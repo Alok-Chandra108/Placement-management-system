@@ -1,0 +1,128 @@
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+
+const userSchema = new mongoose.Schema(
+  {
+    fullName: {
+      type: String,
+      required: [true, 'Full name is required'],
+      trim: true,
+      maxLength: [60, 'Full name cannot exceed 60 characters'],
+    },
+    email: {
+      type: String,
+      required: [true, 'Email is required'],
+      unique: true,
+      lowercase: true,
+      trim: true,
+    },
+    enrollmentNumber: {
+      type: String,
+      required: [true, 'Enrollment number is required'],
+      unique: true,
+      uppercase: true,
+      trim: true,
+    },
+    password: {
+      type: String,
+      required: [true, 'Password is required'],
+    },
+    role: {
+      type: String,
+      enum: ['student', 'admin', 'hr'],
+      default: 'student',
+    },
+    department: {
+      type: String,
+      enum: [
+        'Aeronautical Engineering',
+        'Artificial Intelligence & Machine Learning',
+        'Civil Engineering',
+        'Computer Science & Engineering',
+        'Computer Science & Engineering (Artificial Intelligence & Machine Learning)',
+        'Computer Science & Engineering (IoT & Cyber Security with Blockchain Technology)',
+        'Electronics & Communication Engineering',
+        'Information Science & Engineering',
+        'Mechanical Engineering',
+        'Mechatronics Engineering',
+        'Robotics & Artificial Intelligence',
+        'MCA (Master of Computer Applications)',
+        'MBA (Master of Business Administration)',
+        'M.Tech in Computer Science & Engineering',
+        'M.Tech in Mechatronics',
+      ],
+      required: [true, 'Department is required'],
+    },
+    yearOfStudy: {
+      type: String,
+      enum: ['1st Year', '2nd Year', '3rd Year', 'Final Year'],
+      required: [true, 'Year of study is required'],
+    },
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+    profileComplete: {
+      type: Number,
+      default: 0,
+    },
+    refreshToken: {
+      type: String,
+      default: null,
+    },
+    resetPasswordToken: {
+      type: String,
+      default: null,
+    },
+    resetPasswordExpiry: {
+      type: Date,
+      default: null,
+    },
+    lastLogin: {
+      type: Date,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+// Pre-save hook: hash password if modified
+userSchema.pre('save', async function () {
+  if (!this.isModified('password')) return;
+
+  const salt = await bcrypt.genSalt(12);
+  this.password = await bcrypt.hash(this.password, salt);
+});
+
+// Method: compare password
+userSchema.methods.comparePassword = async function (candidatePassword) {
+  return bcrypt.compare(candidatePassword, this.password);
+};
+
+// Method: generate access token
+userSchema.methods.generateAccessToken = function () {
+  return jwt.sign(
+    { id: this._id, email: this.email, role: this.role },
+    process.env.JWT_ACCESS_SECRET,
+    { expiresIn: process.env.JWT_ACCESS_EXPIRY || '15m' }
+  );
+};
+
+// Method: generate refresh token
+userSchema.methods.generateRefreshToken = function () {
+  return jwt.sign(
+    { id: this._id },
+    process.env.JWT_REFRESH_SECRET,
+    { expiresIn: process.env.JWT_REFRESH_EXPIRY || '7d' }
+  );
+};
+
+const User = mongoose.model('User', userSchema);
+
+module.exports = User;

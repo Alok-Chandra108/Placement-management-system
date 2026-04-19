@@ -1,9 +1,7 @@
 node_modules/
-.env
+*.env
 .DS_Store
 *.log
 dist/
 build/
 .vscode/
-PROJECT_REQUIREMENTS_ANALYSIS.md
-CPMS_IMPLEMENTATION_ROADMAP.md

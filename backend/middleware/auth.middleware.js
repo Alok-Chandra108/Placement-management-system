@@ -1,0 +1,43 @@
+const jwt = require('jsonwebtoken');
+const User = require('../models/User.model');
+const ApiResponse = require('../utils/ApiResponse');
+
+/**
+ * Middleware: Verify access token from Authorization header
+ */
+const verifyAccessToken = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return ApiResponse.error(res, 'Access token required', 401);
+    }
+
+    const token = authHeader.split(' ')[1];
+
+    const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
+
+    const user = await User.findById(decoded.id).select('-password -refreshToken');
+
+    if (!user) {
+      return ApiResponse.error(res, 'User not found', 401);
+    }
+
+    if (!user.isActive) {
+      return ApiResponse.error(res, 'Account has been deactivated', 403);
+    }
+
+    req.user = user;
+    next();
+  } catch (error) {
+    if (error.name === 'TokenExpiredError') {
+      return ApiResponse.error(res, 'Access token expired', 401);
+    }
+    if (error.name === 'JsonWebTokenError') {
+      return ApiResponse.error(res, 'Invalid access token', 401);
+    }
+    return ApiResponse.error(res, 'Authentication failed', 401);
+  }
+};
+
+module.exports = { verifyAccessToken };
