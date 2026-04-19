@@ -23,8 +23,8 @@ const sendOTPEmail = async (fullName, email, otp) => {
           <!-- Header -->
           <tr>
             <td style="background-color:#09529B;padding:24px 32px;text-align:center;">
-              <img src="https://mite.ac.in/wp-content/uploads/2021/05/mite-logo-new.png" alt="MITE" style="height:40px;display:inline-block;border:none;outline:none;" />
-              <p style="color:#ffffff;font-size:14px;margin:8px 0 0;font-weight:600;">Placement Portal</p>
+              <h1 style="color:#ffffff;font-size:32px;margin:0;font-weight:800;letter-spacing:1px;font-family:'Montserrat',Arial,sans-serif;">MITE</h1>
+              <p style="color:#ffffff;font-size:14px;margin:8px 0 0;font-weight:600;letter-spacing:0.5px;opacity:0.9;">Placement Portal</p>
             </td>
           </tr>
           <!-- Body -->
@@ -65,7 +65,7 @@ const sendOTPEmail = async (fullName, email, otp) => {
 
   try {
     await transporter.sendMail(mailOptions);
-    console.log(`OTP email sent to ${email}`);
+
   } catch (error) {
     console.error('Failed to send OTP email:', error.message);
     // Don't throw — allow registration to succeed even if email fails
@@ -96,8 +96,8 @@ const sendResetEmail = async (fullName, email, resetURL) => {
           <!-- Header -->
           <tr>
             <td style="background-color:#09529B;padding:24px 32px;text-align:center;">
-              <img src="https://mite.ac.in/wp-content/uploads/2021/05/mite-logo-new.png" alt="MITE" style="height:40px;display:inline-block;border:none;outline:none;" />
-              <p style="color:#ffffff;font-size:14px;margin:8px 0 0;font-weight:600;">Placement Portal</p>
+              <h1 style="color:#ffffff;font-size:32px;margin:0;font-weight:800;letter-spacing:1px;font-family:'Montserrat',Arial,sans-serif;">MITE</h1>
+              <p style="color:#ffffff;font-size:14px;margin:8px 0 0;font-weight:600;letter-spacing:0.5px;opacity:0.9;">Placement Portal</p>
             </td>
           </tr>
           <!-- Body -->
@@ -138,7 +138,7 @@ const sendResetEmail = async (fullName, email, resetURL) => {
 
   try {
     await transporter.sendMail(mailOptions);
-    console.log(`Reset email sent to ${email}`);
+
   } catch (error) {
     console.error('Failed to send reset email:', error.message);
   }

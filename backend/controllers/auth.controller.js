@@ -68,7 +68,7 @@ const register = async (req, res) => {
       201
     );
   } catch (error) {
-    console.error('Register error:', error);
+
     return ApiResponse.error(res, 'Registration failed. Please try again.', 500);
   }
 };
@@ -123,7 +123,7 @@ const verifyEmail = async (req, res) => {
 
     return ApiResponse.success(res, 'Email verified successfully. You can now log in.');
   } catch (error) {
-    console.error('Verify email error:', error);
+
     return ApiResponse.error(res, 'Verification failed. Please try again.', 500);
   }
 };
@@ -170,7 +170,7 @@ const resendOTP = async (req, res) => {
 
     return ApiResponse.success(res, 'OTP has been resent to your email.');
   } catch (error) {
-    console.error('Resend OTP error:', error);
+
     return ApiResponse.error(res, 'Failed to resend OTP. Please try again.', 500);
   }
 };
@@ -246,7 +246,7 @@ const login = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Login error:', error);
+
     return ApiResponse.error(res, 'Login failed. Please try again.', 500);
   }
 };
@@ -271,7 +271,7 @@ const logout = async (req, res) => {
 
     return ApiResponse.success(res, 'Logged out successfully');
   } catch (error) {
-    console.error('Logout error:', error);
+
     return ApiResponse.error(res, 'Logout failed', 500);
   }
 };
@@ -320,7 +320,7 @@ const refreshTokenHandler = async (req, res) => {
       accessToken: newAccessToken,
     });
   } catch (error) {
-    console.error('Refresh token error:', error);
+
     return ApiResponse.error(res, 'Token refresh failed', 500);
   }
 };
@@ -368,7 +368,7 @@ const forgotPassword = async (req, res) => {
 
     return ApiResponse.success(res, genericMessage);
   } catch (error) {
-    console.error('Forgot password error:', error);
+
     return ApiResponse.error(res, 'Failed to process request. Please try again.', 500);
   }
 };
@@ -402,7 +402,7 @@ const validateResetToken = async (req, res) => {
 
     return ApiResponse.success(res, 'Token is valid', { valid: true });
   } catch (error) {
-    console.error('Validate reset token error:', error);
+
     return ApiResponse.error(res, 'Validation failed', 500);
   }
 };
@@ -443,7 +443,7 @@ const resetPassword = async (req, res) => {
 
     return ApiResponse.success(res, 'Password updated successfully. You can now log in.');
   } catch (error) {
-    console.error('Reset password error:', error);
+
     return ApiResponse.error(res, 'Password reset failed. Please try again.', 500);
   }
 };
