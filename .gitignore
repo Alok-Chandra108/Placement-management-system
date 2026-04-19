@@ -5,3 +5,5 @@ node_modules/
 dist/
 build/
 .vscode/
+PROJECT_REQUIREMENTS_ANALYSIS.md
+CPMS_IMPLEMENTATION_ROADMAP.md
