@@ -1,0 +1,103 @@
+import { useState } from 'react';
+import { Menu, Search, Bell } from 'lucide-react';
+import { motion } from 'framer-motion';
+import Sidebar from './Sidebar';
+import useAuth from '../../hooks/useAuth';
+
+const DashboardLayout = ({ children }) => {
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const { user } = useAuth();
+
+  // Get user initials for the small header avatar
+  const initials = user?.fullName
+    ?.split(' ')
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2) || '??';
+
+  return (
+    <div className="flex min-h-screen bg-neutral-50 font-sans text-neutral-900">
+      {/* Sidebar */}
+      <Sidebar
+        isMobileOpen={mobileOpen}
+        onMobileClose={() => setMobileOpen(false)}
+      />
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Top Bar — visible on all sizes */}
+        <header className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-neutral-200/60">
+          <div className="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
+            {/* Left: Hamburger (mobile) + Greeting */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setMobileOpen(true)}
+                className="lg:hidden p-2 -ml-2 rounded-lg hover:bg-neutral-100 text-neutral-600 transition-colors"
+                aria-label="Open menu"
+              >
+                <Menu className="h-5 w-5" />
+              </button>
+
+              <div className="hidden sm:block">
+                <p className="text-sm font-semibold text-neutral-800">
+                  {getGreeting()}, {user?.fullName?.split(' ')[0]} 👋
+                </p>
+                <p className="text-xs text-neutral-500">
+                  {new Date().toLocaleDateString('en-IN', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  })}
+                </p>
+              </div>
+            </div>
+
+            {/* Right: Search + Notifications + Avatar */}
+            <div className="flex items-center gap-2">
+              {/* Search (desktop) */}
+              <div className="hidden md:flex items-center bg-neutral-100 rounded-xl px-3 py-2 gap-2 w-56 focus-within:ring-2 focus-within:ring-brand-orange/30 focus-within:bg-white transition-all border border-transparent focus-within:border-neutral-200">
+                <Search className="h-4 w-4 text-neutral-400 flex-shrink-0" />
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  className="bg-transparent text-sm text-neutral-700 placeholder:text-neutral-400 outline-none w-full"
+                />
+              </div>
+
+              {/* Notification Bell */}
+              <button className="relative p-2 rounded-xl hover:bg-neutral-100 text-neutral-500 hover:text-neutral-700 transition-colors">
+                <Bell className="h-5 w-5" />
+                <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-brand-orange rounded-full ring-2 ring-white" />
+              </button>
+
+              {/* Mini Avatar */}
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                className="h-9 w-9 rounded-full bg-gradient-to-br from-brand-blue to-brand-blue-dark flex items-center justify-center cursor-pointer shadow-sm"
+              >
+                <span className="text-xs font-bold text-white leading-none">{initials}</span>
+              </motion.div>
+            </div>
+          </div>
+        </header>
+
+        {/* Page Content */}
+        <main className="flex-1 px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+          {children}
+        </main>
+      </div>
+    </div>
+  );
+};
+
+// Helper: returns time-based greeting
+function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 17) return 'Good afternoon';
+  return 'Good evening';
+}
+
+export default DashboardLayout;
