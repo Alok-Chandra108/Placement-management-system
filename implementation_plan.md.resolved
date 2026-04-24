@@ -1,0 +1,324 @@
+# Student Profile & Resume Module — Phased Implementation Plan
+
+## Current State Summary
+
+Your CPMS app currently has:
+- **Backend**: Express + Mongoose with `User` model (fullName, email, usnNumber, password, role, department, yearOfStudy, profileComplete), JWT auth, role middleware
+- **Frontend**: React + Vite + Redux Toolkit + TailwindCSS + Framer Motion, with a polished `StudentDashboard` (hero banner, stats, notices, drives, next-steps checklist), sidebar navigation with a "My Profile" link pointing to `/dashboard/student/profile` (currently renders nothing)
+- **No StudentProfile model** or profile API exists yet
+
+---
+
+## Phase 1 — Backend: StudentProfile Model & Basic CRUD API
+
+> **Goal**: Create the data layer and REST endpoints for student profiles.
+
+### 1A. StudentProfile Mongoose Model
+
+#### [NEW] [StudentProfile.model.js](file:///c:/Users/Alok%20Chandra/cpms-mini-project/backend/models/StudentProfile.model.js)
+
+Create a `StudentProfile` schema linked 1:1 to `User` via `userId`:
+
+| Field | Type | Details |
+|---|---|---|
+| `userId` | ObjectId (ref: User) | Required, unique, indexed |
+| `phone` | String | 10-digit mobile |
+| `dateOfBirth` | Date | Optional |
+| `gender` | String | Enum: Male, Female, Other |
+| `address` | String | Current address |
+| **Academic Details** | | |
+| `tenthPercentage` | Number | 0–100 |
+| `tenthBoard` | String | e.g., CBSE / State Board |
+| `tenthPassingYear` | Number | |
+| `twelfthPercentage` | Number | 0–100 |
+| `twelfthBoard` | String | |
+| `twelfthPassingYear` | Number | |
+| `cgpa` | Number | 0–10 scale |
+| `backlogs` | Number | Active backlogs count (default: 0) |
+| **Skills & Projects** | | |
+| `skills` | [String] | e.g., ["React", "Node.js", "Python"] |
+| `projects` | Array of `{ title, description, techStack, link }` | Max 5 projects |
+| `certifications` | [String] | Optional list |
+| **Resume** | | |
+| `resumeUrl` | String | Cloudinary secure URL |
+| `resumePublicId` | String | Cloudinary public_id (for delete/replace) |
+| **Meta** | | |
+| `linkedIn` | String | Optional profile URL |
+| `github` | String | Optional profile URL |
+
+- Auto-calculate and update `User.profileComplete` percentage via a pre-save hook or a utility method.
+
+### 1B. Profile Controller & Routes
+
+#### [NEW] [profile.controller.js](file:///c:/Users/Alok%20Chandra/cpms-mini-project/backend/controllers/profile.controller.js)
+
+| Endpoint | Method | Auth | Description |
+|---|---|---|---|
+| `/api/profile/me` | GET | Student | Fetch current user's profile (auto-create empty shell if none exists) |
+| `/api/profile/me` | PUT | Student | Update profile fields (partial update via `$set`) |
+
+#### [NEW] [profile.routes.js](file:///c:/Users/Alok%20Chandra/cpms-mini-project/backend/routes/profile.routes.js)
+
+Wire routes through `verifyAccessToken` + `requireRole('student')`.
+
+#### [MODIFY] [app.js](file:///c:/Users/Alok%20Chandra/cpms-mini-project/backend/app.js)
+
+Register new route: `app.use('/api/profile', profileRoutes);`
+
+### 1C. Validation
+
+#### [NEW] [profile.validators.js](file:///c:/Users/Alok%20Chandra/cpms-mini-project/backend/validators/profile.validators.js)
+
+Express-validator rules for profile update (CGPA range 0–10, percentages 0–100, phone format, URL format for LinkedIn/GitHub, etc.)
+
+---
+
+## Phase 2 — Backend: Cloudinary Resume Upload
+
+> **Goal**: Add secure PDF resume upload via Cloudinary.
+
+### 2A. Install Dependencies
+
+```bash
+npm install cloudinary multer multer-storage-cloudinary
+```
+
+### 2B. Cloudinary Config
+
+#### [NEW] [cloudinary.js](file:///c:/Users/Alok%20Chandra/cpms-mini-project/backend/config/cloudinary.js)
+
+Configure Cloudinary with env vars: `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`.
+
+### 2C. Multer Upload Middleware
+
+#### [NEW] [upload.middleware.js](file:///c:/Users/Alok%20Chandra/cpms-mini-project/backend/middleware/upload.middleware.js)
+
+- Accept only PDF files
+- Max file size: **2MB**
+- Store in Cloudinary folder: `cpms/resumes/{userId}`
+- Use `multer-storage-cloudinary` for direct Cloudinary streaming
+
+### 2D. Resume Upload Endpoint
+
+#### [MODIFY] [profile.controller.js](file:///c:/Users/Alok%20Chandra/cpms-mini-project/backend/controllers/profile.controller.js)
+
+| Endpoint | Method | Auth | Description |
+|---|---|---|---|
+| `/api/profile/resume` | POST | Student | Upload resume (PDF), save URL + publicId. If resume exists, delete old one from Cloudinary first. |
+| `/api/profile/resume` | DELETE | Student | Remove resume from Cloudinary & clear fields |
+
+#### [MODIFY] [profile.routes.js](file:///c:/Users/Alok%20Chandra/cpms-mini-project/backend/routes/profile.routes.js)
+
+Add resume upload/delete routes with `upload.single('resume')` middleware.
+
+#### [MODIFY] [.env](file:///c:/Users/Alok%20Chandra/cpms-mini-project/backend/.env)
+
+Add Cloudinary credentials:
+```
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+```
+
+#### [MODIFY] [app.js](file:///c:/Users/Alok%20Chandra/cpms-mini-project/backend/app.js)
+
+Increase body parser limit for multipart: already handled by multer, but ensure no conflicts with `express.json({ limit })`.
+
+---
+
+## Phase 3 — Frontend: Profile API Layer & Redux State
+
+> **Goal**: Wire up the frontend data layer before building any UI.
+
+### 3A. Profile API Functions
+
+#### [NEW] [profileApi.js](file:///c:/Users/Alok%20Chandra/cpms-mini-project/frontend/src/api/profileApi.js)
+
+```js
+getMyProfile()        → GET  /api/profile/me
+updateMyProfile(data) → PUT  /api/profile/me
+uploadResume(file)    → POST /api/profile/resume  (FormData)
+deleteResume()        → DELETE /api/profile/resume
+```
+
+### 3B. Profile Redux Slice
+
+#### [NEW] [profileSlice.js](file:///c:/Users/Alok%20Chandra/cpms-mini-project/frontend/src/features/profile/profileSlice.js)
+
+State shape:
+```js
+{
+  profile: null,
+  loading: false,
+  saving: false,
+  uploading: false,
+  error: null,
+}
+```
+
+#### [NEW] [profileThunks.js](file:///c:/Users/Alok%20Chandra/cpms-mini-project/frontend/src/features/profile/profileThunks.js)
+
+Async thunks: `fetchProfile`, `updateProfile`, `uploadResume`, `deleteResume`.
+
+#### [MODIFY] [store.js](file:///c:/Users/Alok%20Chandra/cpms-mini-project/frontend/src/app/store.js)
+
+Register `profileReducer` in the store.
+
+---
+
+## Phase 4 — Frontend: "My Profile" Page UI
+
+> **Goal**: Build a premium, polished profile page matching your existing dashboard design language.
+
+### 4A. Routing Setup
+
+#### [MODIFY] [AppRouter.jsx](file:///c:/Users/Alok%20Chandra/cpms-mini-project/frontend/src/routes/AppRouter.jsx)
+
+The current `/dashboard/student/*` wildcard route renders `StudentDashboard` for ALL sub-paths. Refactor to use nested routes:
+
+```
+/dashboard/student          → StudentDashboard (overview)
+/dashboard/student/profile  → StudentProfilePage (new)
+```
+
+Use a shared `DashboardLayout` wrapper with `<Outlet />` for nested routing.
+
+### 4B. Profile Page Component
+
+#### [NEW] [StudentProfilePage.jsx](file:///c:/Users/Alok%20Chandra/cpms-mini-project/frontend/src/pages/dashboard/StudentProfilePage.jsx)
+
+**Layout — 3-section card layout**:
+
+```
+┌──────────────────────────────────────────────────┐
+│  PROFILE HERO (same gradient as dashboard hero)  │
+│  Avatar │ Name │ Dept │ USN │ Completion Ring     │
+│         │ Edit Profile / Save / Cancel buttons   │
+└──────────────────────────────────────────────────┘
+
+┌─────────────────────┬────────────────────────────┐
+│  PERSONAL INFO      │  ACADEMIC RECORDS          │
+│  ───────────────    │  ────────────────           │
+│  Phone              │  10th %    │ Board  │ Year  │
+│  DOB                │  12th %    │ Board  │ Year  │
+│  Gender             │  CGPA      │ Backlogs      │
+│  Address            │                            │
+│  LinkedIn / GitHub  │                            │
+└─────────────────────┴────────────────────────────┘
+
+┌──────────────────────────────────────────────────┐
+│  SKILLS & PROJECTS                               │
+│  ─────────────────                               │
+│  [React] [Node.js] [Python]  ← Tag pills         │
+│                                                  │
+│  Project Cards (title, desc, stack, link)         │
+└──────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────┐
+│  RESUME                                          │
+│  ──────                                          │
+│  📄 resume.pdf    [View] [Download] [Replace]    │
+│  ── OR ──                                        │
+│  Drag & drop upload zone (PDF only, max 2MB)     │
+└──────────────────────────────────────────────────┘
+```
+
+**Two modes**:
+1. **View Mode** (default) — Read-only display with clean typography, all fields shown as text
+2. **Edit Mode** — Inline form fields appear (using `react-hook-form` + `zod` validation, matching your auth forms pattern)
+
+**Design tokens** — Reuse your existing Tailwind theme: `brand-blue`, `brand-orange`, `neutral-*`, same `rounded-2xl` cards, same Framer Motion `fadeUp` animations.
+
+### 4C. Zod Validation Schema
+
+#### [NEW] [profileSchema.js](file:///c:/Users/Alok%20Chandra/cpms-mini-project/frontend/src/schemas/profileSchema.js)
+
+Client-side validation matching the backend rules (CGPA 0–10, percentages 0–100, phone regex, URL patterns).
+
+---
+
+## Phase 5 — Integration, Profile Completion & Polish
+
+> **Goal**: Wire everything together, handle edge cases, and polish the UX.
+
+### 5A. Profile Completion Logic
+
+#### [MODIFY] [StudentProfile.model.js](file:///c:/Users/Alok%20Chandra/cpms-mini-project/backend/models/StudentProfile.model.js)
+
+Add a method `calculateCompletion()` that scores each field group:
+
+| Section | Weight |
+|---|---|
+| Personal Info (phone, DOB, gender) | 15% |
+| Academic (10th, 12th, CGPA) | 30% |
+| Skills (≥3 skills) | 15% |
+| Projects (≥1 project) | 15% |
+| Resume uploaded | 25% |
+
+On every profile save → recalculate → update `User.profileComplete`.
+
+### 5B. Dashboard Integration
+
+#### [MODIFY] [StudentDashboard.jsx](file:///c:/Users/Alok%20Chandra/cpms-mini-project/frontend/src/pages/dashboard/StudentDashboard.jsx)
+
+- The "Complete Student Profile" step in the Next Steps checklist should link to `/dashboard/student/profile`
+- Profile completion ring in the hero banner should reflect real-time profile data
+
+### 5C. Toast Notifications
+
+- Success: "Profile updated successfully ✓"
+- Success: "Resume uploaded successfully ✓"
+- Error: "Failed to save profile. Please try again."
+- Error: "Only PDF files under 2MB are allowed"
+
+### 5D. Loading & Error States
+
+- Skeleton loaders while profile data loads
+- Retry button on API errors
+- Optimistic UI for quick field edits
+
+---
+
+## User Review Required
+
+> [!IMPORTANT]
+> **Cloudinary Account**: You'll need a free Cloudinary account to get `CLOUD_NAME`, `API_KEY`, and `API_SECRET`. Do you already have one, or should I guide you through the setup?
+
+> [!IMPORTANT]
+> **File Upload Service Choice**: The plan uses **Cloudinary** (free tier: 25GB storage, 25GB bandwidth/month). Alternatively, we could use **AWS S3** if you prefer. Which do you want?
+
+> [!WARNING]
+> **Routing Refactor**: The current `AppRouter.jsx` renders `StudentDashboard` for ALL `/dashboard/student/*` paths. Phase 4 requires converting this to nested routing with `<Outlet />`, so the sidebar "My Profile" link actually renders a different page. This is a small but important structural change.
+
+## Open Questions
+
+1. **Photo upload?** — Should students be able to upload a profile photo (avatar), or keep the initials-based avatar from the current design?
+2. **Projects limit** — I've set a max of 5 projects. Is that reasonable, or do you want unlimited?
+3. **Admin visibility** — Should admins be able to view student profiles in a later phase? (Doesn't affect this plan, just future-proofing the API permissions.)
+
+---
+
+## Verification Plan
+
+### Automated Tests
+```bash
+# Backend: Test profile CRUD
+curl -X GET http://localhost:5000/api/profile/me -H "Authorization: Bearer <token>"
+curl -X PUT http://localhost:5000/api/profile/me -H "Authorization: Bearer <token>" -d '{"cgpa": 8.5}'
+
+# Backend: Test resume upload
+curl -X POST http://localhost:5000/api/profile/resume -H "Authorization: Bearer <token>" -F "resume=@test.pdf"
+```
+
+### Manual Verification
+- Navigate to `/dashboard/student/profile` → verify page loads with empty/default data
+- Fill in all fields → save → refresh page → verify persistence
+- Upload a PDF resume → verify it appears with View/Download buttons
+- Replace resume → verify old one is deleted from Cloudinary
+- Check profile completion ring updates on dashboard after profile changes
+- Test all form validations (invalid CGPA, oversized file, non-PDF file)
+- Mobile responsiveness check on the profile page
+
+### Browser Testing
+- Use the browser tool to navigate through the complete profile flow
+- Record a walkthrough video of the entire student profile experience
