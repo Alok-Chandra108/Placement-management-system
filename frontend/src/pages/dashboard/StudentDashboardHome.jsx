@@ -118,17 +118,19 @@ const StudentDashboardHome = () => {
     .slice(0, 2) || '??';
 
   const deptShort = user?.department
+    ?.replace(' (Master of Computer Applications)', '')
+    ?.replace(' (Master of Business Administration)', '')
+    ?.replace(' (Artificial Intelligence & Machine Learning)', '')
+    ?.replace(' (IoT & Cyber Security with Blockchain Technology)', '')
     ?.replace('Computer Science & Engineering', 'CSE')
-    .replace('Master of Computer Applications', 'MCA')
-    .replace('Information Science & Engineering', 'ISE')
-    .replace('Electronics & Communication Engineering', 'ECE')
-    .replace('Artificial Intelligence & Machine Learning', 'AI/ML')
-    .replace('Mechanical Engineering', 'ME')
-    .replace('Aeronautical Engineering', 'AE')
-    .replace('Civil Engineering', 'CE')
-    .replace('Mechatronics Engineering', 'MCT')
-    .replace('Robotics & Artificial Intelligence', 'R&AI')
-    .replace('Master of Business Administration', 'MBA')
+    ?.replace('Information Science & Engineering', 'ISE')
+    ?.replace('Electronics & Communication Engineering', 'ECE')
+    ?.replace('Artificial Intelligence & Machine Learning', 'AI/ML')
+    ?.replace('Mechanical Engineering', 'ME')
+    ?.replace('Aeronautical Engineering', 'AE')
+    ?.replace('Civil Engineering', 'CE')
+    ?.replace('Mechatronics Engineering', 'MCT')
+    ?.replace('Robotics & Artificial Intelligence', 'R&AI')
     || user?.department;
 
   return (
@@ -279,6 +281,7 @@ const StudentDashboardHome = () => {
           Your Next Steps
         </h2>
         <div className="space-y-3">
+          {/* Step 1: Profile */}
           <div className={`flex gap-4 items-start p-4 rounded-xl border transition-all ${
             profileCompletion === 100 ? 'bg-emerald-50/50 border-emerald-200/60' : 'bg-brand-blue-light/40 border-brand-blue/10'
           }`}>
@@ -286,8 +289,10 @@ const StudentDashboardHome = () => {
               {profileCompletion === 100 ? <CheckCircle2 className="h-5 w-5 text-emerald-500" /> : <AlertCircle className="h-5 w-5 text-brand-blue" />}
             </div>
             <div className="flex-1 min-w-0">
-              <h4 className="text-sm font-bold text-neutral-900">Complete Student Profile</h4>
-              <p className="text-xs text-neutral-500 mt-0.5">Add your academic details, 10th & 12th marks, and resume to get verified by the admin.</p>
+              <h4 className="text-sm font-bold text-neutral-900">
+                Complete Student Profile {profileCompletion === 100 && '✓'}
+              </h4>
+              <p className="text-xs text-neutral-500 mt-0.5">Add your academic details, 10th & 12th marks, and projects to get verified.</p>
             </div>
             {profileCompletion !== 100 && (
               <button 
@@ -299,22 +304,54 @@ const StudentDashboardHome = () => {
             )}
           </div>
 
-          <div className="flex gap-4 items-start p-4 rounded-xl border border-neutral-100 bg-neutral-50/50 opacity-60">
-            <div className="mt-0.5 flex-shrink-0"><FileText className="h-5 w-5 text-neutral-400" /></div>
-            <div className="flex-1 min-w-0">
-              <h4 className="text-sm font-bold text-neutral-800">Build Your MITE Resume</h4>
-              <p className="text-xs text-neutral-400 mt-0.5">Once your profile is complete, generate your standardized placement resume instantly.</p>
+          {/* Step 2: Resume */}
+          <div className={`flex gap-4 items-start p-4 rounded-xl border transition-all ${
+            profileCompletion === 100 
+              ? (user?.resumeUrl ? 'bg-emerald-50/50 border-emerald-200/60' : 'bg-brand-orange/5 border-brand-orange/10') 
+              : 'border-neutral-100 bg-neutral-50/50 opacity-60'
+          }`}>
+            <div className="mt-0.5 flex-shrink-0">
+              {user?.resumeUrl ? <CheckCircle2 className="h-5 w-5 text-emerald-500" /> : <FileText className={`h-5 w-5 ${profileCompletion === 100 ? 'text-brand-orange' : 'text-neutral-400'}`} />}
             </div>
-            <span className="hidden sm:inline-block px-3 py-1 bg-neutral-200 text-neutral-500 text-[10px] font-semibold rounded-full">Locked</span>
+            <div className="flex-1 min-w-0">
+              <h4 className={`text-sm font-bold ${profileCompletion === 100 ? 'text-neutral-900' : 'text-neutral-800'}`}>
+                Upload Placement Resume {user?.resumeUrl && '✓'}
+              </h4>
+              <p className="text-xs text-neutral-500 mt-0.5">Upload your PDF resume to start applying for drives.</p>
+            </div>
+            {profileCompletion === 100 ? (
+              !user?.resumeUrl && (
+                <button 
+                  onClick={() => navigate('/dashboard/student/profile')}
+                  className="hidden sm:flex items-center gap-1 px-4 py-2 bg-brand-orange text-white text-xs font-semibold rounded-lg hover:bg-brand-orange-dark transition-colors shadow-sm"
+                >
+                  Upload <ChevronRight className="h-3.5 w-3.5" />
+                </button>
+              )
+            ) : (
+              <span className="hidden sm:inline-block px-3 py-1 bg-neutral-200 text-neutral-500 text-[10px] font-semibold rounded-full">Locked</span>
+            )}
           </div>
 
-          <div className="flex gap-4 items-start p-4 rounded-xl border border-neutral-100 bg-neutral-50/50 opacity-60">
-            <div className="mt-0.5 flex-shrink-0"><Briefcase className="h-5 w-5 text-neutral-400" /></div>
+          {/* Step 3: Applications */}
+          <div className={`flex gap-4 items-start p-4 rounded-xl border transition-all ${
+            user?.resumeUrl ? 'bg-brand-blue-light/40 border-brand-blue/10' : 'border-neutral-100 bg-neutral-50/50 opacity-60'
+          }`}>
+            <div className="mt-0.5 flex-shrink-0"><Briefcase className={`h-5 w-5 ${user?.resumeUrl ? 'text-brand-blue' : 'text-neutral-400'}`} /></div>
             <div className="flex-1 min-w-0">
-              <h4 className="text-sm font-bold text-neutral-800">Apply to Placement Drives</h4>
-              <p className="text-xs text-neutral-400 mt-0.5">Browse eligible drives and apply with a single click once your profile is verified.</p>
+              <h4 className={`text-sm font-bold ${user?.resumeUrl ? 'text-neutral-900' : 'text-neutral-800'}`}>Apply to Placement Drives</h4>
+              <p className="text-xs text-neutral-500 mt-0.5">Browse eligible drives and apply with a single click once resume is uploaded.</p>
             </div>
-            <span className="hidden sm:inline-block px-3 py-1 bg-neutral-200 text-neutral-500 text-[10px] font-semibold rounded-full">Locked</span>
+            {user?.resumeUrl ? (
+              <button 
+                onClick={() => navigate('/dashboard/student/drives')}
+                className="hidden sm:flex items-center gap-1 px-4 py-2 bg-brand-blue text-white text-xs font-semibold rounded-lg hover:bg-brand-blue-dark transition-colors shadow-sm"
+              >
+                Browse <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+            ) : (
+              <span className="hidden sm:inline-block px-3 py-1 bg-neutral-200 text-neutral-500 text-[10px] font-semibold rounded-full">Locked</span>
+            )}
           </div>
         </div>
       </motion.div>
