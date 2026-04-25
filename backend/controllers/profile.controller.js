@@ -1,4 +1,4 @@
-const { validationResult } = require('express-validator');
+
 const StudentProfile = require('../models/StudentProfile.model');
 const ApiResponse = require('../utils/ApiResponse');
 const cloudinary = require('../config/cloudinary');
@@ -30,9 +30,22 @@ const ALLOWED_FIELDS = [
  */
 const sanitizeUpdate = (body) => {
   const clean = {};
+  const numericOrDateFields = [
+    'dateOfBirth',
+    'tenthPercentage',
+    'tenthPassingYear',
+    'twelfthPercentage',
+    'twelfthPassingYear',
+    'cgpa',
+  ];
+
   for (const key of ALLOWED_FIELDS) {
     if (body[key] !== undefined) {
-      clean[key] = body[key];
+      if (numericOrDateFields.includes(key) && body[key] === '') {
+        clean[key] = null;
+      } else {
+        clean[key] = body[key];
+      }
     }
   }
   return clean;
@@ -43,21 +56,21 @@ const sanitizeUpdate = (body) => {
  * Fetch the current student's profile.
  * Auto-creates an empty profile shell if none exists.
  */
-const getMyProfile = async (req, res) => {
+const getMyProfile = async (req, res, next) => {
   try {
-    let profile = await StudentProfile.findOne({ userId: req.user._id });
+    let profile = await StudentProfile.findOne({ userId: req.user._id }).lean();
 
     if (!profile) {
       // Auto-create an empty profile linked to this user
-      profile = await StudentProfile.create({ userId: req.user._id });
+      const newProfile = await StudentProfile.create({ userId: req.user._id });
+      profile = newProfile.toObject();
     }
 
     return ApiResponse.success(res, 'Profile fetched successfully', {
       profile,
     });
   } catch (error) {
-    console.error('Get profile error:', error.message);
-    return ApiResponse.error(res, 'Failed to fetch profile', 500);
+    next(error);
   }
 };
 
@@ -67,14 +80,8 @@ const getMyProfile = async (req, res) => {
  * Only whitelisted fields are accepted.
  * The profile completion percentage is recalculated automatically via the pre-save hook.
  */
-const updateMyProfile = async (req, res) => {
+const updateMyProfile = async (req, res, next) => {
   try {
-    // Validate inputs
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return ApiResponse.error(res, 'Validation failed', 400, errors.array());
-    }
-
     // Sanitize — strip out any fields not in the whitelist
     const updateData = sanitizeUpdate(req.body);
 
@@ -99,15 +106,7 @@ const updateMyProfile = async (req, res) => {
       profile,
     });
   } catch (error) {
-    console.error('Update profile error:', error.message);
-
-    // Handle Mongoose validation errors
-    if (error.name === 'ValidationError') {
-      const messages = Object.values(error.errors).map((e) => e.message);
-      return ApiResponse.error(res, messages.join('. '), 400);
-    }
-
-    return ApiResponse.error(res, 'Failed to update profile', 500);
+    next(error);
   }
 };
 
@@ -115,7 +114,7 @@ const updateMyProfile = async (req, res) => {
  * POST /api/profile/resume
  * Upload resume (PDF) to Cloudinary
  */
-const uploadResume = async (req, res) => {
+const uploadResume = async (req, res, next) => {
   try {
     if (!req.file) {
       return ApiResponse.error(res, 'No file uploaded', 400);
@@ -141,8 +140,7 @@ const uploadResume = async (req, res) => {
       resumeUrl: profile.resumeUrl,
     });
   } catch (error) {
-    console.error('Upload resume error:', error.message);
-    return ApiResponse.error(res, 'Failed to upload resume', 500);
+    next(error);
   }
 };
 
@@ -150,7 +148,7 @@ const uploadResume = async (req, res) => {
  * DELETE /api/profile/resume
  * Remove resume from Cloudinary & clear fields
  */
-const deleteResume = async (req, res) => {
+const deleteResume = async (req, res, next) => {
   try {
     const profile = await StudentProfile.findOne({ userId: req.user._id });
     
@@ -167,8 +165,7 @@ const deleteResume = async (req, res) => {
 
     return ApiResponse.success(res, 'Resume deleted successfully');
   } catch (error) {
-    console.error('Delete resume error:', error.message);
-    return ApiResponse.error(res, 'Failed to delete resume', 500);
+    next(error);
   }
 };
 

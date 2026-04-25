@@ -1,6 +1,4 @@
 const crypto = require('crypto');
-const bcrypt = require('bcryptjs');
-const { validationResult } = require('express-validator');
 const User = require('../models/User.model');
 const OTP = require('../models/OTP.model');
 const generateOTP = require('../utils/generateOTP');
@@ -11,13 +9,8 @@ const { sendOTPEmail, sendResetEmail } = require('../services/email.service');
  * POST /api/auth/register
  * Register a new student account
  */
-const register = async (req, res) => {
+const register = async (req, res, next) => {
   try {
-    // Validate input
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return ApiResponse.error(res, 'Validation failed', 400, errors.array());
-    }
 
     const { fullName, email, usnNumber, department, yearOfStudy, password } = req.body;
 
@@ -68,7 +61,7 @@ const register = async (req, res) => {
       201
     );
   } catch (error) {
-    return ApiResponse.error(res, 'Registration failed. Please try again.', 500);
+    next(error);
   }
 };
 
@@ -76,13 +69,8 @@ const register = async (req, res) => {
  * POST /api/auth/verify-email
  * Verify email with OTP
  */
-const verifyEmail = async (req, res) => {
+const verifyEmail = async (req, res, next) => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return ApiResponse.error(res, 'Validation failed', 400, errors.array());
-    }
-
     const { email, otp } = req.body;
 
     // Find OTP record
@@ -122,7 +110,7 @@ const verifyEmail = async (req, res) => {
 
     return ApiResponse.success(res, 'Email verified successfully. You can now log in.');
   } catch (error) {
-    return ApiResponse.error(res, 'Verification failed. Please try again.', 500);
+    next(error);
   }
 };
 
@@ -130,13 +118,8 @@ const verifyEmail = async (req, res) => {
  * POST /api/auth/resend-otp
  * Resend OTP for email verification
  */
-const resendOTP = async (req, res) => {
+const resendOTP = async (req, res, next) => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return ApiResponse.error(res, 'Validation failed', 400, errors.array());
-    }
-
     const { email } = req.body;
 
     // Check if user exists and is not verified
@@ -168,7 +151,7 @@ const resendOTP = async (req, res) => {
 
     return ApiResponse.success(res, 'OTP has been resent to your email.');
   } catch (error) {
-    return ApiResponse.error(res, 'Failed to resend OTP. Please try again.', 500);
+    next(error);
   }
 };
 
@@ -176,13 +159,8 @@ const resendOTP = async (req, res) => {
  * POST /api/auth/login
  * Login with email and password
  */
-const login = async (req, res) => {
+const login = async (req, res, next) => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return ApiResponse.error(res, 'Validation failed', 400, errors.array());
-    }
-
     const { email, password } = req.body;
 
     // Find user — generic error if not found (security)
@@ -243,7 +221,7 @@ const login = async (req, res) => {
       },
     });
   } catch (error) {
-    return ApiResponse.error(res, 'Login failed. Please try again.', 500);
+    next(error);
   }
 };
 
@@ -251,7 +229,7 @@ const login = async (req, res) => {
  * POST /api/auth/logout
  * Logout — clear refresh token
  */
-const logout = async (req, res) => {
+const logout = async (req, res, next) => {
   try {
     // Clear refresh token from user document
     await User.findByIdAndUpdate(req.user._id, {
@@ -276,7 +254,7 @@ const logout = async (req, res) => {
  * POST /api/auth/refresh-token
  * Refresh access token using the httpOnly cookie
  */
-const refreshTokenHandler = async (req, res) => {
+const refreshTokenHandler = async (req, res, next) => {
   try {
     const token = req.cookies?.refreshToken;
 
@@ -316,8 +294,7 @@ const refreshTokenHandler = async (req, res) => {
       accessToken: newAccessToken,
     });
   } catch (error) {
-
-    return ApiResponse.error(res, 'Token refresh failed', 500);
+    next(error);
   }
 };
 
@@ -325,13 +302,8 @@ const refreshTokenHandler = async (req, res) => {
  * POST /api/auth/forgot-password
  * Send password reset link
  */
-const forgotPassword = async (req, res) => {
+const forgotPassword = async (req, res, next) => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return ApiResponse.error(res, 'Validation failed', 400, errors.array());
-    }
-
     const { email } = req.body;
 
     // ALWAYS return 200 — never confirm if email exists (security)
@@ -364,8 +336,7 @@ const forgotPassword = async (req, res) => {
 
     return ApiResponse.success(res, genericMessage);
   } catch (error) {
-
-    return ApiResponse.error(res, 'Failed to process request. Please try again.', 500);
+    next(error);
   }
 };
 
@@ -373,13 +344,8 @@ const forgotPassword = async (req, res) => {
  * POST /api/auth/validate-reset-token
  * Check if a reset token is valid
  */
-const validateResetToken = async (req, res) => {
+const validateResetToken = async (req, res, next) => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return ApiResponse.error(res, 'Validation failed', 400, errors.array());
-    }
-
     const { token } = req.body;
 
     const hashedToken = crypto
@@ -398,8 +364,7 @@ const validateResetToken = async (req, res) => {
 
     return ApiResponse.success(res, 'Token is valid', { valid: true });
   } catch (error) {
-
-    return ApiResponse.error(res, 'Validation failed', 500);
+    next(error);
   }
 };
 
@@ -407,13 +372,8 @@ const validateResetToken = async (req, res) => {
  * POST /api/auth/reset-password
  * Reset password using token
  */
-const resetPassword = async (req, res) => {
+const resetPassword = async (req, res, next) => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return ApiResponse.error(res, 'Validation failed', 400, errors.array());
-    }
-
     const { token, newPassword } = req.body;
 
     const hashedToken = crypto
@@ -439,8 +399,7 @@ const resetPassword = async (req, res) => {
 
     return ApiResponse.success(res, 'Password updated successfully. You can now log in.');
   } catch (error) {
-
-    return ApiResponse.error(res, 'Password reset failed. Please try again.', 500);
+    next(error);
   }
 };
 
@@ -448,13 +407,8 @@ const resetPassword = async (req, res) => {
  * PUT /api/auth/update-verify-email
  * Update email for unverified user and send new OTP
  */
-const updateVerifyEmail = async (req, res) => {
+const updateVerifyEmail = async (req, res, next) => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return ApiResponse.error(res, 'Validation failed', 400, errors.array());
-    }
-
     const { oldEmail, newEmail } = req.body;
 
     // Check if new email is already in use by a VERIFIED user
@@ -488,7 +442,7 @@ const updateVerifyEmail = async (req, res) => {
 
     return ApiResponse.success(res, 'Email updated and new OTP sent.', { email: newEmail });
   } catch (error) {
-    return ApiResponse.error(res, 'Failed to update email. Please try again.', 500);
+    next(error);
   }
 };
 

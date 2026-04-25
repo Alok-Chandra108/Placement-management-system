@@ -13,7 +13,7 @@ const updateProfileValidation = [
     .withMessage('Please enter a valid 10-digit Indian mobile number'),
 
   body('dateOfBirth')
-    .optional()
+    .optional({ checkFalsy: true })
     .isISO8601()
     .withMessage('Please enter a valid date (YYYY-MM-DD)')
     .custom((value) => {
@@ -27,7 +27,7 @@ const updateProfileValidation = [
     }),
 
   body('gender')
-    .optional()
+    .optional({ checkFalsy: true })
     .trim()
     .isIn(['Male', 'Female', 'Other'])
     .withMessage('Gender must be Male, Female, or Other'),
@@ -40,7 +40,7 @@ const updateProfileValidation = [
 
   // ── Academic Details ─────────────────────────────────────────
   body('tenthPercentage')
-    .optional()
+    .optional({ checkFalsy: true })
     .isFloat({ min: 0, max: 100 })
     .withMessage('10th percentage must be between 0 and 100'),
 
@@ -51,12 +51,12 @@ const updateProfileValidation = [
     .withMessage('10th Board name cannot exceed 50 characters'),
 
   body('tenthPassingYear')
-    .optional()
+    .optional({ checkFalsy: true })
     .isInt({ min: 2000, max: new Date().getFullYear() })
     .withMessage(`10th passing year must be between 2000 and ${new Date().getFullYear()}`),
 
   body('twelfthPercentage')
-    .optional()
+    .optional({ checkFalsy: true })
     .isFloat({ min: 0, max: 100 })
     .withMessage('12th percentage must be between 0 and 100'),
 
@@ -67,12 +67,12 @@ const updateProfileValidation = [
     .withMessage('12th Board name cannot exceed 50 characters'),
 
   body('twelfthPassingYear')
-    .optional()
+    .optional({ checkFalsy: true })
     .isInt({ min: 2000, max: new Date().getFullYear() })
     .withMessage(`12th passing year must be between 2000 and ${new Date().getFullYear()}`),
 
   body('cgpa')
-    .optional()
+    .optional({ checkFalsy: true })
     .isFloat({ min: 0, max: 10 })
     .withMessage('CGPA must be between 0 and 10'),
 

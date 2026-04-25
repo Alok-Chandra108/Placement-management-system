@@ -30,4 +30,19 @@ const sensitiveLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-module.exports = { authLimiter, sensitiveLimiter };
+/**
+ * General rate limiter for all API routes
+ * 500 requests per 15 minutes
+ */
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 500,
+  message: {
+    success: false,
+    message: 'Too many requests from this IP, please try again later.',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+module.exports = { authLimiter, sensitiveLimiter, apiLimiter };

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   User,
@@ -60,7 +60,7 @@ const SectionHeader = ({ icon: Icon, title, isEditing, onEdit, onCancel, onSave,
         Edit
       </button>
     )}
-    {isEditing && (
+    {isEditing && onSave && (
       <div className="flex items-center gap-2">
         <button
           onClick={onCancel}
@@ -123,6 +123,7 @@ const StudentProfilePage = () => {
     formState: { errors },
     setValue,
     watch,
+    control,
   } = useForm({
     resolver: zodResolver(profileSchema),
     defaultValues: {
@@ -139,9 +140,15 @@ const StudentProfilePage = () => {
       cgpa: '',
       backlogs: 0,
       skills: [],
+      projects: [],
       linkedIn: '',
       github: '',
     },
+  });
+
+  const { fields: projectFields, append: appendProject, remove: removeProject } = useFieldArray({
+    control,
+    name: "projects",
   });
 
   useEffect(() => {
@@ -164,6 +171,11 @@ const StudentProfilePage = () => {
         twelfthPassingYear: profile.twelfthPassingYear || '',
         cgpa: profile.cgpa || '',
         backlogs: profile.backlogs || 0,
+        skills: profile.skills ? profile.skills.join(', ') : '',
+        projects: profile.projects ? profile.projects.map(p => ({
+          ...p,
+          techStack: Array.isArray(p.techStack) ? p.techStack.join(', ') : (p.techStack || '')
+        })) : [],
         linkedIn: profile.linkedIn || '',
         github: profile.github || '',
       });
@@ -172,6 +184,8 @@ const StudentProfilePage = () => {
 
   const onSaveProfile = async (data) => {
     try {
+      // NOTE: Zod schema handles the string -> array transformation for skills and techStack via preprocess.
+      // So 'data' already contains the correctly formatted payload.
       await dispatch(updateProfile(data)).unwrap();
       toast.success('Profile updated successfully ✓');
       setIsEditing(false);
@@ -179,7 +193,7 @@ const StudentProfilePage = () => {
       if (err.errors && Array.isArray(err.errors) && err.errors.length > 0) {
         toast.error(err.errors[0].msg || err.message || 'Validation failed');
       } else {
-        toast.error('Failed to save profile. Please try again.');
+        toast.error(err.message || 'Failed to save profile. Please try again.');
       }
     }
   };
@@ -223,7 +237,30 @@ const StudentProfilePage = () => {
     );
   }
 
-  const profileCompletion = user?.profileComplete || 0;
+  // Calculate profile completion dynamically
+  const calculateCompletion = () => {
+    if (!profile) return 0;
+    let score = 0;
+    
+    // Personal (15%)
+    if (profile.phone && profile.dateOfBirth && profile.gender && profile.address) score += 15;
+    
+    // Academic (30%)
+    if (profile.tenthPercentage && profile.twelfthPercentage && profile.cgpa) score += 30;
+    
+    // Skills (15%)
+    if (profile.skills && profile.skills.length >= 3) score += 15;
+    
+    // Projects (15%)
+    if (profile.projects && profile.projects.length >= 1) score += 15;
+    
+    // Resume (25%)
+    if (profile.resumeUrl && profile.resumeUrl.trim() !== '') score += 25;
+    
+    return score;
+  };
+
+  const profileCompletion = calculateCompletion();
 
   return (
     <motion.div
@@ -493,31 +530,150 @@ const StudentProfilePage = () => {
               <div className="space-y-4">
                 <h4 className="text-sm font-bold text-neutral-800">Key Skills</h4>
                 <div className="flex flex-wrap gap-2">
-                  {profile?.skills?.map((skill, i) => (
-                    <span key={i} className="px-3 py-1.5 bg-brand-blue-light text-brand-blue text-xs font-bold rounded-lg border border-brand-blue/10">
-                      {skill}
-                    </span>
-                  )) || <p className="text-xs text-neutral-400 italic">No skills added yet</p>}
+                  {profile?.skills?.length > 0 ? (
+                    profile.skills.map((skill, i) => (
+                      <span key={i} className="px-3 py-1.5 bg-brand-blue-light text-brand-blue text-xs font-bold rounded-lg border border-brand-blue/10">
+                        {skill}
+                      </span>
+                    ))
+                  ) : (
+                    <p className="text-xs text-neutral-400 italic">No skills added yet</p>
+                  )}
                 </div>
-                {isEditing && (
-                  <p className="text-[10px] text-neutral-400">Skills can be managed in the full edit view (Coming Soon)</p>
+                {isEditing ? (
+                  <InfoItem 
+                    label="Comma-separated skills" 
+                    value={profile?.skills ? profile.skills.join(', ') : ''} 
+                    isEditing={isEditing} 
+                    register={register} 
+                    name="skills" 
+                    error={errors.skills} 
+                    placeholder="e.g. React, Python, Java"
+                  />
+                ) : (
+                  <p className="text-[10px] text-neutral-400 mt-2">Click Edit Profile to add or manage your skills.</p>
                 )}
               </div>
 
               <div className="space-y-4">
-                <h4 className="text-sm font-bold text-neutral-800">Recent Projects</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                   {profile?.projects?.length > 0 ? (
-                     profile.projects.map((proj, i) => (
-                       <div key={i} className="p-4 rounded-xl border border-neutral-100 bg-neutral-50/50">
-                         <h5 className="font-bold text-neutral-900 text-sm">{proj.title}</h5>
-                         <p className="text-xs text-neutral-500 mt-1 line-clamp-2">{proj.description}</p>
-                       </div>
-                     ))
-                   ) : (
-                     <p className="text-xs text-neutral-400 italic">No projects listed</p>
-                   )}
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-bold text-neutral-800">Recent Projects</h4>
+                  {isEditing && projectFields.length < 5 && (
+                    <button
+                      type="button"
+                      onClick={() => appendProject({ title: '', description: '', techStack: '', link: '' })}
+                      className="flex items-center gap-1 text-xs font-bold text-brand-blue hover:text-brand-blue-dark transition-all"
+                    >
+                      <Plus className="h-3.5 w-3.5" /> Add Project
+                    </button>
+                  )}
                 </div>
+                
+                {isEditing ? (
+                  <div className="space-y-4">
+                    {projectFields.map((field, index) => (
+                      <div key={field.id} className="p-4 rounded-xl border border-brand-blue/20 bg-brand-blue/[0.02] space-y-3 relative">
+                        <button
+                          type="button"
+                          onClick={() => removeProject(index)}
+                          className="absolute top-3 right-3 p-1 text-neutral-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                        
+                        <div>
+                          <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Project Title</label>
+                          <input
+                            {...register(`projects.${index}.title`)}
+                            className={`w-full mt-1 px-3 py-2 bg-white border rounded-lg text-sm transition-all focus:ring-2 focus:ring-brand-blue/20 outline-none ${
+                              errors.projects?.[index]?.title ? 'border-red-300' : 'border-neutral-200 focus:border-brand-blue'
+                            }`}
+                            placeholder="e.g. E-commerce Website"
+                          />
+                          {errors.projects?.[index]?.title && (
+                            <p className="text-xs text-red-500 mt-1">{errors.projects[index].title.message}</p>
+                          )}
+                        </div>
+                        
+                        <div>
+                          <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Description</label>
+                          <textarea
+                            {...register(`projects.${index}.description`)}
+                            className={`w-full mt-1 px-3 py-2 bg-white border rounded-lg text-sm transition-all focus:ring-2 focus:ring-brand-blue/20 outline-none resize-none ${
+                              errors.projects?.[index]?.description ? 'border-red-300' : 'border-neutral-200 focus:border-brand-blue'
+                            }`}
+                            rows="2"
+                            placeholder="Briefly describe the project..."
+                          />
+                          {errors.projects?.[index]?.description && (
+                            <p className="text-xs text-red-500 mt-1">{errors.projects[index].description.message}</p>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Tech Stack (comma separated)</label>
+                            <input
+                              {...register(`projects.${index}.techStack`)}
+                              className={`w-full mt-1 px-3 py-2 bg-white border rounded-lg text-sm transition-all focus:ring-2 focus:ring-brand-blue/20 outline-none ${
+                                errors.projects?.[index]?.techStack ? 'border-red-300' : 'border-neutral-200 focus:border-brand-blue'
+                              }`}
+                              placeholder="e.g. React, Node.js, MongoDB"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Project Link</label>
+                            <input
+                              {...register(`projects.${index}.link`)}
+                              className={`w-full mt-1 px-3 py-2 bg-white border rounded-lg text-sm transition-all focus:ring-2 focus:ring-brand-blue/20 outline-none ${
+                                errors.projects?.[index]?.link ? 'border-red-300' : 'border-neutral-200 focus:border-brand-blue'
+                              }`}
+                              placeholder="https://github.com/..."
+                            />
+                            {errors.projects?.[index]?.link && (
+                              <p className="text-xs text-red-500 mt-1">{errors.projects[index].link.message}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {projectFields.length === 0 && (
+                      <div className="p-6 rounded-xl border-2 border-dashed border-neutral-200 flex flex-col items-center justify-center text-center">
+                        <p className="text-sm text-neutral-500 font-medium">No projects added yet</p>
+                        <p className="text-xs text-neutral-400 mt-1">Add projects to increase your profile completion.</p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     {profile?.projects?.length > 0 ? (
+                        profile.projects.map((proj, i) => (
+                          <div key={i} className="p-4 rounded-xl border border-neutral-100 bg-neutral-50/50 hover:bg-white hover:shadow-md transition-all">
+                            <div className="flex justify-between items-start mb-2">
+                              <h5 className="font-bold text-neutral-900 text-sm">{proj.title}</h5>
+                              {proj.link && (
+                                <a href={proj.link} target="_blank" rel="noopener noreferrer" className="text-brand-blue hover:text-brand-blue-dark">
+                                  <Globe className="h-3.5 w-3.5" />
+                                </a>
+                              )}
+                            </div>
+                            <p className="text-xs text-neutral-500 line-clamp-3 leading-relaxed mb-3">{proj.description}</p>
+                            {proj.techStack && proj.techStack.length > 0 && (
+                              <div className="flex flex-wrap gap-1.5">
+                                {proj.techStack.map((tech, idx) => (
+                                  <span key={idx} className="text-[9px] font-bold px-1.5 py-0.5 bg-neutral-200 text-neutral-600 rounded">
+                                    {tech}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))
+                     ) : (
+                       <p className="text-xs text-neutral-400 italic">No projects listed</p>
+                     )}
+                  </div>
+                )}
               </div>
             </div>
           </motion.div>

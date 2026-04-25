@@ -208,14 +208,9 @@ studentProfileSchema.methods.calculateCompletion = function () {
 };
 
 // ── Pre-save hook: sync completion to User.profileComplete ────────
-studentProfileSchema.pre('save', async function (next) {
-  try {
-    const completion = this.calculateCompletion();
-    await User.findByIdAndUpdate(this.userId, { profileComplete: completion });
-    next();
-  } catch (error) {
-    next(error);
-  }
+studentProfileSchema.pre('save', async function () {
+  const completion = this.calculateCompletion();
+  await User.findByIdAndUpdate(this.userId, { profileComplete: completion });
 });
 
 const StudentProfile = mongoose.model('StudentProfile', studentProfileSchema);

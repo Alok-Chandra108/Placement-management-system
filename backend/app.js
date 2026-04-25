@@ -5,6 +5,7 @@ const morgan = require('morgan');
 const cookieParser = require('cookie-parser');
 const authRoutes = require('./routes/auth.routes');
 const profileRoutes = require('./routes/profile.routes');
+const errorHandler = require('./middleware/error.middleware');
 
 const app = express();
 
@@ -40,7 +41,10 @@ app.get('/', (req, res) => {
   });
 });
 
+const { apiLimiter } = require('./middleware/rateLimiter');
+
 // API Routes
+app.use('/api', apiLimiter);
 app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
 
@@ -53,12 +57,6 @@ app.use((req, res) => {
 });
 
 // Global error handler
-app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err);
-  res.status(500).json({
-    success: false,
-    message: 'Internal server error',
-  });
-});
+app.use(errorHandler);
 
 module.exports = app;

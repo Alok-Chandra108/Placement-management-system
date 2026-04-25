@@ -10,6 +10,7 @@ const {
   updateProfileValidation,
 } = require('../validators/profile.validators');
 const { verifyAccessToken } = require('../middleware/auth.middleware');
+const { validateRequest } = require('../middleware/validateRequest.middleware');
 const { requireRole } = require('../middleware/role.middleware');
 const upload = require('../middleware/upload.middleware');
 
@@ -21,7 +22,7 @@ router.use(requireRole('student'));
 router.get('/me', getMyProfile);
 
 // PUT  /api/profile/me — Update current student's profile
-router.put('/me', updateProfileValidation, updateMyProfile);
+router.put('/me', updateProfileValidation, validateRequest, updateMyProfile);
 
 // POST /api/profile/resume — Upload resume
 router.post(

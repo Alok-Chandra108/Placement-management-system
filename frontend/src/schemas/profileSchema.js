@@ -16,38 +16,28 @@ export const profileSchema = z.object({
   address: z.string().min(5, 'Address is too short').max(300, 'Address is too long').optional().or(z.literal('')),
   
   // Academic Details
-  tenthPercentage: z.coerce
-    .number()
-    .min(0, 'Percentage cannot be negative')
-    .max(100, 'Percentage cannot exceed 100')
+  tenthPercentage: z
+    .union([z.coerce.number().min(0, 'Percentage cannot be negative').max(100, 'Percentage cannot exceed 100'), z.literal('')])
     .optional(),
   
   tenthBoard: z.string().optional().or(z.literal('')),
   
-  tenthPassingYear: z.coerce
-    .number()
-    .min(2000, 'Year must be 2000 or later')
-    .max(new Date().getFullYear(), 'Invalid year')
+  tenthPassingYear: z
+    .union([z.coerce.number().min(2000, 'Year must be 2000 or later').max(new Date().getFullYear(), 'Invalid year'), z.literal('')])
     .optional(),
   
-  twelfthPercentage: z.coerce
-    .number()
-    .min(0, 'Percentage cannot be negative')
-    .max(100, 'Percentage cannot exceed 100')
+  twelfthPercentage: z
+    .union([z.coerce.number().min(0, 'Percentage cannot be negative').max(100, 'Percentage cannot exceed 100'), z.literal('')])
     .optional(),
   
   twelfthBoard: z.string().optional().or(z.literal('')),
   
-  twelfthPassingYear: z.coerce
-    .number()
-    .min(2000, 'Year must be 2000 or later')
-    .max(new Date().getFullYear(), 'Invalid year')
+  twelfthPassingYear: z
+    .union([z.coerce.number().min(2000, 'Year must be 2000 or later').max(new Date().getFullYear(), 'Invalid year'), z.literal('')])
     .optional(),
   
-  cgpa: z.coerce
-    .number()
-    .min(0, 'CGPA cannot be negative')
-    .max(10, 'CGPA cannot exceed 10')
+  cgpa: z
+    .union([z.coerce.number().min(0, 'CGPA cannot be negative').max(10, 'CGPA cannot exceed 10'), z.literal('')])
     .optional(),
   
   backlogs: z.coerce
@@ -56,7 +46,29 @@ export const profileSchema = z.object({
     .default(0),
   
   // Skills & Social
-  skills: z.array(z.string()).optional(),
+  skills: z.preprocess(
+    (val) => {
+      if (typeof val === 'string') {
+        return val.split(',').map(s => s.trim()).filter(Boolean);
+      }
+      return val || [];
+    },
+    z.array(z.string()).optional()
+  ),
+  projects: z.array(z.object({
+    title: z.string().min(1, 'Project title is required').max(100, 'Title too long'),
+    description: z.string().max(500, 'Description too long').optional().or(z.literal('')),
+    techStack: z.preprocess(
+      (val) => {
+        if (typeof val === 'string') {
+          return val.split(',').map(s => s.trim()).filter(Boolean);
+        }
+        return val || [];
+      },
+      z.array(z.string()).optional()
+    ),
+    link: z.string().url('Invalid Project URL').optional().or(z.literal('')),
+  })).max(5, 'Maximum 5 projects allowed').optional(),
   
   linkedIn: z
     .string()
