@@ -130,8 +130,13 @@ const uploadResume = async (req, res, next) => {
       await cloudinary.uploader.destroy(profile.resumePublicId);
     }
 
+    // Construct download URL by adding the 'fl_attachment' transformation
+    // Original path: https://res.cloudinary.com/.../image/upload/v.../...
+    // Download path: https://res.cloudinary.com/.../image/upload/fl_attachment/v.../...
+    const downloadUrl = req.file.path.replace('/upload/', '/upload/fl_attachment/');
+
     // Update profile with new resume info
-    profile.resumeUrl = req.file.path;
+    profile.resumeUrl = downloadUrl;
     profile.resumePublicId = req.file.filename;
 
     await profile.save();

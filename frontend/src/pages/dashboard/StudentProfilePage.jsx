@@ -20,6 +20,7 @@ import {
   Trash2,
   FileText,
   Upload,
+  Download,
   CheckCircle2,
   AlertCircle,
   Loader2,
@@ -702,9 +703,11 @@ const StudentProfilePage = () => {
                       href={profile.resumeUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-4 py-2 bg-white border border-neutral-200 text-neutral-700 text-xs font-bold rounded-xl hover:bg-neutral-50 transition-all shadow-sm"
+                      download
+                      className="flex items-center gap-2 px-4 py-2 bg-white border border-neutral-200 text-brand-blue text-xs font-bold rounded-xl hover:bg-brand-blue/5 transition-all shadow-sm"
                     >
-                      View PDF
+                      Download Resume
+                      <Download className="h-3.5 w-3.5" />
                     </a>
                     <button
                       onClick={handleResumeDelete}
