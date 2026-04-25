@@ -5,12 +5,12 @@ const cloudinary = require('../config/cloudinary');
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: async (req, file) => {
-    // Sanitize the filename for security (prevent directory traversal / invalid chars)
-    const sanitizedName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
+    // Sanitize the filename for security
+    const sanitizedName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_').replace(/\.pdf$/i, '');
     return {
       folder: `cpms/resumes/${req.user._id}`,
-      resource_type: 'raw', // Use 'raw' as it is the most reliable for generic file delivery
-      public_id: `${Date.now()}-${sanitizedName}`,
+      format: 'pdf', // Cloudinary will automatically handle it as the correct resource type
+      public_id: `${Date.now()}-${sanitizedName}`
     };
   },
 });
