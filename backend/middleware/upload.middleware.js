@@ -6,13 +6,11 @@ const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: async (req, file) => {
     // Sanitize the filename for security (prevent directory traversal / invalid chars)
-    const sanitizedName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_').replace(/\.pdf$/i, '');
+    const sanitizedName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
     return {
       folder: `cpms/resumes/${req.user._id}`,
-      resource_type: 'image', // Cloudinary treats PDFs as images, allowing future transformations
-      format: 'pdf',
+      resource_type: 'raw', // Use 'raw' as it is the most reliable for generic file delivery
       public_id: `${Date.now()}-${sanitizedName}`,
-      type: 'upload', // Ensure public accessibility
     };
   },
 });
