@@ -1,0 +1,27 @@
+const express = require('express');
+const {
+  createDrive,
+  getAllDrives,
+  getDriveById,
+  updateDrive,
+} = require('../controllers/drive.controller');
+const { verifyAccessToken, restrictToRoles } = require('../middleware/auth.middleware');
+
+const router = express.Router();
+
+// Apply verifyAccessToken to all routes
+router.use(verifyAccessToken);
+
+// Route: /api/drives
+router
+  .route('/')
+  .get(getAllDrives) // Public/Students
+  .post(restrictToRoles('admin', 'hr'), createDrive); // Admin/HR only
+
+// Route: /api/drives/:id
+router
+  .route('/:id')
+  .get(getDriveById) // Public/Students
+  .patch(restrictToRoles('admin', 'hr'), updateDrive); // Admin/HR only
+
+module.exports = router;

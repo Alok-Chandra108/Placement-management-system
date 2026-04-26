@@ -5,6 +5,7 @@ const morgan = require('morgan');
 const cookieParser = require('cookie-parser');
 const authRoutes = require('./routes/auth.routes');
 const profileRoutes = require('./routes/profile.routes');
+const driveRoutes = require('./routes/drive.routes');
 const errorHandler = require('./middleware/error.middleware');
 
 const app = express();
@@ -47,6 +48,7 @@ const { apiLimiter } = require('./middleware/rateLimiter');
 app.use('/api', apiLimiter);
 app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/drives', driveRoutes);
 
 // 404 handler
 app.use((req, res) => {
