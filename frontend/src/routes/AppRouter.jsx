@@ -13,7 +13,7 @@ import StudentDashboardHome from '../pages/dashboard/StudentDashboardHome';
 import StudentProfilePage from '../pages/dashboard/StudentProfilePage';
 import DrivesPage from '../pages/dashboard/DrivesPage';
 import DriveDetail from '../pages/dashboard/DriveDetail';
-import ApplicationsPlaceholder from '../pages/dashboard/ApplicationsPlaceholder';
+import ApplicationsPage from '../pages/dashboard/ApplicationsPage';
 import NoticesPlaceholder from '../pages/dashboard/NoticesPlaceholder';
 import AdminDashboard from '../pages/dashboard/AdminDashboard';
 import HRDashboard from '../pages/dashboard/HRDashboard';
@@ -49,7 +49,7 @@ const AppRouter = () => {
         <Route path="profile" element={<StudentProfilePage />} />
         <Route path="drives" element={<DrivesPage />} />
         <Route path="drives/:id" element={<DriveDetail />} />
-        <Route path="applications" element={<ApplicationsPlaceholder />} />
+        <Route path="applications" element={<ApplicationsPage />} />
         <Route path="notices" element={<NoticesPlaceholder />} />
       </Route>
       <Route

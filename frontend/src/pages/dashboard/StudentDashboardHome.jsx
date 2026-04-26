@@ -21,6 +21,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useEffect } from 'react';
 import useAuth from '../../hooks/useAuth';
 import { getDrives } from '../../features/drives/driveSlice';
+import { getMyApplicationsAction } from '../../features/applications/applicationSlice';
 
 // ── Mock Data ───────────────────────────────────────────────────────
 const mockStats = [
@@ -113,10 +114,25 @@ const StudentDashboardHome = () => {
   const dispatch = useDispatch();
 
   const { drives, isLoading: drivesLoading } = useSelector((state) => state.drives);
+  const { applications } = useSelector((state) => state.applications);
 
   useEffect(() => {
     dispatch(getDrives({ limit: 3 }));
+    dispatch(getMyApplicationsAction());
   }, [dispatch]);
+
+  // Calculate real stats
+  const jobsApplied = applications.length;
+  const shortlisted = applications.filter(app => ['shortlisted', 'test-cleared', 'selected'].includes(app.status)).length;
+  const interviews = applications.filter(app => app.status === 'interview-scheduled').length;
+  const offers = applications.filter(app => app.status === 'selected').length;
+
+  const realStats = [
+    { title: 'Jobs Applied', value: jobsApplied, icon: Briefcase, color: 'text-brand-blue', bgColor: 'bg-brand-blue-light', trend: 'Lifetime' },
+    { title: 'Shortlisted', value: shortlisted, icon: Award, color: 'text-emerald-600', bgColor: 'bg-emerald-50', trend: 'Wait for updates' },
+    { title: 'Interviews', value: interviews, icon: CalendarCheck, color: 'text-amber-600', bgColor: 'bg-amber-50', trend: 'Next: TBD' },
+    { title: 'Offers', value: offers, icon: Trophy, color: 'text-violet-600', bgColor: 'bg-violet-50', trend: '🎉 Congrats!' },
+  ];
 
   const profileCompletion = user?.profileComplete || 0;
 
@@ -175,7 +191,7 @@ const StudentDashboardHome = () => {
             <p className="text-sm sm:text-base text-white/70 mt-1 flex items-center gap-2 flex-wrap">
               <span>{user?.yearOfStudy || 'Final Year'}</span>
               <span className="text-white/30">•</span>
-              <span className="font-mono text-white/60">{user?.usnNumber || '4MT25MC007'}</span>
+              <span className="font-mono text-white/60">{user?.usnNumber}</span>
             </p>
           </div>
 
@@ -188,7 +204,7 @@ const StudentDashboardHome = () => {
 
       {/* ── 2. QUICK STATS ROW ─────────────────────────────────── */}
       <motion.div variants={fadeUp} className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {mockStats.map((stat, idx) => (
+        {realStats.map((stat, idx) => (
           <motion.div
             key={idx}
             whileHover={{ y: -2, boxShadow: '0 8px 30px rgba(0,0,0,0.08)' }}
