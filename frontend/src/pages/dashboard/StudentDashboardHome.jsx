@@ -16,8 +16,11 @@ import {
   Sparkles,
   FileDown,
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { useEffect } from 'react';
 import useAuth from '../../hooks/useAuth';
+import { getDrives } from '../../features/drives/driveSlice';
 
 // ── Mock Data ───────────────────────────────────────────────────────
 const mockStats = [
@@ -33,11 +36,11 @@ const mockAnnouncements = [
   { id: 3, date: 'Apr 18, 2026', title: 'Resume Format Updated', desc: 'Download the latest MITE-standard resume template from the notices section.', hasPdf: true },
 ];
 
-const mockDrives = [
-  { id: 1, company: 'Infosys BPM', role: 'Systems Engineer', ctc: '4.5 LPA', location: 'Bangalore', deadline: 'Apr 25', eligible: ['CSE', 'ISE', 'MCA'], status: 'open' },
-  { id: 2, company: 'Wipro Ltd', role: 'Project Engineer', ctc: '3.8 LPA', location: 'Mysore', deadline: 'Apr 28', eligible: ['All Branches'], status: 'open' },
-  { id: 3, company: 'TCS Digital', role: 'Digital Engineer', ctc: '7.0 LPA', location: 'Mumbai', deadline: 'May 02', eligible: ['CSE', 'AI/ML', 'ECE'], status: 'upcoming' },
-];
+// const mockDrives = [
+//   { id: 1, company: 'Infosys BPM', role: 'Systems Engineer', ctc: '4.5 LPA', location: 'Bangalore', deadline: 'Apr 25', eligible: ['CSE', 'ISE', 'MCA'], status: 'open' },
+//   { id: 2, company: 'Wipro Ltd', role: 'Project Engineer', ctc: '3.8 LPA', location: 'Mysore', deadline: 'Apr 28', eligible: ['All Branches'], status: 'open' },
+//   { id: 3, company: 'TCS Digital', role: 'Digital Engineer', ctc: '7.0 LPA', location: 'Mumbai', deadline: 'May 02', eligible: ['CSE', 'AI/ML', 'ECE'], status: 'upcoming' },
+// ];
 
 // ── Animation Variants ──────────────────────────────────────────────
 const staggerContainer = {
@@ -107,6 +110,13 @@ const AnimatedCounter = ({ value }) => {
 const StudentDashboardHome = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  const { drives, isLoading: drivesLoading } = useSelector((state) => state.drives);
+
+  useEffect(() => {
+    dispatch(getDrives({ limit: 3 }));
+  }, [dispatch]);
 
   const profileCompletion = user?.profileComplete || 0;
 
@@ -239,37 +249,82 @@ const StudentDashboardHome = () => {
             </h2>
             <div className="flex items-center gap-1.5 text-xs text-neutral-400">
               <span className="h-2 w-2 rounded-full bg-emerald-400" />
-              {mockDrives.filter((d) => d.status === 'open').length} Open
+              {drives?.filter((d) => d.status === 'open').length || 0} Open
             </div>
           </div>
           <div className="divide-y divide-neutral-100">
-            {mockDrives.map((drive) => (
-              <div key={drive.id} className="px-6 py-4 hover:bg-neutral-50/50 transition-colors group cursor-pointer">
-                <div className="flex items-center justify-between gap-3 mb-2">
-                  <h4 className="text-sm font-semibold text-neutral-900 group-hover:text-brand-blue transition-colors">
-                    {drive.company}
-                  </h4>
-                  <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
-                    drive.status === 'open' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'
-                  }`}>
-                    {drive.status}
-                  </span>
+            {drivesLoading ? (
+              [1, 2, 3].map((i) => (
+                <div key={i} className="px-6 py-4 animate-pulse">
+                  <div className="h-4 w-1/3 bg-neutral-100 rounded mb-2"></div>
+                  <div className="h-3 w-1/2 bg-neutral-100 rounded mb-3"></div>
+                  <div className="flex gap-2">
+                    <div className="h-3 w-12 bg-neutral-100 rounded"></div>
+                    <div className="h-3 w-12 bg-neutral-100 rounded"></div>
+                  </div>
                 </div>
-                <p className="text-xs text-neutral-600 mb-2">{drive.role}</p>
-                <div className="flex items-center gap-3 text-[11px] text-neutral-400 flex-wrap">
-                  <span className="flex items-center gap-1"><IndianRupee className="h-3 w-3" />{drive.ctc}</span>
-                  <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{drive.location}</span>
-                  <span className="flex items-center gap-1"><Clock className="h-3 w-3" />Deadline: {drive.deadline}</span>
-                </div>
-                <div className="flex items-center gap-1.5 mt-2.5 flex-wrap">
-                  {drive.eligible.map((tag) => (
-                    <span key={tag} className="text-[10px] font-medium px-2 py-0.5 rounded bg-brand-blue-light text-brand-blue">
-                      {tag}
+              ))
+            ) : drives.length > 0 ? (
+              drives.map((drive) => (
+                <Link
+                  key={drive._id}
+                  to={`/dashboard/student/drives/${drive._id}`}
+                  className="block px-6 py-4 hover:bg-neutral-50/50 transition-colors group cursor-pointer"
+                >
+                  <div className="flex items-center justify-between gap-3 mb-2">
+                    <h4 className="text-sm font-semibold text-neutral-900 group-hover:text-brand-blue transition-colors">
+                      {drive.companyName}
+                    </h4>
+                    <span
+                      className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
+                        drive.status === 'open'
+                          ? 'bg-emerald-50 text-emerald-600'
+                          : drive.status === 'upcoming'
+                          ? 'bg-amber-50 text-amber-600'
+                          : 'bg-rose-50 text-rose-600'
+                      }`}
+                    >
+                      {drive.status}
                     </span>
-                  ))}
-                </div>
+                  </div>
+                  <p className="text-xs text-neutral-600 mb-2">{drive.jobRole}</p>
+                  <div className="flex items-center gap-3 text-[11px] text-neutral-400 flex-wrap">
+                    <span className="flex items-center gap-1">
+                      <IndianRupee className="h-3 w-3" />
+                      {drive.ctc}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <MapPin className="h-3 w-3" />
+                      {drive.location}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      Deadline: {new Date(drive.registrationDeadline).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 mt-2.5 flex-wrap">
+                    {drive.eligibility?.eligibleBranches?.slice(0, 3).map((tag) => (
+                      <span
+                        key={tag}
+                        className="text-[10px] font-medium px-2 py-0.5 rounded bg-brand-blue-light text-brand-blue"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                    {drive.eligibility?.eligibleBranches?.length > 3 && (
+                      <span className="text-[10px] font-medium px-2 py-0.5 rounded bg-neutral-100 text-neutral-500">
+                        +{drive.eligibility.eligibleBranches.length - 3} more
+                      </span>
+                    )}
+                  </div>
+                </Link>
+              ))
+            ) : (
+              <div className="px-6 py-12 text-center">
+                <Briefcase className="h-8 w-8 text-neutral-200 mx-auto mb-3" />
+                <p className="text-sm text-neutral-500 font-medium">No active drives found</p>
               </div>
-            ))}
+            )}
           </div>
         </motion.div>
       </div>

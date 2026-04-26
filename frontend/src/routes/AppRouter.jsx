@@ -11,7 +11,8 @@ import ResetPasswordPage from '../pages/auth/ResetPasswordPage';
 import StudentDashboard from '../pages/dashboard/StudentDashboard';
 import StudentDashboardHome from '../pages/dashboard/StudentDashboardHome';
 import StudentProfilePage from '../pages/dashboard/StudentProfilePage';
-import DrivesPlaceholder from '../pages/dashboard/DrivesPlaceholder';
+import DrivesPage from '../pages/dashboard/DrivesPage';
+import DriveDetail from '../pages/dashboard/DriveDetail';
 import ApplicationsPlaceholder from '../pages/dashboard/ApplicationsPlaceholder';
 import NoticesPlaceholder from '../pages/dashboard/NoticesPlaceholder';
 import AdminDashboard from '../pages/dashboard/AdminDashboard';
@@ -46,7 +47,8 @@ const AppRouter = () => {
       >
         <Route index element={<StudentDashboardHome />} />
         <Route path="profile" element={<StudentProfilePage />} />
-        <Route path="drives" element={<DrivesPlaceholder />} />
+        <Route path="drives" element={<DrivesPage />} />
+        <Route path="drives/:id" element={<DriveDetail />} />
         <Route path="applications" element={<ApplicationsPlaceholder />} />
         <Route path="notices" element={<NoticesPlaceholder />} />
       </Route>
