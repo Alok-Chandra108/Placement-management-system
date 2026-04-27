@@ -9,11 +9,13 @@ A modern, full-stack recruitment portal designed for the **Mangalore Institute o
 CPMS is built using the **MERN** stack, focusing on professional aesthetics, secure authentication, and real-time data tracking. It provides a centralized hub for managing student profiles, recruitment drives, and placement analytics.
 
 ### Key Features
-- **Multi-role Authentication**: Secure login and registration for Students, Admins, and HRs.
+- **Multi-role Authentication**: Secure login and registration for Students, Admins, and HRs with JWT-based sessions.
 - **OTP Verification**: Email-based verification using Nodemailer for secure student onboarding.
-- **Dynamic Dashboard**: Real-time insights and profile management (In Progress).
-- **Professional UI**: Built with a clean, corporate design using Tailwind CSS and Framer Motion.
-- **Responsive Management**: Role-based access control (RBAC) to ensure data integrity.
+- **Dynamic Student Dashboard**: Real-time tracking of profile completion, applied jobs, and upcoming placement drives.
+- **Smart Eligibility Engine**: Automated eligibility checks (CGPA, backlogs, branch) for recruitment drives.
+- **Resume Management**: Secure PDF resume uploads and management powered by Cloudinary.
+- **Professional UI**: Built with a premium, corporate aesthetic using Tailwind CSS, Framer Motion, and Lucide icons.
+- **Role-Based Access Control (RBAC)**: Strict permission handling to ensure data integrity across student, admin, and HR roles.
 
 ---
 
@@ -21,20 +23,20 @@ CPMS is built using the **MERN** stack, focusing on professional aesthetics, sec
 
 ### Frontend
 - **Framework**: React.js (Vite)
-- **State Management**: Redux Toolkit
+- **State Management**: Redux Toolkit (with persistence and data-sync fixes)
 - **Styling**: Tailwind CSS
 - **Animations**: Framer Motion
 - **Icons**: Lucide React
-- **Data Fetching**: TanStack Query (React Query)
 - **Forms**: React Hook Form with Zod validation
 
 ### Backend
 - **Environment**: Node.js
 - **Framework**: Express.js
 - **Database**: MongoDB (Mongoose ODM)
+- **File Storage**: Cloudinary (for Resumes)
 - **Authentication**: JWT (Access & Refresh Tokens)
 - **Email Service**: Nodemailer (Gmail SMTP)
-- **Middleware**: Helmet, Morgan, Express-Rate-Limit
+- **Security**: Helmet, Rate Limiting, and Hashed Refresh Tokens
 
 ---
 
@@ -43,22 +45,17 @@ CPMS is built using the **MERN** stack, focusing on professional aesthetics, sec
 ```text
 cpms-mini-project/
 ├── backend/            # Express API with Node.js
-│   ├── config/         # Database and app configurations
-│   ├── controllers/    # Request handlers (logic)
-│   ├── middleware/     # Auth and validation middleware
-│   ├── models/         # Mongoose schemas
+│   ├── controllers/    # Request handlers (Profile, Auth, Drives, Applications)
+│   ├── middleware/     # Auth, Role, Rate Limiter, and Upload middleware
+│   ├── models/         # Mongoose schemas (User, Profile, Drive, Application)
 │   ├── routes/         # API endpoints
-│   ├── services/       # Business services (Email, Token)
-│   └── utils/          # Error handlers and utility helper functions
+│   └── validators/     # Express-validator schemas
 ├── frontend/           # React Application
-│   ├── public/         # Static assets
-│   └── src/
-│       ├── assets/     # Images, SVG, Icons
-│       ├── components/ # Reusable UI components
-│       ├── pages/      # View layouts (Login, Dashboard, etc.)
-│       ├── redux/      # Slices and Store configuration
-│       └── services/   # API communication logic
-└── render.yaml         # Blueprint for Render.com deployment
+│   ├── src/
+│   │   ├── features/   # Redux logic (Auth, Profile, Drives, Apps)
+│   │   ├── pages/      # Dashboards, Profile, and Drive views
+│   │   ├── components/ # Reusable UI components (Modals, Progress rings)
+│   │   └── api/        # Axios communication layer
 ```
 
 ---
