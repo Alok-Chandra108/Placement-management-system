@@ -43,6 +43,13 @@ const applicationSlice = createSlice({
       state.isError = false;
       state.message = '';
     },
+    clearApplications: (state) => {
+      state.applications = [];
+      state.isLoading = false;
+      state.isSuccess = false;
+      state.isError = false;
+      state.message = '';
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -74,5 +81,5 @@ const applicationSlice = createSlice({
   },
 });
 
-export const { resetApplicationState } = applicationSlice.actions;
+export const { resetApplicationState, clearApplications } = applicationSlice.actions;
 export default applicationSlice.reducer;

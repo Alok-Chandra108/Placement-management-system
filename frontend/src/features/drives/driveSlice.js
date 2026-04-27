@@ -45,6 +45,13 @@ export const driveSlice = createSlice({
     },
     clearCurrentDrive: (state) => {
       state.currentDrive = null;
+    },
+    clearDrives: (state) => {
+      state.drives = [];
+      state.currentDrive = null;
+      state.isLoading = false;
+      state.isError = false;
+      state.message = '';
     }
   },
   extraReducers: (builder) => {
@@ -78,5 +85,5 @@ export const driveSlice = createSlice({
   },
 });
 
-export const { resetDriveState, clearCurrentDrive } = driveSlice.actions;
+export const { resetDriveState, clearCurrentDrive, clearDrives } = driveSlice.actions;
 export default driveSlice.reducer;

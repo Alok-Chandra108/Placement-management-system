@@ -30,6 +30,7 @@ import { profileSchema } from '../../schemas/profileSchema';
 import { fetchProfile, updateProfile, uploadResume, deleteResume } from '../../features/profile/profileThunks';
 import toast from 'react-hot-toast';
 import useAuth from '../../hooks/useAuth';
+import { calculateProfileCompletion } from '../../utils/profileUtils';
 
 // ── Animation Variants ──────────────────────────────────────────────
 const fadeUp = {
@@ -238,30 +239,7 @@ const StudentProfilePage = () => {
     );
   }
 
-  // Calculate profile completion dynamically
-  const calculateCompletion = () => {
-    if (!profile) return 0;
-    let score = 0;
-    
-    // Personal (15%)
-    if (profile.phone && profile.dateOfBirth && profile.gender && profile.address) score += 15;
-    
-    // Academic (30%)
-    if (profile.tenthPercentage && profile.twelfthPercentage && profile.cgpa) score += 30;
-    
-    // Skills (15%)
-    if (profile.skills && profile.skills.length >= 3) score += 15;
-    
-    // Projects (15%)
-    if (profile.projects && profile.projects.length >= 1) score += 15;
-    
-    // Resume (25%)
-    if (profile.resumeUrl && profile.resumeUrl.trim() !== '') score += 25;
-    
-    return score;
-  };
-
-  const profileCompletion = calculateCompletion();
+  const profileCompletion = calculateProfileCompletion(profile);
 
   return (
     <motion.div

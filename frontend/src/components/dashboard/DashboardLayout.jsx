@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Menu, Search, Bell } from 'lucide-react';
+import { Menu, Bell } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Sidebar from './Sidebar';
 import useAuth from '../../hooks/useAuth';
@@ -56,15 +56,7 @@ const DashboardLayout = ({ children }) => {
 
             {/* Right: Search + Notifications + Avatar */}
             <div className="flex items-center gap-2">
-              {/* Search (desktop) */}
-              <div className="hidden md:flex items-center bg-neutral-100 rounded-xl px-3 py-2 gap-2 w-56 focus-within:ring-2 focus-within:ring-brand-orange/30 focus-within:bg-white transition-all border border-transparent focus-within:border-neutral-200">
-                <Search className="h-4 w-4 text-neutral-400 flex-shrink-0" />
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  className="bg-transparent text-sm text-neutral-700 placeholder:text-neutral-400 outline-none w-full"
-                />
-              </div>
+
 
               {/* Notification Bell */}
               <button className="relative p-2 rounded-xl hover:bg-neutral-100 text-neutral-500 hover:text-neutral-700 transition-colors">

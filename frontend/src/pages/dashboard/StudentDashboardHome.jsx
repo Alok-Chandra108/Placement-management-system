@@ -22,6 +22,8 @@ import { useEffect } from 'react';
 import useAuth from '../../hooks/useAuth';
 import { getDrives } from '../../features/drives/driveSlice';
 import { getMyApplicationsAction } from '../../features/applications/applicationSlice';
+import { fetchProfile } from '../../features/profile/profileThunks';
+import { calculateProfileCompletion } from '../../utils/profileUtils';
 
 // ── Mock Data ───────────────────────────────────────────────────────
 const mockStats = [
@@ -115,10 +117,12 @@ const StudentDashboardHome = () => {
 
   const { drives, isLoading: drivesLoading } = useSelector((state) => state.drives);
   const { applications } = useSelector((state) => state.applications);
+  const { profile } = useSelector((state) => state.profile);
 
   useEffect(() => {
     dispatch(getDrives({ limit: 3 }));
     dispatch(getMyApplicationsAction());
+    dispatch(fetchProfile());
   }, [dispatch]);
 
   // Calculate real stats
@@ -134,7 +138,7 @@ const StudentDashboardHome = () => {
     { title: 'Offers', value: offers, icon: Trophy, color: 'text-violet-600', bgColor: 'bg-violet-50', trend: '🎉 Congrats!' },
   ];
 
-  const profileCompletion = user?.profileComplete || 0;
+  const profileCompletion = profile ? calculateProfileCompletion(profile) : 0;
 
   const initials = user?.fullName
     ?.split(' ')
@@ -378,20 +382,20 @@ const StudentDashboardHome = () => {
           {/* Step 2: Resume */}
           <div className={`flex gap-4 items-start p-4 rounded-xl border transition-all ${
             profileCompletion === 100 
-              ? (user?.resumeUrl ? 'bg-emerald-50/50 border-emerald-200/60' : 'bg-brand-orange/5 border-brand-orange/10') 
+              ? (profile?.resumeUrl ? 'bg-emerald-50/50 border-emerald-200/60' : 'bg-brand-orange/5 border-brand-orange/10') 
               : 'border-neutral-100 bg-neutral-50/50 opacity-60'
           }`}>
             <div className="mt-0.5 flex-shrink-0">
-              {user?.resumeUrl ? <CheckCircle2 className="h-5 w-5 text-emerald-500" /> : <FileText className={`h-5 w-5 ${profileCompletion === 100 ? 'text-brand-orange' : 'text-neutral-400'}`} />}
+              {profile?.resumeUrl ? <CheckCircle2 className="h-5 w-5 text-emerald-500" /> : <FileText className={`h-5 w-5 ${profileCompletion === 100 ? 'text-brand-orange' : 'text-neutral-400'}`} />}
             </div>
             <div className="flex-1 min-w-0">
               <h4 className={`text-sm font-bold ${profileCompletion === 100 ? 'text-neutral-900' : 'text-neutral-800'}`}>
-                Upload Placement Resume {user?.resumeUrl && '✓'}
+                Upload Placement Resume {profile?.resumeUrl && '✓'}
               </h4>
               <p className="text-xs text-neutral-500 mt-0.5">Upload your PDF resume to start applying for drives.</p>
             </div>
             {profileCompletion === 100 ? (
-              !user?.resumeUrl && (
+              !profile?.resumeUrl && (
                 <button 
                   onClick={() => navigate('/dashboard/student/profile')}
                   className="hidden sm:flex items-center gap-1 px-4 py-2 bg-brand-orange text-white text-xs font-semibold rounded-lg hover:bg-brand-orange-dark transition-colors shadow-sm"
@@ -406,14 +410,14 @@ const StudentDashboardHome = () => {
 
           {/* Step 3: Applications */}
           <div className={`flex gap-4 items-start p-4 rounded-xl border transition-all ${
-            user?.resumeUrl ? 'bg-brand-blue-light/40 border-brand-blue/10' : 'border-neutral-100 bg-neutral-50/50 opacity-60'
+            profile?.resumeUrl ? 'bg-brand-blue-light/40 border-brand-blue/10' : 'border-neutral-100 bg-neutral-50/50 opacity-60'
           }`}>
-            <div className="mt-0.5 flex-shrink-0"><Briefcase className={`h-5 w-5 ${user?.resumeUrl ? 'text-brand-blue' : 'text-neutral-400'}`} /></div>
+            <div className="mt-0.5 flex-shrink-0"><Briefcase className={`h-5 w-5 ${profile?.resumeUrl ? 'text-brand-blue' : 'text-neutral-400'}`} /></div>
             <div className="flex-1 min-w-0">
-              <h4 className={`text-sm font-bold ${user?.resumeUrl ? 'text-neutral-900' : 'text-neutral-800'}`}>Apply to Placement Drives</h4>
+              <h4 className={`text-sm font-bold ${profile?.resumeUrl ? 'text-neutral-900' : 'text-neutral-800'}`}>Apply to Placement Drives</h4>
               <p className="text-xs text-neutral-500 mt-0.5">Browse eligible drives and apply with a single click once resume is uploaded.</p>
             </div>
-            {user?.resumeUrl ? (
+            {profile?.resumeUrl ? (
               <button 
                 onClick={() => navigate('/dashboard/student/drives')}
                 className="hidden sm:flex items-center gap-1 px-4 py-2 bg-brand-blue text-white text-xs font-semibold rounded-lg hover:bg-brand-blue-dark transition-colors shadow-sm"

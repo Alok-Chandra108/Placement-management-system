@@ -212,12 +212,13 @@ const login = async (req, res, next) => {
     return ApiResponse.success(res, 'Login successful', {
       accessToken,
       user: {
-        id: user._id,
+        _id: user._id,
         fullName: user.fullName,
         email: user.email,
         role: user.role,
         department: user.department,
         usnNumber: user.usnNumber,
+        yearOfStudy: user.yearOfStudy,
       },
     });
   } catch (error) {
