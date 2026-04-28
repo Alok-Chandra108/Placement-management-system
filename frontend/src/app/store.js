@@ -3,6 +3,7 @@ import authReducer from '../features/auth/authSlice';
 import profileReducer from '../features/profile/profileSlice';
 import driveReducer from '../features/drives/driveSlice';
 import applicationReducer from '../features/applications/applicationSlice';
+import noticeReducer from '../features/notices/noticeSlice';
 
 const store = configureStore({
   reducer: {
@@ -10,6 +11,7 @@ const store = configureStore({
     profile: profileReducer,
     drives: driveReducer,
     applications: applicationReducer,
+    notices: noticeReducer,
   },
   devTools: import.meta.env.DEV,
 });
