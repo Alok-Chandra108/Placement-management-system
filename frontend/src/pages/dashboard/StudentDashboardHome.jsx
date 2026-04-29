@@ -15,6 +15,7 @@ import {
   TrendingUp,
   Sparkles,
   FileDown,
+  Bell,
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
@@ -23,27 +24,15 @@ import useAuth from '../../hooks/useAuth';
 import { getDrives } from '../../features/drives/driveSlice';
 import { getMyApplicationsAction } from '../../features/applications/applicationSlice';
 import { fetchProfile } from '../../features/profile/profileThunks';
+import { getNotices } from '../../features/notices/noticeSlice';
 import { calculateProfileCompletion } from '../../utils/profileUtils';
 
-// ── Mock Data ───────────────────────────────────────────────────────
-const mockStats = [
-  { title: 'Jobs Applied', value: 12, icon: Briefcase, color: 'text-brand-blue', bgColor: 'bg-brand-blue-light', trend: '+3 this week' },
-  { title: 'Shortlisted', value: 5, icon: Award, color: 'text-emerald-600', bgColor: 'bg-emerald-50', trend: '+2 new' },
-  { title: 'Interviews', value: 3, icon: CalendarCheck, color: 'text-amber-600', bgColor: 'bg-amber-50', trend: 'Next: Tomorrow' },
-  { title: 'Offers', value: 1, icon: Trophy, color: 'text-violet-600', bgColor: 'bg-violet-50', trend: '🎉 Congrats!' },
-];
-
-const mockAnnouncements = [
-  { id: 1, date: 'Apr 23, 2026', title: 'Guest Lecture: AI in Web Dev', desc: 'Special session by industry experts from TechCorp on Monday 10 AM.', hasPdf: true },
-  { id: 2, date: 'Apr 21, 2026', title: 'Placement Drive — Infosys', desc: 'Infosys BPM drive registration closes on Apr 25. Eligible: CSE, ISE, MCA.', hasPdf: false },
-  { id: 3, date: 'Apr 18, 2026', title: 'Resume Format Updated', desc: 'Download the latest MITE-standard resume template from the notices section.', hasPdf: true },
-];
-
-// const mockDrives = [
-//   { id: 1, company: 'Infosys BPM', role: 'Systems Engineer', ctc: '4.5 LPA', location: 'Bangalore', deadline: 'Apr 25', eligible: ['CSE', 'ISE', 'MCA'], status: 'open' },
-//   { id: 2, company: 'Wipro Ltd', role: 'Project Engineer', ctc: '3.8 LPA', location: 'Mysore', deadline: 'Apr 28', eligible: ['All Branches'], status: 'open' },
-//   { id: 3, company: 'TCS Digital', role: 'Digital Engineer', ctc: '7.0 LPA', location: 'Mumbai', deadline: 'May 02', eligible: ['CSE', 'AI/ML', 'ECE'], status: 'upcoming' },
-// ];
+// ── Category badge helpers ───────────────────────────────────────────
+const categoryStyles = {
+  Urgent:    { bg: 'bg-rose-50',    text: 'text-rose-600',    dot: 'bg-rose-500' },
+  Placement: { bg: 'bg-brand-blue-light', text: 'text-brand-blue', dot: 'bg-brand-blue' },
+  General:   { bg: 'bg-neutral-100', text: 'text-neutral-600', dot: 'bg-neutral-400' },
+};
 
 // ── Animation Variants ──────────────────────────────────────────────
 const staggerContainer = {
@@ -118,11 +107,13 @@ const StudentDashboardHome = () => {
   const { drives, isLoading: drivesLoading } = useSelector((state) => state.drives);
   const { applications } = useSelector((state) => state.applications);
   const { profile } = useSelector((state) => state.profile);
+  const { notices, isLoading: noticesLoading } = useSelector((state) => state.notices);
 
   useEffect(() => {
     dispatch(getDrives({ limit: 3 }));
     dispatch(getMyApplicationsAction());
     dispatch(fetchProfile());
+    dispatch(getNotices({ limit: 3 }));
   }, [dispatch]);
 
   // Calculate real stats
@@ -235,29 +226,68 @@ const StudentDashboardHome = () => {
               <span className="h-2 w-2 rounded-full bg-brand-orange animate-pulse" />
               Notice Board
             </h2>
-            <button className="text-xs font-semibold text-brand-blue hover:text-brand-blue-dark transition-colors">
+            <button
+              onClick={() => navigate('/dashboard/student/notices')}
+              className="text-xs font-semibold text-brand-blue hover:text-brand-blue-dark transition-colors"
+            >
               View All
             </button>
           </div>
           <div className="divide-y divide-neutral-100">
-            {mockAnnouncements.map((item) => (
-              <div key={item.id} className="px-6 py-4 hover:bg-neutral-50/50 transition-colors group cursor-pointer">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-brand-orange mb-1">{item.date}</p>
-                    <h4 className="text-sm font-semibold text-neutral-900 group-hover:text-brand-blue transition-colors truncate">
-                      {item.title}
-                    </h4>
-                    <p className="text-xs text-neutral-500 mt-1 line-clamp-2">{item.desc}</p>
+            {noticesLoading ? (
+              [1, 2, 3].map((i) => (
+                <div key={i} className="px-6 py-4 animate-pulse">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="h-3 w-16 bg-neutral-100 rounded" />
+                    <div className="h-4 w-14 bg-neutral-100 rounded-full" />
                   </div>
-                  {item.hasPdf && (
-                    <button className="flex-shrink-0 p-2 rounded-lg bg-neutral-100 text-neutral-400 hover:bg-brand-blue-light hover:text-brand-blue transition-all">
-                      <FileDown className="h-4 w-4" />
-                    </button>
-                  )}
+                  <div className="h-4 w-3/4 bg-neutral-100 rounded mb-2" />
+                  <div className="h-3 w-full bg-neutral-100 rounded" />
                 </div>
+              ))
+            ) : notices.length > 0 ? (
+              notices.map((item) => {
+                const style = categoryStyles[item.category] || categoryStyles.General;
+                return (
+                  <div key={item._id} className="px-6 py-4 hover:bg-neutral-50/50 transition-colors group cursor-pointer">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="text-xs font-medium text-brand-orange">
+                            {new Date(item.createdAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </p>
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${style.bg} ${style.text}`}>
+                            <span className={`h-1.5 w-1.5 rounded-full ${style.dot}`} />
+                            {item.category}
+                          </span>
+                        </div>
+                        <h4 className="text-sm font-semibold text-neutral-900 group-hover:text-brand-blue transition-colors truncate">
+                          {item.title}
+                        </h4>
+                        <p className="text-xs text-neutral-500 mt-1 line-clamp-2">{item.body}</p>
+                      </div>
+                      {item.attachmentUrl && (
+                        <a
+                          href={item.attachmentUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="flex-shrink-0 p-2 rounded-lg bg-neutral-100 text-neutral-400 hover:bg-brand-blue-light hover:text-brand-blue transition-all"
+                          title={item.attachmentName || 'Download attachment'}
+                        >
+                          <FileDown className="h-4 w-4" />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="px-6 py-12 text-center">
+                <Bell className="h-8 w-8 text-neutral-200 mx-auto mb-3" />
+                <p className="text-sm text-neutral-500 font-medium">No notices yet</p>
               </div>
-            ))}
+            )}
           </div>
         </motion.div>
 
