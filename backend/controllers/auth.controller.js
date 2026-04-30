@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const User = require('../models/User.model');
+const Admin = require('../models/Admin.model');
 const OTP = require('../models/OTP.model');
 const generateOTP = require('../utils/generateOTP');
 const ApiResponse = require('../utils/ApiResponse');
@@ -163,8 +164,14 @@ const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
-    // Find user — generic error if not found (security)
-    const user = await User.findOne({ email });
+    // Find user or admin — generic error if not found (security)
+    let user = await User.findOne({ email });
+    let isAdmin = false;
+
+    if (!user) {
+      user = await Admin.findOne({ email });
+      if (user) isAdmin = true;
+    }
 
     if (!user) {
       return ApiResponse.error(res, 'Incorrect email or password', 401);
@@ -209,17 +216,21 @@ const login = async (req, res, next) => {
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
+    const payloadUser = {
+      _id: user._id,
+      fullName: user.fullName,
+      email: user.email,
+      role: user.role,
+    };
+    if (!isAdmin) {
+      payloadUser.department = user.department;
+      payloadUser.usnNumber = user.usnNumber;
+      payloadUser.yearOfStudy = user.yearOfStudy;
+    }
+
     return ApiResponse.success(res, 'Login successful', {
       accessToken,
-      user: {
-        _id: user._id,
-        fullName: user.fullName,
-        email: user.email,
-        role: user.role,
-        department: user.department,
-        usnNumber: user.usnNumber,
-        yearOfStudy: user.yearOfStudy,
-      },
+      user: payloadUser,
     });
   } catch (error) {
     next(error);
@@ -233,9 +244,15 @@ const login = async (req, res, next) => {
 const logout = async (req, res, next) => {
   try {
     // Clear refresh token from user document
-    await User.findByIdAndUpdate(req.user._id, {
+    const user = await User.findByIdAndUpdate(req.user._id, {
       refreshToken: null,
     });
+
+    if (!user) {
+      await Admin.findByIdAndUpdate(req.user._id, {
+        refreshToken: null,
+      });
+    }
 
     // Clear cookie
     res.clearCookie('refreshToken', {
@@ -273,7 +290,11 @@ const refreshTokenHandler = async (req, res, next) => {
     }
 
     // Find user and compare stored hash
-    const user = await User.findById(decoded.id);
+    let user = await User.findById(decoded.id);
+
+    if (!user) {
+      user = await Admin.findById(decoded.id);
+    }
 
     if (!user || !user.refreshToken) {
       return ApiResponse.error(res, 'Invalid refresh token', 401);
@@ -310,7 +331,11 @@ const forgotPassword = async (req, res, next) => {
     // ALWAYS return 200 — never confirm if email exists (security)
     const genericMessage = 'If an account with this email exists, a reset link has been sent.';
 
-    const user = await User.findOne({ email });
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      user = await Admin.findOne({ email });
+    }
 
     if (!user) {
       return ApiResponse.success(res, genericMessage);
@@ -354,10 +379,17 @@ const validateResetToken = async (req, res, next) => {
       .update(token)
       .digest('hex');
 
-    const user = await User.findOne({
+    let user = await User.findOne({
       resetPasswordToken: hashedToken,
       resetPasswordExpiry: { $gt: Date.now() },
     });
+
+    if (!user) {
+      user = await Admin.findOne({
+        resetPasswordToken: hashedToken,
+        resetPasswordExpiry: { $gt: Date.now() },
+      });
+    }
 
     if (!user) {
       return ApiResponse.error(res, 'Invalid or expired reset link', 400, { valid: false });
@@ -382,10 +414,17 @@ const resetPassword = async (req, res, next) => {
       .update(token)
       .digest('hex');
 
-    const user = await User.findOne({
+    let user = await User.findOne({
       resetPasswordToken: hashedToken,
       resetPasswordExpiry: { $gt: Date.now() },
     });
+
+    if (!user) {
+      user = await Admin.findOne({
+        resetPasswordToken: hashedToken,
+        resetPasswordExpiry: { $gt: Date.now() },
+      });
+    }
 
     if (!user) {
       return ApiResponse.error(res, 'Invalid or expired reset link', 400);

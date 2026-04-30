@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User.model');
+const Admin = require('../models/Admin.model');
 const ApiResponse = require('../utils/ApiResponse');
 
 /**
@@ -17,13 +18,18 @@ const verifyAccessToken = async (req, res, next) => {
 
     const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
 
-    const user = await User.findById(decoded.id).select('-password -refreshToken');
+    let user = await User.findById(decoded.id).select('-password -refreshToken');
+
+    if (!user) {
+      user = await Admin.findById(decoded.id).select('-password -refreshToken');
+    }
 
     if (!user) {
       return ApiResponse.error(res, 'User not found', 401);
     }
 
-    if (!user.isActive) {
+    // Since Admin model might not have isActive defined yet, we check specifically for false
+    if (user.isActive === false) {
       return ApiResponse.error(res, 'Account has been deactivated', 403);
     }
 
