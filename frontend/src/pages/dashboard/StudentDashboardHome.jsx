@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Briefcase,
   Award,
@@ -107,13 +107,12 @@ const StudentDashboardHome = () => {
   const { drives, isLoading: drivesLoading } = useSelector((state) => state.drives);
   const { applications } = useSelector((state) => state.applications);
   const { profile } = useSelector((state) => state.profile);
-  const { notices, isLoading: noticesLoading } = useSelector((state) => state.notices);
+  const { notices, isLoading: noticesLoading, readNotices } = useSelector((state) => state.notices);
 
   useEffect(() => {
     dispatch(getDrives({ limit: 3 }));
     dispatch(getMyApplicationsAction());
     dispatch(fetchProfile());
-    dispatch(getNotices({ limit: 3 }));
   }, [dispatch]);
 
   // Calculate real stats
@@ -154,6 +153,8 @@ const StudentDashboardHome = () => {
     ?.replace('Robotics & Artificial Intelligence', 'R&AI')
     || user?.department;
 
+  const urgentUnread = notices.find(n => n.category === 'Urgent' && !readNotices?.includes(n._id));
+
   return (
     <motion.div
       variants={staggerContainer}
@@ -161,6 +162,46 @@ const StudentDashboardHome = () => {
       animate="visible"
       className="space-y-6 max-w-[1200px] mx-auto"
     >
+      {/* ── 0. URGENT BANNER ───────────────────────────────────── */}
+      <AnimatePresence>
+        {urgentUnread && (
+          <motion.div
+            initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+            animate={{ opacity: 1, height: 'auto', marginBottom: 24 }}
+            exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="relative overflow-hidden bg-rose-500 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg shadow-rose-500/20 border border-rose-600">
+              {/* Pulsing background effect */}
+              <div className="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-white/20 rounded-full blur-2xl animate-pulse" />
+              
+              <div className="flex items-start sm:items-center gap-3 sm:gap-4 relative z-10 text-white flex-1 min-w-0">
+                <div className="h-10 w-10 rounded-xl bg-white/20 flex flex-shrink-0 items-center justify-center backdrop-blur-sm">
+                  <AlertCircle className="h-5 w-5 text-white" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="font-black text-sm sm:text-base uppercase tracking-wider mb-0.5 flex items-center gap-2">
+                    Urgent Announcement
+                    <span className="flex h-2 w-2 relative">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                    </span>
+                  </h3>
+                  <p className="text-white/90 text-sm truncate">{urgentUnread.title}</p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => navigate('/dashboard/student/notices')}
+                className="relative z-10 w-full sm:w-auto px-5 py-2.5 bg-white text-rose-600 text-sm font-bold rounded-xl hover:bg-rose-50 transition-colors shadow-sm whitespace-nowrap"
+              >
+                View Notice
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* ── 1. PROFILE HERO BANNER ─────────────────────────────── */}
       <motion.div
         variants={fadeUp}
@@ -246,7 +287,7 @@ const StudentDashboardHome = () => {
                 </div>
               ))
             ) : notices.length > 0 ? (
-              notices.map((item) => {
+              notices.slice(0, 3).map((item) => {
                 const style = categoryStyles[item.category] || categoryStyles.General;
                 return (
                   <div key={item._id} className="px-6 py-4 hover:bg-neutral-50/50 transition-colors group cursor-pointer">

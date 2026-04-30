@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard,
@@ -46,6 +46,9 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
+  const { notices, readNotices } = useSelector((state) => state.notices || { notices: [], readNotices: [] });
+  const unreadCount = notices.filter(n => !readNotices.includes(n._id)).length;
+
   const handleLogout = async () => {
     await dispatch(logoutUser());
     navigate('/login', { replace: true });
@@ -88,7 +91,14 @@ const Sidebar = ({ isMobileOpen, onMobileClose }) => {
               <>
                 <item.icon className={`h-[18px] w-[18px] flex-shrink-0 transition-colors ${isActive ? 'text-brand-orange' : 'text-neutral-400 group-hover:text-neutral-600'}`} />
                 {(isMobile || !collapsed) && (
-                  <span className="whitespace-nowrap">{item.label}</span>
+                  <span className="whitespace-nowrap flex-1">{item.label}</span>
+                )}
+                {item.to === '/dashboard/student/notices' && unreadCount > 0 && (
+                  <span className={`flex-shrink-0 ml-auto inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                    isActive ? 'bg-brand-orange text-white' : 'bg-rose-100 text-rose-600'
+                  }`}>
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
                 )}
               </>
             )}

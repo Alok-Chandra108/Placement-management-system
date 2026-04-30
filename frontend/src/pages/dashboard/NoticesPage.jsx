@@ -14,7 +14,7 @@ import {
   Inbox
 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
-import { getNotices, getNoticeById, clearCurrentNotice } from '../../features/notices/noticeSlice';
+import { getNotices, getNoticeById, clearCurrentNotice, markNoticeAsRead } from '../../features/notices/noticeSlice';
 
 const categoryStyles = {
   Urgent:    { bg: 'bg-rose-50',    text: 'text-rose-600',    dot: 'bg-rose-500',   border: 'border-rose-100' },
@@ -26,19 +26,12 @@ const CATEGORIES = ['All', 'Urgent', 'Placement', 'General'];
 
 const NoticesPage = () => {
   const dispatch = useDispatch();
-  const { notices, total, isLoading, currentNotice } = useSelector((state) => state.notices);
+  const { notices, total, isLoading, currentNotice, readNotices } = useSelector((state) => state.notices);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const [page, setPage] = useState(1);
-  const [readNotices, setReadNotices] = useState([]);
   const limit = 6;
-
-  useEffect(() => {
-    // Load read notices from localStorage
-    const stored = JSON.parse(localStorage.getItem('cpms_read_notices') || '[]');
-    setReadNotices(stored);
-  }, []);
 
   useEffect(() => {
     const params = {
@@ -62,13 +55,7 @@ const NoticesPage = () => {
 
   const handleOpenNotice = (id) => {
     dispatch(getNoticeById(id));
-    
-    // Mark as read
-    if (!readNotices.includes(id)) {
-      const updated = [...readNotices, id];
-      setReadNotices(updated);
-      localStorage.setItem('cpms_read_notices', JSON.stringify(updated));
-    }
+    dispatch(markNoticeAsRead(id));
   };
 
   const handleCloseNotice = () => {
