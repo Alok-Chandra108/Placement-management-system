@@ -12,14 +12,15 @@ const seedAdmin = async () => {
 
     // Check if the admin already exists
     const existingAdmin = await Admin.findOne({ email: adminEmail });
+    const password = process.argv[2] || 'TempAdmin@123';
+
     if (existingAdmin) {
-      console.log(`Admin with email ${adminEmail} already exists.`);
+      console.log(`Admin with email ${adminEmail} already exists. Updating password...`);
+      existingAdmin.password = password;
+      await existingAdmin.save();
+      console.log('✅ Password updated successfully!');
       process.exit(0);
     }
-
-    // You can pass the password as a command-line argument, or it will generate a default one.
-    // Example usage: node scripts/seedAdmin.js "MySecurePassword123!"
-    const password = process.argv[2] || 'TempAdmin@123';
 
     // Create the admin user
     // Now using the slim Admin schema

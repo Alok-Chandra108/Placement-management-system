@@ -6,6 +6,7 @@ import LoginPage from '../pages/auth/LoginPage';
 import VerifyEmailPage from '../pages/auth/VerifyEmailPage';
 import ForgotPasswordPage from '../pages/auth/ForgotPasswordPage';
 import ResetPasswordPage from '../pages/auth/ResetPasswordPage';
+import AdminLoginPage from '../pages/auth/AdminLoginPage';
 
 // Dashboard pages
 import StudentDashboard from '../pages/dashboard/StudentDashboard';
@@ -30,6 +31,7 @@ const AppRouter = () => {
       {/* Public auth routes */}
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/admin/login" element={<AdminLoginPage />} />
       <Route path="/verify-email" element={<VerifyEmailPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password/:token" element={<ResetPasswordPage />} />

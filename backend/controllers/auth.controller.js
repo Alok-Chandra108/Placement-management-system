@@ -163,15 +163,10 @@ const resendOTP = async (req, res, next) => {
 const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
+    const sanitizedEmail = email.trim().toLowerCase();
 
-    // Find user or admin — generic error if not found (security)
-    let user = await User.findOne({ email });
-    let isAdmin = false;
-
-    if (!user) {
-      user = await Admin.findOne({ email });
-      if (user) isAdmin = true;
-    }
+    // Find ONLY in user collection (Students/HR)
+    const user = await User.findOne({ email: sanitizedEmail });
 
     if (!user) {
       return ApiResponse.error(res, 'Incorrect email or password', 401);
@@ -221,16 +216,75 @@ const login = async (req, res, next) => {
       fullName: user.fullName,
       email: user.email,
       role: user.role,
+      department: user.department,
+      usnNumber: user.usnNumber,
+      yearOfStudy: user.yearOfStudy,
     };
-    if (!isAdmin) {
-      payloadUser.department = user.department;
-      payloadUser.usnNumber = user.usnNumber;
-      payloadUser.yearOfStudy = user.yearOfStudy;
-    }
 
     return ApiResponse.success(res, 'Login successful', {
       accessToken,
       user: payloadUser,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * POST /api/auth/admin-login
+ * Dedicated Login for Admins
+ */
+const adminLogin = async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
+    const sanitizedEmail = email.trim().toLowerCase();
+
+    // Find ONLY in Admin collection
+    const admin = await Admin.findOne({ email: sanitizedEmail });
+
+    if (!admin) {
+      return ApiResponse.error(res, 'Incorrect email or password', 401);
+    }
+
+    // Compare password
+    const isMatch = await admin.comparePassword(password);
+
+    if (!isMatch) {
+      return ApiResponse.error(res, 'Incorrect email or password', 401);
+    }
+
+    // Generate tokens
+    const accessToken = admin.generateAccessToken();
+    const refreshToken = admin.generateRefreshToken();
+
+    // Store hashed refresh token
+    const hashedRefreshToken = crypto
+      .createHash('sha256')
+      .update(refreshToken)
+      .digest('hex');
+
+    admin.refreshToken = hashedRefreshToken;
+    admin.lastLogin = new Date();
+    await admin.save({ validateBeforeSave: false });
+
+    // Set refresh token in httpOnly cookie
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
+    const payloadAdmin = {
+      _id: admin._id,
+      fullName: admin.fullName,
+      email: admin.email,
+      role: admin.role,
+    };
+
+    return ApiResponse.success(res, 'Admin login successful', {
+      accessToken,
+      user: payloadAdmin,
     });
   } catch (error) {
     next(error);
@@ -492,6 +546,7 @@ module.exports = {
   resendOTP,
   updateVerifyEmail,
   login,
+  adminLogin,
   logout,
   refreshTokenHandler,
   forgotPassword,

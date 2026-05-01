@@ -20,6 +20,10 @@ export const updateVerifyEmail = (data) =>
 export const loginUser = (data) =>
   axiosInstance.post('/auth/login', data);
 
+// Admin Login
+export const loginAdmin = (data) =>
+  axiosInstance.post('/auth/admin-login', data);
+
 // Logout
 export const logoutUser = () =>
   axiosInstance.post('/auth/logout');
