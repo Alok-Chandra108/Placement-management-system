@@ -18,6 +18,7 @@ import ApplicationsPage from '../pages/dashboard/ApplicationsPage';
 import NoticesPage from '../pages/dashboard/NoticesPage';
 import AdminDashboard from '../pages/dashboard/AdminDashboard';
 import HRDashboard from '../pages/dashboard/HRDashboard';
+import AdminOverview from '../pages/dashboard/admin/AdminOverview';
 
 // Route guards
 import ProtectedRoute from './ProtectedRoute';
@@ -77,7 +78,7 @@ const AppRouter = () => {
         <Route path="notices" element={<NoticesPage />} />
       </Route>
       <Route
-        path="/dashboard/admin/*"
+        path="/dashboard/admin"
         element={
           <ProtectedRoute>
             <RoleRoute allowedRoles={[ROLES.ADMIN]}>
@@ -85,7 +86,14 @@ const AppRouter = () => {
             </RoleRoute>
           </ProtectedRoute>
         }
-      />
+      >
+        <Route index element={<AdminOverview />} />
+        {/* Placeholder routes for other admin features */}
+        <Route path="students" element={<div className="p-8 text-center">Student Management — Coming Soon</div>} />
+        <Route path="drives" element={<div className="p-8 text-center">Drive Management — Coming Soon</div>} />
+        <Route path="notices" element={<div className="p-8 text-center">Notice Board Management — Coming Soon</div>} />
+        <Route path="settings" element={<div className="p-8 text-center">Admin Settings — Coming Soon</div>} />
+      </Route>
       <Route
         path="/dashboard/hr/*"
         element={
