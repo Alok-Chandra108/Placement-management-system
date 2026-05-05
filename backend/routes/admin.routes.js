@@ -1,5 +1,5 @@
 const express = require('express');
-const { getDashboardStats } = require('../controllers/admin.controller');
+const { getDashboardStats, getAllStudents } = require('../controllers/admin.controller');
 const { verifyAccessToken, restrictToRoles } = require('../middleware/auth.middleware');
 
 const router = express.Router();
@@ -10,5 +10,8 @@ router.use(restrictToRoles('admin', 'super-admin'));
 
 // Route: /api/admin/stats
 router.get('/stats', getDashboardStats);
+
+// Route: /api/admin/students
+router.get('/students', getAllStudents);
 
 module.exports = router;
