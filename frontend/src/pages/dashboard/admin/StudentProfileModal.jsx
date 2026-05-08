@@ -11,8 +11,8 @@ import {
   Award,
   Briefcase,
   Code2,
-  Github,
-  Linkedin,
+  Link,
+  Globe,
   FileText,
   Download,
   ExternalLink,
@@ -379,11 +379,11 @@ const StudentProfileModal = ({ studentId, onClose }) => {
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-blue-200 bg-blue-50 text-blue-700 text-sm font-medium hover:bg-blue-100 transition-colors"
                       >
-                        <Linkedin className="w-4 h-4" /> LinkedIn
+                        <Globe className="w-4 h-4" /> LinkedIn
                       </a>
                     ) : (
                       <span className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-100 bg-gray-50 text-gray-400 text-sm">
-                        <Linkedin className="w-4 h-4" /> Not linked
+                        <Globe className="w-4 h-4" /> Not linked
                       </span>
                     )}
                     {profile?.github ? (
@@ -393,11 +393,11 @@ const StudentProfileModal = ({ studentId, onClose }) => {
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-800 bg-gray-900 text-white text-sm font-medium hover:bg-gray-700 transition-colors"
                       >
-                        <Github className="w-4 h-4" /> GitHub
+                        <Link className="w-4 h-4" /> GitHub
                       </a>
                     ) : (
                       <span className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-100 bg-gray-50 text-gray-400 text-sm">
-                        <Github className="w-4 h-4" /> Not linked
+                        <Link className="w-4 h-4" /> Not linked
                       </span>
                     )}
                   </div>
