@@ -96,6 +96,32 @@ exports.getNoticeById = async (req, res, next) => {
 };
 
 /**
+ * @desc    Update notice details
+ * @route   PUT /api/notices/:id
+ * @access  Private (Admin / HR)
+ */
+exports.updateNotice = async (req, res, next) => {
+  try {
+    const notice = await Notice.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true, runValidators: true }
+    ).populate('postedBy', 'fullName role');
+
+    if (!notice) {
+      return ApiResponse.error(res, 'Notice not found', 404);
+    }
+
+    return ApiResponse.success(res, 'Notice updated successfully', notice);
+  } catch (error) {
+    if (error.name === 'CastError') {
+      return ApiResponse.error(res, 'Invalid notice ID format', 400);
+    }
+    next(error);
+  }
+};
+
+/**
  * @desc    Soft-delete a notice (sets isActive = false)
  * @route   DELETE /api/notices/:id
  * @access  Private (Admin / HR)

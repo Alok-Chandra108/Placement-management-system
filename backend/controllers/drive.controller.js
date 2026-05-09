@@ -94,3 +94,25 @@ exports.updateDrive = async (req, res, next) => {
     next(error);
   }
 };
+
+/**
+ * @desc    Delete a drive
+ * @route   DELETE /api/drives/:id
+ * @access  Private (Admin/HR)
+ */
+exports.deleteDrive = async (req, res, next) => {
+  try {
+    const drive = await Drive.findByIdAndDelete(req.params.id);
+
+    if (!drive) {
+      return ApiResponse.error(res, 'Drive not found', 404);
+    }
+
+    return ApiResponse.success(res, 'Drive deleted successfully');
+  } catch (error) {
+    if (error.name === 'CastError') {
+      return ApiResponse.error(res, 'Invalid drive ID format', 400);
+    }
+    next(error);
+  }
+};

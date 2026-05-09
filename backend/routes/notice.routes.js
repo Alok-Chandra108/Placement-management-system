@@ -4,6 +4,7 @@ const {
   getAllNotices,
   getNoticeById,
   deleteNotice,
+  updateNotice,
 } = require('../controllers/notice.controller');
 const { verifyAccessToken, restrictToRoles } = require('../middleware/auth.middleware');
 
@@ -22,6 +23,7 @@ router
 router
   .route('/:id')
   .get(getNoticeById)                              // All logged-in users
+  .put(restrictToRoles('admin', 'hr'), updateNotice)     // Admin / HR only
   .delete(restrictToRoles('admin', 'hr'), deleteNotice); // Admin / HR only
 
 module.exports = router;

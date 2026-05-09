@@ -4,6 +4,7 @@ const {
   getAllDrives,
   getDriveById,
   updateDrive,
+  deleteDrive,
 } = require('../controllers/drive.controller');
 const { verifyAccessToken, restrictToRoles } = require('../middleware/auth.middleware');
 
@@ -22,6 +23,7 @@ router
 router
   .route('/:id')
   .get(getDriveById) // Public/Students
-  .patch(restrictToRoles('admin', 'hr'), updateDrive); // Admin/HR only
+  .patch(restrictToRoles('admin', 'hr'), updateDrive) // Admin/HR only
+  .delete(restrictToRoles('admin', 'hr'), deleteDrive); // Admin/HR only
 
 module.exports = router;
