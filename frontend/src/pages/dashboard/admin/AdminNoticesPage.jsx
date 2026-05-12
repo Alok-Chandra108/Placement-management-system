@@ -1,6 +1,19 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { fetchNotices } from '../../../api/noticeApi';
-import { Search, Filter, ChevronLeft, ChevronRight, FileText, Calendar, Plus } from 'lucide-react';
+import { 
+  Search, 
+  Filter, 
+  ChevronLeft, 
+  ChevronRight, 
+  FileText, 
+  Calendar, 
+  Plus,
+  AlertCircle,
+  MoreVertical,
+  ExternalLink,
+  Clock
+} from 'lucide-react';
 
 const AdminNoticesPage = () => {
   const [notices, setNotices] = useState([]);
@@ -64,16 +77,16 @@ const AdminNoticesPage = () => {
     loadNotices();
   }, [page, debouncedSearch, categoryFilter]);
 
-  const getCategoryColor = (category) => {
+  const getCategoryStyles = (category) => {
     switch (category) {
       case 'Urgent':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-50 text-red-700 border-red-100';
       case 'Placement':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-brand-blue-light text-brand-blue border-brand-blue-light';
       case 'General':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-50 text-green-700 border-green-100';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-neutral-100 text-neutral-700 border-neutral-200';
     }
   };
 
@@ -82,233 +95,250 @@ const AdminNoticesPage = () => {
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
 
+  const containerVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: { duration: 0.4, staggerChildren: 0.1 }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, x: -10 },
+    visible: { opacity: 1, x: 0 }
+  };
+
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <motion.div 
+      initial="hidden"
+      animate="visible"
+      variants={containerVariants}
+      className="max-w-7xl mx-auto space-y-8"
+    >
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Notice Board Management</h1>
-          <p className="text-gray-600 mt-1">Create, view, and manage all notices across the system</p>
+          <h1 className="text-3xl font-extrabold text-neutral-900 tracking-tight">Notice Board</h1>
+          <p className="text-neutral-500 mt-2 flex items-center gap-2">
+            <Clock className="w-4 h-4" />
+            Manage official announcements and placement alerts
+          </p>
         </div>
         <button
-          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-sm"
+          className="inline-flex items-center gap-2 px-6 py-3 bg-brand-orange text-white rounded-2xl hover:bg-brand-orange/90 transition-all duration-300 font-semibold shadow-lg shadow-brand-orange/20 active:scale-95"
         >
           <Plus className="w-5 h-5" />
-          Create Notice
+          Create New Notice
         </button>
       </div>
 
-      {/* Filters Section */}
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-6 flex flex-col md:flex-row gap-4 justify-between items-center">
-        <div className="relative w-full md:w-96">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-5 w-5 text-gray-400" />
+      {/* Control Bar */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+        <div className="md:col-span-8 relative">
+          <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+            <Search className="h-5 w-5 text-neutral-400" />
           </div>
           <input
             type="text"
-            placeholder="Search by Title..."
-            className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
+            placeholder="Search by title or content..."
+            className="block w-full pl-12 pr-4 py-3.5 bg-white border border-neutral-200 rounded-2xl focus:ring-2 focus:ring-brand-orange/20 focus:border-brand-orange transition-all outline-none shadow-sm placeholder:text-neutral-400"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
 
-        <div className="relative w-full md:w-72">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Filter className="h-5 w-5 text-gray-400" />
+        <div className="md:col-span-4 relative">
+          <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+            <Filter className="h-5 w-5 text-neutral-400" />
           </div>
           <select
-            className="block w-full pl-10 pr-10 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white transition-shadow"
+            className="block w-full pl-12 pr-10 py-3.5 bg-white border border-neutral-200 rounded-2xl focus:ring-2 focus:ring-brand-orange/20 focus:border-brand-orange transition-all outline-none shadow-sm appearance-none cursor-pointer"
             value={categoryFilter}
             onChange={handleCategoryChange}
           >
             <option value="">All Categories</option>
-            <option value="Urgent">Urgent</option>
-            <option value="Placement">Placement</option>
-            <option value="General">General</option>
+            <option value="Urgent">Urgent Priority</option>
+            <option value="Placement">Placement Drive</option>
+            <option value="General">General Notice</option>
           </select>
+          <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+            <ChevronRight className="h-4 w-4 text-neutral-400 rotate-90" />
+          </div>
         </div>
       </div>
 
-      {/* Error State */}
-      {error && (
-        <div className="bg-red-50 text-red-600 p-4 rounded-lg mb-6 flex items-center">
-          <span className="font-medium">{error}</span>
-        </div>
-      )}
+      {/* Main Content Card */}
+      <div className="bg-white rounded-3xl shadow-xl shadow-neutral-200/50 border border-neutral-100 overflow-hidden">
+        {error && (
+          <div className="p-4 bg-red-50 border-b border-red-100 flex items-center gap-3 text-red-600">
+            <AlertCircle className="w-5 h-5" />
+            <span className="text-sm font-medium">{error}</span>
+          </div>
+        )}
 
-      {/* Data Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  Notice Details
+          <table className="w-full">
+            <thead>
+              <tr className="bg-neutral-50/50">
+                <th className="px-8 py-5 text-left text-xs font-bold text-neutral-500 uppercase tracking-widest border-b border-neutral-100">
+                  Announcement Details
                 </th>
-                <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-5 text-left text-xs font-bold text-neutral-500 uppercase tracking-widest border-b border-neutral-100">
                   Category
                 </th>
-                <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  Posted Date
+                <th className="px-6 py-5 text-left text-xs font-bold text-neutral-500 uppercase tracking-widest border-b border-neutral-100">
+                  Date Published
                 </th>
-                <th scope="col" className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-5 text-left text-xs font-bold text-neutral-500 uppercase tracking-widest border-b border-neutral-100">
                   Status
                 </th>
-                <th scope="col" className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                <th className="px-8 py-5 text-right text-xs font-bold text-neutral-500 uppercase tracking-widest border-b border-neutral-100">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {loading ? (
-                // Loading Skeleton
-                [...Array(5)].map((_, index) => (
-                  <tr key={index} className="animate-pulse">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="h-4 w-48 bg-gray-200 rounded mb-2"></div>
-                      <div className="h-3 w-32 bg-gray-200 rounded"></div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="h-6 w-20 bg-gray-200 rounded-full"></div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="h-4 w-24 bg-gray-200 rounded"></div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="h-6 w-16 bg-gray-200 rounded-full"></div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <div className="h-8 w-16 bg-gray-200 rounded-lg ml-auto"></div>
-                    </td>
-                  </tr>
-                ))
-              ) : notices.length > 0 ? (
-                notices.map((notice) => (
-                  <tr key={notice._id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-gray-900 line-clamp-1">{notice.title}</div>
-                      <div className="text-sm text-gray-500 mt-1 flex items-center">
-                        <FileText className="w-3 h-3 mr-1" />
-                        Posted by {notice.postedBy?.fullName || 'Admin'}
+            <tbody className="divide-y divide-neutral-100">
+              <AnimatePresence mode="wait">
+                {loading ? (
+                  [...Array(5)].map((_, index) => (
+                    <motion.tr 
+                      key={`skeleton-${index}`}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="animate-pulse"
+                    >
+                      <td className="px-8 py-6">
+                        <div className="h-4 w-64 bg-neutral-100 rounded-full mb-3"></div>
+                        <div className="h-3 w-40 bg-neutral-50 rounded-full"></div>
+                      </td>
+                      <td className="px-6 py-6"><div className="h-7 w-24 bg-neutral-100 rounded-xl"></div></td>
+                      <td className="px-6 py-6"><div className="h-4 w-32 bg-neutral-100 rounded-full"></div></td>
+                      <td className="px-6 py-6"><div className="h-7 w-20 bg-neutral-100 rounded-xl"></div></td>
+                      <td className="px-8 py-6"><div className="h-10 w-24 bg-neutral-100 rounded-xl ml-auto"></div></td>
+                    </motion.tr>
+                  ))
+                ) : notices.length > 0 ? (
+                  notices.map((notice) => (
+                    <motion.tr 
+                      key={notice._id}
+                      variants={itemVariants}
+                      className="group hover:bg-neutral-50/80 transition-all duration-300"
+                    >
+                      <td className="px-8 py-6">
+                        <div className="flex flex-col">
+                          <span className="text-sm font-bold text-neutral-900 group-hover:text-brand-blue transition-colors leading-relaxed">
+                            {notice.title}
+                          </span>
+                          <span className="text-xs text-neutral-500 mt-1.5 flex items-center gap-1.5 font-medium">
+                            <div className="w-1.5 h-1.5 rounded-full bg-neutral-300"></div>
+                            Posted by {notice.postedBy?.fullName || 'Academic Office'}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-6">
+                        <span className={`px-3.5 py-1.5 inline-flex text-[11px] font-bold rounded-xl border ${getCategoryStyles(notice.category)} uppercase tracking-wider`}>
+                          {notice.category}
+                        </span>
+                      </td>
+                      <td className="px-6 py-6">
+                        <div className="flex items-center gap-2 text-sm text-neutral-600 font-medium">
+                          <Calendar className="w-4 h-4 text-neutral-400" />
+                          {formatDate(notice.createdAt)}
+                        </div>
+                      </td>
+                      <td className="px-6 py-6">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-2 h-2 rounded-full ${notice.isActive !== false ? 'bg-green-500 shadow-lg shadow-green-200' : 'bg-neutral-300'}`}></div>
+                          <span className={`text-xs font-bold uppercase tracking-widest ${notice.isActive !== false ? 'text-green-700' : 'text-neutral-500'}`}>
+                            {notice.isActive !== false ? 'Live' : 'Hidden'}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-8 py-6 text-right">
+                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                          <button className="p-2.5 text-neutral-400 hover:text-brand-blue hover:bg-brand-blue-light rounded-xl transition-all" title="View Details">
+                            <ExternalLink className="w-4.5 h-4.5" />
+                          </button>
+                          <button className="p-2.5 text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 rounded-xl transition-all" title="More Options">
+                            <MoreVertical className="w-4.5 h-4.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </motion.tr>
+                  ))
+                ) : (
+                  <motion.tr
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                  >
+                    <td colSpan="5" className="px-8 py-20 text-center">
+                      <div className="flex flex-col items-center justify-center max-w-sm mx-auto">
+                        <div className="w-20 h-20 bg-neutral-50 rounded-3xl flex items-center justify-center mb-6">
+                          <FileText className="h-10 w-10 text-neutral-300" />
+                        </div>
+                        <h3 className="text-xl font-bold text-neutral-900">No notices to display</h3>
+                        <p className="text-neutral-500 mt-2 text-sm leading-relaxed">
+                          We couldn't find any notices matching your criteria. Try adjusting your search or filters.
+                        </p>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getCategoryColor(notice.category)}`}>
-                        {notice.category}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900 flex items-center">
-                        <Calendar className="w-4 h-4 mr-1 text-gray-400" />
-                        {formatDate(notice.createdAt)}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        notice.isActive !== false
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {notice.isActive !== false ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <button className="text-blue-600 hover:text-blue-900 text-sm font-medium transition-colors">
-                        Edit
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="5" className="px-6 py-12 text-center text-gray-500">
-                    <div className="flex flex-col items-center justify-center">
-                      <FileText className="h-12 w-12 text-gray-300 mb-3" />
-                      <p className="text-lg font-medium text-gray-900">No notices found</p>
-                      <p className="text-sm mt-1">Try adjusting your search or filter parameters.</p>
-                    </div>
-                  </td>
-                </tr>
-              )}
+                  </motion.tr>
+                )}
+              </AnimatePresence>
             </tbody>
           </table>
         </div>
 
-        {/* Pagination Controls */}
+        {/* Improved Pagination */}
         {!loading && notices.length > 0 && (
-          <div className="bg-white px-6 py-4 flex items-center justify-between border-t border-gray-200">
-            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm text-gray-700">
-                  Showing <span className="font-medium">{(page - 1) * limit + 1}</span> to{' '}
-                  <span className="font-medium">
-                    {Math.min(page * limit, totalCount)}
-                  </span>{' '}
-                  of <span className="font-medium">{totalCount}</span> results
-                </p>
-              </div>
-              <div>
-                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                  <button
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    disabled={page === 1}
-                    className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <span className="sr-only">Previous</span>
-                    <ChevronLeft className="h-5 w-5" aria-hidden="true" />
-                  </button>
-                  
-                  {/* Page Numbers */}
-                  {[...Array(totalPages)].map((_, i) => (
-                    <button
-                      key={i + 1}
-                      onClick={() => setPage(i + 1)}
-                      className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium transition-colors ${
-                        page === i + 1
-                          ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                          : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                      }`}
-                    >
-                      {i + 1}
-                    </button>
-                  ))}
-
-                  <button
-                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                    disabled={page === totalPages || totalPages === 0}
-                    className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <span className="sr-only">Next</span>
-                    <ChevronRight className="h-5 w-5" aria-hidden="true" />
-                  </button>
-                </nav>
-              </div>
-            </div>
-            {/* Mobile Pagination */}
-            <div className="flex items-center justify-between sm:hidden w-full">
+          <div className="px-8 py-6 bg-neutral-50/30 border-t border-neutral-100 flex items-center justify-between">
+            <p className="text-sm font-medium text-neutral-500">
+              Showing <span className="text-neutral-900 font-bold">{(page - 1) * limit + 1}</span> to{' '}
+              <span className="text-neutral-900 font-bold">{Math.min(page * limit, totalCount)}</span> of{' '}
+              <span className="text-neutral-900 font-bold">{totalCount}</span>
+            </p>
+            
+            <div className="flex items-center gap-2">
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                className="p-2 rounded-xl border border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm"
               >
-                Previous
+                <ChevronLeft className="w-5 h-5" />
               </button>
-              <span className="text-sm text-gray-700">
-                Page {page} of {totalPages || 1}
-              </span>
+              
+              <div className="flex items-center gap-1">
+                {[...Array(totalPages)].map((_, i) => (
+                  <button
+                    key={i + 1}
+                    onClick={() => setPage(i + 1)}
+                    className={`min-w-[40px] h-10 rounded-xl text-sm font-bold transition-all shadow-sm ${
+                      page === i + 1
+                        ? 'bg-brand-blue text-white shadow-brand-blue/20'
+                        : 'bg-white border border-neutral-200 text-neutral-600 hover:border-brand-blue/30 hover:text-brand-blue'
+                    }`}
+                  >
+                    {i + 1}
+                  </button>
+                ))}
+              </div>
+
               <button
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages || totalPages === 0}
-                className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                className="p-2 rounded-xl border border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50 disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm"
               >
-                Next
+                <ChevronRight className="w-5 h-5" />
               </button>
             </div>
           </div>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 };
 
 export default AdminNoticesPage;
+
