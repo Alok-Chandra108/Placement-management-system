@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { fetchDrives } from '../../../api/driveApi';
+import { fetchDrives, createDrive, updateDrive } from '../../../api/driveApi';
 import toast from 'react-hot-toast';
 import { 
   Search, 
@@ -14,8 +14,10 @@ import {
   ExternalLink,
   MapPin,
   IndianRupee,
-  Building2
+  Building2,
+  Edit2
 } from 'lucide-react';
+import DriveModal from './components/DriveModal';
 
 const AdminDrivesPage = () => {
   const [drives, setDrives] = useState([]);
@@ -26,6 +28,12 @@ const AdminDrivesPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+
+  // Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState('create');
+  const [currentDrive, setCurrentDrive] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Debounce search query
   useEffect(() => {
@@ -78,6 +86,37 @@ const AdminDrivesPage = () => {
     loadDrives();
   }, [statusFilter, debouncedSearch]);
 
+  const handleOpenModal = (mode, drive = null) => {
+    setModalMode(mode);
+    setCurrentDrive(drive);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setCurrentDrive(null);
+  };
+
+  const handleDriveSubmit = async (formData) => {
+    try {
+      setIsSubmitting(true);
+      if (modalMode === 'create') {
+        await createDrive(formData);
+        toast.success('Drive created successfully');
+      } else {
+        await updateDrive(currentDrive._id, formData);
+        toast.success('Drive updated successfully');
+      }
+      handleCloseModal();
+      loadDrives(); // Refresh the list
+    } catch (error) {
+      console.error('Error saving drive:', error);
+      toast.error(error.response?.data?.message || 'Failed to save drive.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const getStatusStyles = (status) => {
     switch (status) {
       case 'open':
@@ -127,8 +166,8 @@ const AdminDrivesPage = () => {
           </p>
         </div>
         <button
-          className="inline-flex items-center gap-2 px-6 py-3 bg-brand-orange text-white rounded-2xl hover:bg-brand-orange/90 transition-all duration-300 font-semibold shadow-lg shadow-brand-orange/20 active:scale-95 opacity-50 cursor-not-allowed"
-          title="Create drive functionality coming soon"
+          onClick={() => handleOpenModal('create')}
+          className="inline-flex items-center gap-2 px-6 py-3 bg-brand-orange text-white rounded-2xl hover:bg-brand-orange/90 transition-all duration-300 font-semibold shadow-lg shadow-brand-orange/20 active:scale-95"
         >
           <Plus className="w-5 h-5" />
           Create New Drive
@@ -282,6 +321,13 @@ const AdminDrivesPage = () => {
                       <td className="px-8 py-6 text-right">
                         <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                           <button 
+                            onClick={() => handleOpenModal('edit', drive)}
+                            className="p-2 text-brand-orange hover:bg-brand-orange/10 rounded-xl transition-all" 
+                            title="Edit Drive"
+                          >
+                            <Edit2 className="w-4.5 h-4.5" />
+                          </button>
+                          <button 
                             className="p-2 text-neutral-400 hover:text-brand-blue hover:bg-brand-blue-light rounded-xl transition-all" 
                             title="View Details"
                           >
@@ -314,6 +360,15 @@ const AdminDrivesPage = () => {
           </table>
         </div>
       </div>
+
+      <DriveModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        mode={modalMode}
+        initialData={currentDrive}
+        onSubmit={handleDriveSubmit}
+        isSubmitting={isSubmitting}
+      />
     </motion.div>
   );
 };
