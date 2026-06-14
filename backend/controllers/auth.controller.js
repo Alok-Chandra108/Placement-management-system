@@ -629,7 +629,26 @@ const updateVerifyEmail = async (req, res, next) => {
       expiresAt: new Date(Date.now() + 10 * 60 * 1000),
     });
 
-    await sendOTPEmail(user.fullName, newEmail, otp);
+    try {
+      await sendOTPEmail(user.fullName, newEmail, otp);
+    } catch (emailError) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('⚠️ Failed to send OTP email in dev:', emailError.message);
+        console.log('--------------------------------------------');
+        console.log('UPDATE-EMAIL OTP (DEV ONLY):', otp);
+        console.log('--------------------------------------------');
+      } else {
+        // Roll back: revert email so the user can retry once SMTP is fixed
+        user.email = oldEmail;
+        await user.save();
+        await OTP.deleteMany({ email: newEmail });
+        return ApiResponse.error(
+          res,
+          `Failed to send verification email: ${emailError.message}. Please try again later.`,
+          500
+        );
+      }
+    }
 
     return ApiResponse.success(res, 'Email updated and new OTP sent.', { email: newEmail });
   } catch (error) {
