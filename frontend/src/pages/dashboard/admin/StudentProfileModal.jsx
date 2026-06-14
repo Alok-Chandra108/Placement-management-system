@@ -448,14 +448,6 @@ const StudentProfileModal = ({ studentId, onClose }) => {
             <div className="flex gap-2">
               {profile?.resumeUrl && (
                 <>
-                  <a
-                    href={profile.resumeUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-indigo-200 text-indigo-700 text-sm font-medium hover:bg-indigo-50 transition-colors"
-                  >
-                    <ExternalLink className="w-4 h-4" /> View
-                  </a>
                   <button
                     onClick={handleDownloadResume}
                     disabled={downloading}
