@@ -10,11 +10,14 @@ const nodemailer = require('nodemailer');
  * - Migrate to a transactional email service like Resend / SendGrid.
  */
 const transporter = nodemailer.createTransport({
-  service: 'gmail', // uses port 465 SSL — proven to work on Render
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true,
   auth: {
     user: process.env.GMAIL_USER,
     pass: process.env.GMAIL_APP_PASSWORD,
   },
+  family: 4, // Force IPv4 (prevents ENETUNREACH ipv6 issues on Render)
   connectionTimeout: 10000,
   greetingTimeout: 10000,
   socketTimeout: 15000,
