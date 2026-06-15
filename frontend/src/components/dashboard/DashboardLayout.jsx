@@ -1,12 +1,16 @@
 import { useState } from 'react';
 import { Menu, Bell } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useSelector } from 'react-redux';
 import Sidebar from './Sidebar';
 import useAuth from '../../hooks/useAuth';
 
 const DashboardLayout = ({ children }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { user } = useAuth();
+  
+  const { notices, readNotices } = useSelector((state) => state.notices);
+  const hasUnread = notices?.some(notice => !readNotices?.includes(notice._id));
 
   // Get user initials for the small header avatar
   const initials = user?.fullName
@@ -61,7 +65,9 @@ const DashboardLayout = ({ children }) => {
               {/* Notification Bell */}
               <button className="relative p-2 rounded-xl hover:bg-neutral-100 text-neutral-500 hover:text-neutral-700 transition-colors">
                 <Bell className="h-5 w-5" />
-                <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-brand-orange rounded-full ring-2 ring-white" />
+                {hasUnread && (
+                  <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-brand-orange rounded-full ring-2 ring-white" />
+                )}
               </button>
 
               {/* Mini Avatar */}

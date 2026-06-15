@@ -72,7 +72,7 @@ export const noticeSlice = createSlice({
       const id = action.payload;
       if (!state.readNotices.includes(id)) {
         state.readNotices.push(id);
-        localStorage.setItem('cpms_read_notices', JSON.stringify(state.readNotices));
+        localStorage.setItem('cpms_read_notices', JSON.stringify([...state.readNotices]));
       }
     },
   },
