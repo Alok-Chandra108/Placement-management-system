@@ -12,7 +12,7 @@ import {
   Clock, 
   AlertCircle,
   Building2,
-  DollarSign,
+  IndianRupee,
   ArrowRight
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -93,7 +93,7 @@ const DriveCard = ({ drive, index, hasApplied }) => {
       <div className="mb-6">
         <h4 className="text-neutral-900 font-bold mb-1 line-clamp-1">{drive.jobRole}</h4>
         <div className="flex items-center text-brand-blue font-bold text-sm bg-brand-blue-light/50 px-3 py-1 rounded-lg w-fit">
-          <DollarSign className="w-3.5 h-3.5 mr-0.5" />
+          <IndianRupee className="w-3.5 h-3.5 mr-0.5" />
           {drive.ctc}
         </div>
       </div>
