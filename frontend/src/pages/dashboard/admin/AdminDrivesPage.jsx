@@ -86,7 +86,7 @@ const AdminDrivesPage = () => {
       const response = await fetchDrives(params);
 
       if (response.success) {
-        console.log('[LoadDrives] Drives received:', response.data.drives.map(d => ({ name: d.companyName, logo: d.companyLogo })));
+
         setDrives(response.data.drives);
         setTotalPages(response.data.pages);
         setTotalCount(response.data.total);
@@ -162,15 +162,15 @@ const AdminDrivesPage = () => {
         delete payload.companyLogo;
       }
 
-      console.log('[DriveSubmit] Payload being sent:', JSON.stringify(payload, null, 2));
+
 
       if (modalMode === 'create') {
         const result = await createDrive(payload);
-        console.log('[DriveSubmit] Create response:', result);
+
         toast.success('Drive created successfully');
       } else {
         const result = await updateDrive(currentDrive._id, payload);
-        console.log('[DriveSubmit] Update response:', result);
+
         toast.success('Drive updated successfully');
       }
       handleCloseModal();

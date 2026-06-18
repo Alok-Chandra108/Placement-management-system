@@ -56,21 +56,14 @@ const register = async (req, res, next) => {
     try {
       await sendOTPEmail(fullName, email, otp);
     } catch (emailError) {
-      if (process.env.NODE_ENV !== 'production') {
-        console.warn('⚠️ Failed to send OTP email in dev:', emailError.message);
-        console.log('--------------------------------------------');
-        console.log('STUDENT REGISTRATION OTP (DEV ONLY):', otp);
-        console.log('--------------------------------------------');
-      } else {
-        // Delete the newly created user and OTP so they can try again once SMTP is fixed
-        await User.deleteOne({ _id: user._id });
-        await OTP.deleteMany({ email });
-        return ApiResponse.error(
-          res,
-          `Failed to send verification email: ${emailError.message}. Please configure SMTP settings.`,
-          500
-        );
-      }
+      // Delete the newly created user and OTP so they can try again
+      await User.deleteOne({ _id: user._id });
+      await OTP.deleteMany({ email });
+      return ApiResponse.error(
+        res,
+        `Failed to send verification email: ${emailError.message}.`,
+        500
+      );
     }
 
     return ApiResponse.success(
@@ -169,18 +162,11 @@ const resendOTP = async (req, res, next) => {
     try {
       await sendOTPEmail(user.fullName, email, otp);
     } catch (emailError) {
-      if (process.env.NODE_ENV !== 'production') {
-        console.warn('⚠️ Failed to send OTP email in dev:', emailError.message);
-        console.log('--------------------------------------------');
-        console.log('STUDENT RESEND OTP (DEV ONLY):', otp);
-        console.log('--------------------------------------------');
-      } else {
-        return ApiResponse.error(
-          res,
-          `Failed to resend OTP: ${emailError.message}. Please configure SMTP settings.`,
-          500
-        );
-      }
+      return ApiResponse.error(
+        res,
+        `Failed to resend OTP: ${emailError.message}.`,
+        500
+      );
     }
 
     return ApiResponse.success(res, 'OTP has been resent to your email.');
@@ -488,27 +474,17 @@ const forgotPassword = async (req, res, next) => {
     // Build reset URL
     const resetURL = `${process.env.FRONTEND_URL}/reset-password/${rawToken}`;
 
-    // Debug: Log reset link to console in development
-    if (process.env.NODE_ENV !== 'production') {
-      console.log('-----------------------------------------');
-      console.log('PASSWORD RESET LINK (DEV ONLY):');
-      console.log(resetURL);
-      console.log('-----------------------------------------');
-    }
+
 
     // Send email
     try {
       await sendResetEmail(user.fullName, sanitizedEmail, resetURL);
     } catch (emailError) {
-      if (process.env.NODE_ENV !== 'production') {
-        console.warn('⚠️ Failed to send reset email in dev:', emailError.message);
-      } else {
-        return ApiResponse.error(
-          res,
-          `Failed to send password reset email: ${emailError.message}. Please configure SMTP settings.`,
-          500
-        );
-      }
+      return ApiResponse.error(
+        res,
+        `Failed to send password reset email: ${emailError.message}.`,
+        500
+      );
     }
 
     return ApiResponse.success(res, genericMessage);
@@ -632,22 +608,15 @@ const updateVerifyEmail = async (req, res, next) => {
     try {
       await sendOTPEmail(user.fullName, newEmail, otp);
     } catch (emailError) {
-      if (process.env.NODE_ENV !== 'production') {
-        console.warn('⚠️ Failed to send OTP email in dev:', emailError.message);
-        console.log('--------------------------------------------');
-        console.log('UPDATE-EMAIL OTP (DEV ONLY):', otp);
-        console.log('--------------------------------------------');
-      } else {
-        // Roll back: revert email so the user can retry once SMTP is fixed
-        user.email = oldEmail;
-        await user.save();
-        await OTP.deleteMany({ email: newEmail });
-        return ApiResponse.error(
-          res,
-          `Failed to send verification email: ${emailError.message}. Please try again later.`,
-          500
-        );
-      }
+      // Roll back: revert email so the user can retry
+      user.email = oldEmail;
+      await user.save();
+      await OTP.deleteMany({ email: newEmail });
+      return ApiResponse.error(
+        res,
+        `Failed to send verification email: ${emailError.message}. Please try again later.`,
+        500
+      );
     }
 
     return ApiResponse.success(res, 'Email updated and new OTP sent.', { email: newEmail });
