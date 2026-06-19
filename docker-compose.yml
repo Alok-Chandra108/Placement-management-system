@@ -3,12 +3,11 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      target: production
     ports:
       - "5000:5000"
     env_file:
       - ./backend/.env
-    environment:
-      - FRONTEND_URL=http://localhost
     networks:
       - cpms-network
 

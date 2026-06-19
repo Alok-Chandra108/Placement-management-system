@@ -1,0 +1,19 @@
+services:
+  backend:
+    build:
+      target: development
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    environment:
+      - FRONTEND_URL=http://localhost:5173
+
+  frontend:
+    build:
+      target: build
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: npm run dev -- --host
