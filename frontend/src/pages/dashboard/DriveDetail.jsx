@@ -2,16 +2,16 @@ import React, { useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { motion } from 'framer-motion';
-import { 
-  ArrowLeft, 
-  Building2, 
-  MapPin, 
-  Calendar, 
-  Briefcase, 
-  GraduationCap, 
-  Users, 
-  Clock, 
-  CheckCircle2, 
+import {
+  ArrowLeft,
+  Building2,
+  MapPin,
+  Calendar,
+  Briefcase,
+  GraduationCap,
+  Users,
+  Clock,
+  CheckCircle2,
   AlertTriangle,
   ExternalLink,
   ChevronRight,
@@ -27,17 +27,17 @@ const DriveDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  
+
   const { currentDrive, isLoading, isError, message } = useSelector((state) => state.drives);
   const { applications, isLoading: isApplying, isSuccess: applicationSuccess, isError: applicationError, message: applicationMessage } = useSelector((state) => state.applications);
-  
+
   const hasApplied = applications.some(app => app.driveId?._id === id || app.driveId === id);
   const { isEligible, reason, isProfileIncomplete } = useEligibility(currentDrive);
 
   useEffect(() => {
     dispatch(getDriveById(id));
     dispatch(getMyApplicationsAction());
-    
+
     return () => {
       dispatch(clearCurrentDrive());
       dispatch(resetApplicationState());
@@ -79,7 +79,7 @@ const DriveDetail = () => {
         </div>
         <h2 className="text-2xl font-bold text-neutral-900 mb-2">Drive not found</h2>
         <p className="text-neutral-500 mb-8">{message || "The placement drive you're looking for doesn't exist or has been removed."}</p>
-        <button 
+        <button
           onClick={() => navigate('/dashboard/student/drives')}
           className="px-6 py-3 bg-neutral-900 text-white rounded-xl font-bold hover:bg-brand-orange transition-colors"
         >
@@ -108,14 +108,14 @@ const DriveDetail = () => {
     }
 
     const statusToCurrentStep = {
-      'applied':              0, // registration done, shortlisting current
-      'shortlisted':          1,
-      'not-shortlisted':      1, // stuck at shortlisting (failed)
-      'test-cleared':         2,
-      'test-failed':          2, // stuck at online test (failed)
-      'interview-scheduled':  3,
-      'selected':             4,
-      'rejected':             4,
+      'applied': 0, // registration done, shortlisting current
+      'shortlisted': 1,
+      'not-shortlisted': 1, // stuck at shortlisting (failed)
+      'test-cleared': 2,
+      'test-failed': 2, // stuck at online test (failed)
+      'interview-scheduled': 3,
+      'selected': 4,
+      'rejected': 4,
     };
 
     const currentStepIndex = statusToCurrentStep[appStatus] ?? 0;
@@ -131,18 +131,18 @@ const DriveDetail = () => {
   };
 
   const driveSteps = [
-    { name: 'Registration',        date: currentDrive.registrationDeadline, state: getStepState(0) },
-    { name: 'Shortlisting',        date: null,                              state: getStepState(1) },
-    { name: 'Online Test',         date: currentDrive.driveDate,            state: getStepState(2) },
-    { name: 'Technical Interview', date: null,                              state: getStepState(3) },
-    { name: 'HR Interview',        date: null,                              state: getStepState(4) },
+    { name: 'Registration', date: currentDrive.registrationDeadline, state: getStepState(0) },
+    { name: 'Shortlisting', date: null, state: getStepState(1) },
+    { name: 'Online Test', date: currentDrive.driveDate, state: getStepState(2) },
+    { name: 'Technical Interview', date: null, state: getStepState(3) },
+    { name: 'HR Interview', date: null, state: getStepState(4) },
   ];
 
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Back Button */}
-      <Link 
+      <Link
         to="/dashboard/student/drives"
         className="inline-flex items-center text-neutral-500 hover:text-brand-orange font-bold mb-8 group transition-colors"
       >
@@ -154,15 +154,15 @@ const DriveDetail = () => {
         {/* Left Column: Main Info */}
         <div className="lg:col-span-2 space-y-8">
           {/* Company Header */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="bg-white rounded-3xl border border-neutral-100 p-8 shadow-sm"
           >
             <div className="flex flex-col sm:flex-row sm:items-center gap-6 mb-8">
-              <CompanyLogo 
-                logo={currentDrive.companyLogo} 
-                companyName={currentDrive.companyName} 
+              <CompanyLogo
+                logo={currentDrive.companyLogo}
+                companyName={currentDrive.companyName}
                 className="w-20 h-20 bg-neutral-50 rounded-3xl flex items-center justify-center border border-neutral-100 shadow-inner overflow-hidden shrink-0"
                 iconClassName="w-10 h-10 text-neutral-400"
               />
@@ -174,11 +174,10 @@ const DriveDetail = () => {
                 </div>
               </div>
               <div className="sm:ml-auto flex flex-col items-end gap-2">
-                <span className={`px-4 py-2 rounded-full text-xs font-extrabold uppercase tracking-widest border ${
-                  isProfileIncomplete ? 'border-amber-200 bg-amber-50 text-amber-700' :
-                  !isEligible ? 'border-rose-200 bg-rose-50 text-rose-700' :
-                  'border-emerald-200 bg-emerald-50 text-emerald-700'
-                }`}>
+                <span className={`px-4 py-2 rounded-full text-xs font-extrabold uppercase tracking-widest border ${isProfileIncomplete ? 'border-amber-200 bg-amber-50 text-amber-700' :
+                    !isEligible ? 'border-rose-200 bg-rose-50 text-rose-700' :
+                      'border-emerald-200 bg-emerald-50 text-emerald-700'
+                  }`}>
                   {isProfileIncomplete ? 'Incomplete Profile' : !isEligible ? 'Not Eligible' : currentDrive.status}
                 </span>
                 {!isEligible && (
@@ -208,7 +207,7 @@ const DriveDetail = () => {
           </motion.div>
 
           {/* Job Description */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
@@ -224,7 +223,7 @@ const DriveDetail = () => {
           </motion.div>
 
           {/* Recruitment Timeline */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
@@ -234,20 +233,19 @@ const DriveDetail = () => {
               <Clock className="w-5 h-5 mr-3 text-brand-orange" />
               Recruitment Process
             </h2>
-            
+
             <div className="relative">
               {/* Vertical Line */}
               <div className="absolute left-[11px] top-2 bottom-2 w-0.5 bg-neutral-100"></div>
-              
+
               <div className="space-y-8 relative">
                 {driveSteps.map((step, index) => (
                   <div key={index} className="flex items-start gap-6 group">
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 z-10 transition-colors ${
-                      step.state === 'completed' ? 'bg-emerald-500 text-white' :
-                      step.state === 'current'   ? 'bg-brand-orange text-white shadow-lg shadow-brand-orange/30' :
-                      step.state === 'failed'    ? 'bg-rose-500 text-white' :
-                      'bg-neutral-100 text-neutral-400'
-                    }`}>
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 z-10 transition-colors ${step.state === 'completed' ? 'bg-emerald-500 text-white' :
+                        step.state === 'current' ? 'bg-brand-orange text-white shadow-lg shadow-brand-orange/30' :
+                          step.state === 'failed' ? 'bg-rose-500 text-white' :
+                            'bg-neutral-100 text-neutral-400'
+                      }`}>
                       {step.state === 'completed' ? (
                         <CheckCircle2 className="w-4 h-4" />
                       ) : step.state === 'failed' ? (
@@ -257,11 +255,10 @@ const DriveDetail = () => {
                       )}
                     </div>
                     <div>
-                      <h3 className={`font-bold transition-colors ${
-                        step.state === 'upcoming' ? 'text-neutral-400' :
-                        step.state === 'failed'   ? 'text-rose-500 line-through' :
-                        'text-neutral-900'
-                      }`}>
+                      <h3 className={`font-bold transition-colors ${step.state === 'upcoming' ? 'text-neutral-400' :
+                          step.state === 'failed' ? 'text-rose-500 line-through' :
+                            'text-neutral-900'
+                        }`}>
                         {step.name}
                       </h3>
                       {step.date && (
@@ -281,7 +278,7 @@ const DriveDetail = () => {
         {/* Right Column: Sticky Sidebar - both cards in one sticky wrapper */}
         <div className="sticky top-8 space-y-6 self-start">
           {/* Eligibility Card */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             className="bg-white rounded-3xl border border-neutral-100 p-8 shadow-sm"
@@ -326,21 +323,20 @@ const DriveDetail = () => {
               </div>
             </div>
 
-            <button 
+            <button
               onClick={handleApply}
               disabled={currentDrive.status === 'closed' || isDeadlinePassed || !isEligible || isProfileIncomplete || hasApplied || isApplying}
-              className={`w-full py-4 rounded-2xl font-extrabold text-lg shadow-xl transition-all duration-300 flex items-center justify-center gap-2 ${
-                currentDrive.status === 'closed' || isDeadlinePassed || !isEligible || isProfileIncomplete || hasApplied || isApplying
-                ? 'bg-neutral-100 text-neutral-400 cursor-not-allowed'
-                : 'bg-neutral-900 text-white hover:bg-brand-orange hover:shadow-brand-orange/30'
-              }`}
+              className={`w-full py-4 rounded-2xl font-extrabold text-lg shadow-xl transition-all duration-300 flex items-center justify-center gap-2 ${currentDrive.status === 'closed' || isDeadlinePassed || !isEligible || isProfileIncomplete || hasApplied || isApplying
+                  ? 'bg-neutral-100 text-neutral-400 cursor-not-allowed'
+                  : 'bg-neutral-900 text-white hover:bg-brand-orange hover:shadow-brand-orange/30'
+                }`}
             >
-              {isApplying ? 'Processing...' : 
-               hasApplied ? 'Already Applied' : 
-               currentDrive.status === 'closed' ? 'Application Closed' : 
-               isDeadlinePassed ? 'Deadline Passed' : 
-               !isEligible ? 'Not Eligible' : 
-               isProfileIncomplete ? 'Complete Profile' : 'Apply Now'}
+              {isApplying ? 'Processing...' :
+                hasApplied ? 'Already Applied' :
+                  currentDrive.status === 'closed' ? 'Application Closed' :
+                    isDeadlinePassed ? 'Deadline Passed' :
+                      !isEligible ? 'Not Eligible' :
+                        isProfileIncomplete ? 'Complete Profile' : 'Apply Now'}
               {currentDrive.status === 'open' && !isDeadlinePassed && isEligible && !isProfileIncomplete && !hasApplied && !isApplying && <ExternalLink className="w-5 h-5" />}
             </button>
             <p className={`text-center text-[11px] font-bold mt-4 uppercase tracking-widest ${isDeadlinePassed || !isEligible ? 'text-rose-500' : 'text-neutral-400'}`}>
