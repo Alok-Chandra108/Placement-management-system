@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Shield, Users, Briefcase, GraduationCap, Clock } from 'lucide-react';
+import { Shield, Users, Briefcase, GraduationCap, Clock, Megaphone, ChevronRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import useAuth from '../../../hooks/useAuth';
 import { getDashboardStats } from '../../../services/admin.service';
 
@@ -56,7 +57,6 @@ const AdminOverview = () => {
               <div className={`p-2.5 rounded-xl ${stat.bg}`}>
                 <stat.icon className={`h-5 w-5 ${stat.color}`} />
               </div>
-              <span className="text-xs font-medium text-neutral-400 uppercase tracking-wider">Phase 2</span>
             </div>
             <div>
               {isLoading ? (
@@ -70,15 +70,43 @@ const AdminOverview = () => {
         ))}
       </div>
 
-      {/* Placeholder for recent activity */}
-      <div className="bg-white rounded-2xl border border-neutral-200 p-8 flex flex-col items-center justify-center text-center min-h-[300px]">
-        <div className="h-16 w-16 rounded-full bg-neutral-50 flex items-center justify-center mb-4">
-          <Shield className="h-8 w-8 text-neutral-300" />
+      {/* Quick Actions */}
+      <div className="bg-white rounded-2xl border border-neutral-200 p-8">
+        <h3 className="text-lg font-semibold text-neutral-900 mb-6 flex items-center">
+          <Shield className="h-5 w-5 mr-2 text-brand-blue" />
+          Quick Actions
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Link to="/dashboard/admin/drives" className="flex items-center justify-between p-4 rounded-xl border border-neutral-100 hover:border-brand-blue/30 hover:bg-brand-blue/5 transition-all group">
+            <div className="flex items-center">
+              <div className="p-2 bg-brand-blue-light text-brand-blue rounded-lg mr-3">
+                <Briefcase className="h-5 w-5" />
+              </div>
+              <span className="font-medium text-neutral-700 group-hover:text-brand-blue transition-colors">Manage Drives</span>
+            </div>
+            <ChevronRight className="h-4 w-4 text-neutral-400 group-hover:text-brand-blue transition-colors" />
+          </Link>
+          
+          <Link to="/dashboard/admin/students" className="flex items-center justify-between p-4 rounded-xl border border-neutral-100 hover:border-emerald-600/30 hover:bg-emerald-50 transition-all group">
+            <div className="flex items-center">
+              <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg mr-3">
+                <Users className="h-5 w-5" />
+              </div>
+              <span className="font-medium text-neutral-700 group-hover:text-emerald-600 transition-colors">Student Directory</span>
+            </div>
+            <ChevronRight className="h-4 w-4 text-neutral-400 group-hover:text-emerald-600 transition-colors" />
+          </Link>
+
+          <Link to="/dashboard/admin/notices" className="flex items-center justify-between p-4 rounded-xl border border-neutral-100 hover:border-brand-orange/30 hover:bg-brand-orange-light transition-all group">
+            <div className="flex items-center">
+              <div className="p-2 bg-brand-orange-light text-brand-orange rounded-lg mr-3">
+                <Megaphone className="h-5 w-5" />
+              </div>
+              <span className="font-medium text-neutral-700 group-hover:text-brand-orange transition-colors">Notice Board</span>
+            </div>
+            <ChevronRight className="h-4 w-4 text-neutral-400 group-hover:text-brand-orange transition-colors" />
+          </Link>
         </div>
-        <h3 className="text-lg font-semibold text-neutral-900">System Monitoring</h3>
-        <p className="text-neutral-500 max-w-sm mt-2">
-          The administrative control panel is being initialized. Full management features will be available in Phase 2.
-        </p>
       </div>
     </motion.div>
   );
