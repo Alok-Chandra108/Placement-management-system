@@ -10,7 +10,9 @@ import {
   LogOut, 
   Menu, 
   X,
-  Shield
+  Shield,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import useAuth from '../../hooks/useAuth';
@@ -24,8 +26,24 @@ const adminNavItems = [
   { label: 'Settings', icon: Settings, to: '/dashboard/admin/settings' },
 ];
 
+const sidebarVariants = {
+  expanded: { width: 260 },
+  collapsed: { width: 76 },
+};
+
+const mobileOverlayVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1 },
+};
+
+const mobilePanelVariants = {
+  hidden: { x: '-100%' },
+  visible: { x: 0, transition: { type: 'spring', stiffness: 300, damping: 30 } },
+};
+
 const AdminLayout = ({ children }) => {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   const { user } = useAuth();
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -42,113 +60,129 @@ const AdminLayout = ({ children }) => {
     .toUpperCase()
     .slice(0, 2) || 'AD';
 
-  return (
-    <div className="flex min-h-screen bg-neutral-50 font-sans text-neutral-900">
-      {/* Sidebar (Desktop) */}
-      <aside className="hidden lg:flex flex-col w-64 fixed inset-y-0 bg-white border-r border-neutral-200 z-30">
-        <div className="flex items-center gap-3 px-6 h-16 border-b border-neutral-100">
-          <div className="h-8 w-8 rounded-lg bg-brand-orange flex items-center justify-center">
+  const renderNav = (isMobile = false) => (
+    <div className="flex flex-col h-full">
+      {/* Logo Area */}
+      <div className={`flex items-center px-5 pt-6 pb-5 border-b border-neutral-200/60 ${(!isMobile && collapsed) ? 'justify-center px-3' : ''}`}>
+        {(!isMobile && collapsed) ? (
+          <div className="h-8 w-8 rounded-lg bg-brand-orange flex items-center justify-center flex-shrink-0">
             <Shield className="h-5 w-5 text-white" />
           </div>
-          <span className="font-bold text-lg tracking-tight">Admin Portal</span>
-        </div>
+        ) : (
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-8 rounded-lg bg-brand-orange flex items-center justify-center flex-shrink-0">
+              <Shield className="h-5 w-5 text-white" />
+            </div>
+            <span className="font-bold text-lg tracking-tight whitespace-nowrap">Admin Portal</span>
+          </div>
+        )}
+      </div>
 
-        <nav className="flex-1 px-4 py-6 space-y-1">
-          {adminNavItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === '/dashboard/admin'}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200
-                ${isActive
-                  ? 'bg-brand-orange/10 text-brand-orange'
-                  : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900'
-                }`
+      {/* Navigation */}
+      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto custom-scrollbar">
+        {adminNavItems.map((item) => (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            end={item.to === '/dashboard/admin'}
+            onClick={isMobile ? () => setIsMobileOpen(false) : undefined}
+            className={({ isActive }) =>
+              `group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 relative
+              ${isActive
+                ? 'bg-brand-orange/10 text-brand-orange'
+                : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900'
               }
-            >
-              <item.icon className="h-[18px] w-[18px]" />
-              {item.label}
-            </NavLink>
-          ))}
-        </nav>
-
-        <div className="p-4 border-t border-neutral-100">
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-500 hover:bg-red-50 transition-colors"
+              ${(!isMobile && collapsed) ? 'justify-center px-2' : ''}`
+            }
           >
-            <LogOut className="h-[18px] w-[18px]" />
-            Logout
-          </button>
-        </div>
-      </aside>
+            {({ isActive }) => (
+              <>
+                <item.icon className={`h-[18px] w-[18px] flex-shrink-0 transition-colors ${isActive ? 'text-brand-orange' : 'text-neutral-400 group-hover:text-neutral-600'}`} />
+                {(isMobile || !collapsed) && (
+                  <span className="whitespace-nowrap flex-1">{item.label}</span>
+                )}
+              </>
+            )}
+          </NavLink>
+        ))}
+      </nav>
 
-      {/* Mobile Sidebar */}
+      {/* Bottom Section */}
+      <div className={`px-3 pb-5 space-y-1 border-t border-neutral-200/60 pt-3 ${(!isMobile && collapsed) ? 'px-2' : ''}`}>
+        <button
+          onClick={handleLogout}
+          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-500 hover:bg-red-50 hover:text-red-600 transition-all duration-200 ${(!isMobile && collapsed) ? 'justify-center px-2' : ''}`}
+        >
+          <LogOut className="h-[18px] w-[18px] flex-shrink-0" />
+          {(isMobile || !collapsed) && <span>Logout</span>}
+        </button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="flex min-h-screen bg-neutral-50 font-sans text-neutral-900">
+      {/* Desktop Sidebar */}
+      <motion.aside
+        variants={sidebarVariants}
+        initial={false}
+        animate={collapsed ? 'collapsed' : 'expanded'}
+        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+        className="hidden lg:flex flex-col fixed left-0 top-0 h-screen bg-white border-r border-neutral-200 z-30 select-none"
+      >
+        {renderNav(false)}
+
+        {/* Collapse Toggle */}
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className="absolute -right-3 top-20 h-6 w-6 bg-white border border-neutral-200 rounded-full flex items-center justify-center shadow-sm hover:shadow-md transition-shadow text-neutral-400 hover:text-neutral-700"
+        >
+          {collapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
+        </button>
+      </motion.aside>
+
+      {/* Desktop spacer — pushes main content */}
+      <motion.div
+        className="hidden lg:block flex-shrink-0"
+        initial={false}
+        animate={{ width: collapsed ? 76 : 260 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+      />
+
+      {/* Mobile Overlay */}
       <AnimatePresence>
         {isMobileOpen && (
           <>
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsMobileOpen(false)}
+              variants={mobileOverlayVariants}
+              initial="hidden"
+              animate="visible"
+              exit="hidden"
               className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden"
+              onClick={() => setIsMobileOpen(false)}
             />
             <motion.aside
-              initial={{ x: '-100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '-100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed inset-y-0 left-0 w-72 bg-white z-50 shadow-2xl lg:hidden flex flex-col"
+              variants={mobilePanelVariants}
+              initial="hidden"
+              animate="visible"
+              exit="hidden"
+              className="fixed left-0 top-0 h-screen w-72 bg-white z-50 shadow-2xl lg:hidden"
             >
-              <div className="flex items-center justify-between px-6 h-16 border-b border-neutral-100">
-                <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-lg bg-brand-orange flex items-center justify-center">
-                    <Shield className="h-5 w-5 text-white" />
-                  </div>
-                  <span className="font-bold text-lg tracking-tight">Admin Portal</span>
-                </div>
-                <button onClick={() => setIsMobileOpen(false)} className="p-2 -mr-2 text-neutral-500">
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-              <nav className="flex-1 px-4 py-6 space-y-1">
-                {adminNavItems.map((item) => (
-                  <NavLink
-                    key={item.to}
-                    to={item.to}
-                    end={item.to === '/dashboard/admin'}
-                    onClick={() => setIsMobileOpen(false)}
-                    className={({ isActive }) =>
-                      `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200
-                      ${isActive
-                        ? 'bg-brand-orange/10 text-brand-orange'
-                        : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900'
-                      }`
-                    }
-                  >
-                    <item.icon className="h-[18px] w-[18px]" />
-                    {item.label}
-                  </NavLink>
-                ))}
-              </nav>
-              <div className="p-4 border-t border-neutral-100">
-                <button
-                  onClick={handleLogout}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-500 hover:bg-red-50 transition-colors"
-                >
-                  <LogOut className="h-[18px] w-[18px]" />
-                  Logout
-                </button>
-              </div>
+              {/* Close button */}
+              <button
+                onClick={() => setIsMobileOpen(false)}
+                className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-neutral-100 text-neutral-400 hover:text-neutral-700 transition-colors z-50"
+              >
+                <X className="h-5 w-5" />
+              </button>
+              {renderNav(true)}
             </motion.aside>
           </>
         )}
       </AnimatePresence>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 lg:pl-64">
+      <div className="flex-1 flex flex-col min-w-0">
         {/* Topbar */}
         <header className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-neutral-200/60">
           <div className="flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
@@ -195,3 +229,4 @@ const AdminLayout = ({ children }) => {
 };
 
 export default AdminLayout;
+
