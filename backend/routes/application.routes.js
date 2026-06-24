@@ -12,6 +12,7 @@ router.get('/my-applications', restrictToRoles(ROLES.STUDENT), applicationContro
 
 // Admin/HR Routes
 router.get('/drive/:driveId', restrictToRoles(ROLES.ADMIN, ROLES.HR), applicationController.getDriveApplications);
+router.patch('/bulk-status', restrictToRoles(ROLES.ADMIN, ROLES.HR), applicationController.updateBulkApplicationStatus);
 router.patch('/:applicationId/status', restrictToRoles(ROLES.ADMIN, ROLES.HR), applicationController.updateApplicationStatus);
 
 module.exports = router;

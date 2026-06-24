@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo, Suspense } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { getDriveApplications } from '../../../api/applicationApi';
-import { Download, Search, ArrowLeft, GraduationCap, Building2, ExternalLink, Loader2 } from 'lucide-react';
+import { getDriveApplications, updateBulkApplicationStatus } from '../../../api/applicationApi';
+import { Download, Search, ArrowLeft, GraduationCap, Building2, ExternalLink, Loader2, X, Check } from 'lucide-react';
 import ApplicationStatusManager from './components/ApplicationStatusManager';
 import { toast } from 'react-hot-toast';
 
@@ -103,6 +103,21 @@ const DriveApplicationsPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: 'appliedAt', direction: 'desc' });
   const [activeTab, setActiveTab] = useState('applications'); // 'applications' | 'analytics'
+  const [selectedAppIds, setSelectedAppIds] = useState([]);
+  const [isBulkStatusModalOpen, setIsBulkStatusModalOpen] = useState(false);
+  const [bulkStatusToApply, setBulkStatusToApply] = useState('shortlisted');
+  const [isBulkUpdating, setIsBulkUpdating] = useState(false);
+
+  const statuses = [
+    { value: 'applied', label: 'Applied' },
+    { value: 'shortlisted', label: 'Shortlisted' },
+    { value: 'not-shortlisted', label: 'Not Shortlisted' },
+    { value: 'test-cleared', label: 'Test Cleared' },
+    { value: 'test-failed', label: 'Test Failed' },
+    { value: 'interview-scheduled', label: 'Interview Scheduled' },
+    { value: 'selected', label: 'Selected' },
+    { value: 'rejected', label: 'Rejected' },
+  ];
 
   useEffect(() => {
     const fetchApplications = async () => {
@@ -125,6 +140,40 @@ const DriveApplicationsPage = () => {
     setApplications(prev => prev.map(app => 
       app._id === appId ? { ...app, status: newStatus } : app
     ));
+  };
+
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      setSelectedAppIds(filteredAndSortedApps.map(app => app._id));
+    } else {
+      setSelectedAppIds([]);
+    }
+  };
+
+  const handleSelectOne = (appId) => {
+    setSelectedAppIds(prev => 
+      prev.includes(appId) ? prev.filter(id => id !== appId) : [...prev, appId]
+    );
+  };
+
+  const handleBulkStatusUpdate = async () => {
+    if (selectedAppIds.length === 0) return;
+    try {
+      setIsBulkUpdating(true);
+      await updateBulkApplicationStatus(selectedAppIds, bulkStatusToApply);
+      
+      setApplications(prev => prev.map(app => 
+        selectedAppIds.includes(app._id) ? { ...app, status: bulkStatusToApply } : app
+      ));
+      
+      toast.success(`Successfully updated ${selectedAppIds.length} applications`);
+      setIsBulkStatusModalOpen(false);
+      setSelectedAppIds([]);
+    } catch (error) {
+      toast.error('Failed to update applications');
+    } finally {
+      setIsBulkUpdating(false);
+    }
   };
 
   const filteredAndSortedApps = useMemo(() => {
@@ -251,12 +300,33 @@ const DriveApplicationsPage = () => {
               className="w-full pl-11 pr-4 py-2.5 rounded-xl border-neutral-200 text-sm focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue transition-all"
             />
           </div>
+          {selectedAppIds.length > 0 && (
+            <div className="flex items-center gap-4 bg-brand-blue/10 px-4 py-2 rounded-xl border border-brand-blue/20">
+              <span className="text-sm font-semibold text-brand-blue">
+                {selectedAppIds.length} selected
+              </span>
+              <button
+                onClick={() => setIsBulkStatusModalOpen(true)}
+                className="px-4 py-1.5 bg-brand-blue text-white text-sm font-medium rounded-lg hover:bg-brand-blue/90 transition-colors"
+              >
+                Change Status
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm text-neutral-600">
             <thead className="text-xs uppercase bg-neutral-50/80 text-neutral-500 font-semibold border-b border-neutral-100">
               <tr>
+                <th className="px-6 py-4 w-12">
+                  <input 
+                    type="checkbox" 
+                    className="w-4 h-4 rounded border-neutral-300 text-brand-blue focus:ring-brand-blue cursor-pointer"
+                    checked={filteredAndSortedApps.length > 0 && selectedAppIds.length === filteredAndSortedApps.length}
+                    onChange={handleSelectAll}
+                  />
+                </th>
                 <th className="px-6 py-4 cursor-pointer hover:text-brand-blue" onClick={() => requestSort('name')}>
                   Applicant {sortConfig.key === 'name' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                 </th>
@@ -274,13 +344,21 @@ const DriveApplicationsPage = () => {
             <tbody className="divide-y divide-neutral-100/80">
               {filteredAndSortedApps.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="px-6 py-12 text-center text-neutral-400">
+                  <td colSpan="7" className="px-6 py-12 text-center text-neutral-400">
                     No applicants found matching your criteria.
                   </td>
                 </tr>
               ) : (
                 filteredAndSortedApps.map((app) => (
-                  <tr key={app._id} className="hover:bg-neutral-50/50 transition-colors group">
+                  <tr key={app._id} className={`hover:bg-neutral-50/50 transition-colors group ${selectedAppIds.includes(app._id) ? 'bg-brand-blue/5' : ''}`}>
+                    <td className="px-6 py-4">
+                      <input 
+                        type="checkbox" 
+                        className="w-4 h-4 rounded border-neutral-300 text-brand-blue focus:ring-brand-blue cursor-pointer"
+                        checked={selectedAppIds.includes(app._id)}
+                        onChange={() => handleSelectOne(app._id)}
+                      />
+                    </td>
                     <td className="px-6 py-4">
                       <div className="font-bold text-neutral-900">{app.studentId?.name || 'Unknown'}</div>
                       <div className="text-xs text-neutral-500 font-medium mt-0.5">{app.studentId?.rollNumber}</div>
@@ -335,6 +413,71 @@ const DriveApplicationsPage = () => {
           </table>
         </div>
       </div>
+      )}
+      {/* Bulk Status Update Modal */}
+      {isBulkStatusModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-5 border-b border-neutral-100 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-neutral-900">Update Status for {selectedAppIds.length} Students</h3>
+              <button 
+                onClick={() => setIsBulkStatusModalOpen(false)}
+                className="p-2 text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-5 overflow-y-auto">
+              <div className="mb-4">
+                <label className="block text-sm font-semibold text-neutral-700 mb-2">Selected Students:</label>
+                <div className="bg-neutral-50 border border-neutral-200 rounded-xl p-3 max-h-40 overflow-y-auto">
+                  <ul className="space-y-1">
+                    {applications.filter(app => selectedAppIds.includes(app._id)).map(app => (
+                      <li key={app._id} className="text-sm text-neutral-600 flex justify-between">
+                        <span className="font-medium">{app.studentId?.name || 'Unknown'}</span>
+                        <span className="text-neutral-400 text-xs">{app.studentId?.rollNumber}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-semibold text-neutral-700 mb-2">New Status:</label>
+                <select
+                  value={bulkStatusToApply}
+                  onChange={(e) => setBulkStatusToApply(e.target.value)}
+                  className="w-full rounded-xl border border-neutral-200 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-blue/20 transition-colors"
+                >
+                  {statuses.map(s => (
+                    <option key={s.value} value={s.value}>{s.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            
+            <div className="p-5 border-t border-neutral-100 bg-neutral-50 flex justify-end gap-3">
+              <button
+                onClick={() => setIsBulkStatusModalOpen(false)}
+                className="px-4 py-2 text-sm font-semibold text-neutral-600 hover:bg-neutral-200 rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleBulkStatusUpdate}
+                disabled={isBulkUpdating}
+                className="px-4 py-2 bg-brand-blue text-white text-sm font-semibold rounded-xl hover:bg-brand-blue/90 transition-colors flex items-center disabled:opacity-50"
+              >
+                {isBulkUpdating ? (
+                  <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Updating...</>
+                ) : (
+                  <><Check className="w-4 h-4 mr-2" /> Confirm Update</>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

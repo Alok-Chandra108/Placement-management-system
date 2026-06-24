@@ -20,3 +20,8 @@ export const updateApplicationStatus = async (applicationId, data) => {
   const response = await api.patch(`/applications/${applicationId}/status`, data);
   return response.data;
 };
+
+export const updateBulkApplicationStatus = async (applicationIds, status, remarks) => {
+  const response = await api.patch(`/applications/bulk-status`, { applicationIds, status, remarks });
+  return response.data;
+};

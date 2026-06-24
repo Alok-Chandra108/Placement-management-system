@@ -224,3 +224,69 @@ exports.updateApplicationStatus = async (req, res, next) => {
     next(error);
   }
 };
+
+/**
+ * Bulk update application statuses (Admin/HR only)
+ * PATCH /api/applications/bulk-status
+ */
+exports.updateBulkApplicationStatus = async (req, res, next) => {
+  try {
+    const { applicationIds, status, remarks } = req.body;
+
+    if (!applicationIds || !Array.isArray(applicationIds) || applicationIds.length === 0) {
+      return ApiResponse.error(res, 'Application IDs are required', 400);
+    }
+
+    const validStatuses = ['applied', 'shortlisted', 'not-shortlisted', 'test-cleared', 'test-failed', 'interview-scheduled', 'selected', 'rejected'];
+    
+    if (!validStatuses.includes(status)) {
+      return ApiResponse.error(res, 'Invalid status', 400);
+    }
+
+    // Update all at once
+    const updateData = { status };
+    if (remarks !== undefined) {
+      updateData.remarks = remarks;
+    }
+
+    await Application.updateMany(
+      { _id: { $in: applicationIds } },
+      { $set: updateData }
+    );
+
+    // Send emails for all
+    const notifiableStatuses = [
+      'shortlisted', 'not-shortlisted',
+      'test-cleared', 'test-failed',
+      'interview-scheduled', 'selected', 'rejected'
+    ];
+
+    if (notifiableStatuses.includes(status)) {
+      try {
+        const applications = await Application.find({ _id: { $in: applicationIds } });
+        for (const application of applications) {
+          const studentUser = await User.findById(application.studentId).select('fullName email');
+          const drive = await Drive.findById(application.driveId).select('companyName jobRole');
+
+          if (studentUser && drive) {
+             // Let it run asynchronously to avoid blocking the response for too long
+             sendStatusUpdateEmail(
+              studentUser.fullName,
+              studentUser.email,
+              drive.companyName,
+              drive.jobRole,
+              status,
+              remarks || ''
+            ).catch(err => console.error('Bulk status email notification failed:', err.message));
+          }
+        }
+      } catch (emailErr) {
+        console.error('Bulk status email notification lookup failed:', emailErr.message);
+      }
+    }
+
+    return ApiResponse.success(res, 'Applications status updated successfully');
+  } catch (error) {
+    next(error);
+  }
+};
