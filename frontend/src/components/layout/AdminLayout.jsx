@@ -17,6 +17,8 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import useAuth from '../../hooks/useAuth';
 import { logoutUser } from '../../features/auth/authThunks';
+import miteLogo from '../../assets/mite-logo.png';
+import miteIcon from '../../assets/mite-icon.svg';
 
 const adminNavItems = [
   { label: 'Overview', icon: LayoutDashboard, to: '/dashboard/admin' },
@@ -65,15 +67,12 @@ const AdminLayout = ({ children }) => {
       {/* Logo Area */}
       <div className={`flex items-center px-5 pt-6 pb-5 border-b border-neutral-200/60 ${(!isMobile && collapsed) ? 'justify-center px-3' : ''}`}>
         {(!isMobile && collapsed) ? (
-          <div className="h-8 w-8 rounded-lg bg-brand-orange flex items-center justify-center flex-shrink-0">
-            <Shield className="h-5 w-5 text-white" />
-          </div>
+          <img src={miteIcon} alt="MITE Icon" className="h-8 w-8 flex-shrink-0" />
         ) : (
-          <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-lg bg-brand-orange flex items-center justify-center flex-shrink-0">
-              <Shield className="h-5 w-5 text-white" />
-            </div>
-            <span className="font-bold text-lg tracking-tight whitespace-nowrap">Admin Portal</span>
+          <div className="flex items-center">
+            <img src={miteIcon} alt="MITE Icon" className="h-7 w-7 flex-shrink-0" />
+            <div className="w-[1.5px] h-6 bg-neutral-300 mx-3 rounded-full flex-shrink-0" />
+            <img src={miteLogo} alt="MITE Logo" className="h-8 w-auto flex-shrink-0" />
           </div>
         )}
       </div>
