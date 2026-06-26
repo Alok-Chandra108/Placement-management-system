@@ -58,9 +58,9 @@ const noticeSchema = new mongoose.Schema(
  * Admin bypasses this by passing { isActive: { $exists: true } } in the filter,
  * which signals "raw" access (no default filtering applied).
  */
-noticeSchema.pre(/^find/, function () {
+noticeSchema.pre(/^(find|count)/, function () {
   if (this.getFilter().isActive === undefined) {
-    this.where({ isActive: true, isArchived: false });
+    this.where({ isActive: true, isArchived: { $ne: true } });
   }
 });
 

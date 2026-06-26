@@ -285,7 +285,7 @@ exports.runAutoArchive = async () => {
 
   const result = await Notice.updateMany(
     {
-      isArchived: false,
+      isArchived: { $ne: true },
       isActive: true,
       createdAt: { $lt: cutoff },
     },
