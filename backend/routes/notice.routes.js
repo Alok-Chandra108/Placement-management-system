@@ -5,6 +5,9 @@ const {
   getNoticeById,
   deleteNotice,
   updateNotice,
+  archiveNotice,
+  restoreNotice,
+  getArchivedNotices,
 } = require('../controllers/notice.controller');
 const { verifyAccessToken, restrictToRoles } = require('../middleware/auth.middleware');
 const { validateRequest } = require('../middleware/validateRequest.middleware');
@@ -17,6 +20,12 @@ const router = express.Router();
 
 // Apply token verification to all notice routes
 router.use(verifyAccessToken);
+
+// ── Admin-only: Archive management ──────────────────────────────────────────────
+// IMPORTANT: /archived must be defined BEFORE /:id to avoid route collision
+router.get('/archived', restrictToRoles('admin', 'hr'), getArchivedNotices);
+router.patch('/:id/archive', restrictToRoles('admin', 'hr'), archiveNotice);
+router.patch('/:id/restore', restrictToRoles('admin', 'hr'), restoreNotice);
 
 // Route: /api/notices
 router
@@ -32,5 +41,3 @@ router
   .delete(restrictToRoles('admin', 'hr'), deleteNotice); // Admin / HR only
 
 module.exports = router;
-
- 

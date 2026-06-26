@@ -1,6 +1,7 @@
 require('dotenv').config();
 const app = require('./app');
 const connectDB = require('./config/db');
+const { startNoticeArchiveCron } = require('./services/noticeArchiveCron');
 
 const PORT = process.env.PORT || 5000;
 
@@ -8,6 +9,9 @@ const PORT = process.env.PORT || 5000;
 const startServer = async () => {
   try {
     await connectDB();
+
+    // Start scheduled background jobs
+    startNoticeArchiveCron();
 
     app.listen(PORT, () => {
       console.log(`\n Server running on port ${PORT}`);
@@ -21,3 +25,4 @@ const startServer = async () => {
 };
 
 startServer();
+

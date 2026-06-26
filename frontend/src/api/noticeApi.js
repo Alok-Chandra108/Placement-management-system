@@ -1,8 +1,8 @@
 import api from './axiosInstance';
 
 /**
- * Fetch all active notices
- * @param {Object} params - Query params (e.g., limit, page, category)
+ * Fetch all active (non-archived) notices
+ * @param {Object} params - Query params (e.g., limit, page, category, search)
  */
 export const fetchNotices = async (params = {}) => {
   const response = await api.get('/notices', { params });
@@ -38,10 +38,41 @@ export const updateNotice = async (id, noticeData) => {
 };
 
 /**
- * Delete a notice (soft delete)
+ * Delete a notice (soft delete — sets isActive=false)
  * @param {String} id - Notice ID
  */
 export const deleteNotice = async (id) => {
   const response = await api.delete(`/notices/${id}`);
+  return response.data;
+};
+
+// ── Archive API ────────────────────────────────────────────────────────────────
+
+/**
+ * Fetch all archived notices (admin/hr only)
+ * @param {Object} params - Query params (e.g., limit, page, category, search)
+ */
+export const fetchArchivedNotices = async (params = {}) => {
+  const response = await api.get('/notices/archived', { params });
+  return response.data;
+};
+
+/**
+ * Manually archive a notice (admin/hr only)
+ * Immediately hides the notice from the student dashboard
+ * @param {String} id - Notice ID
+ */
+export const archiveNoticeById = async (id) => {
+  const response = await api.patch(`/notices/${id}/archive`);
+  return response.data;
+};
+
+/**
+ * Restore an archived notice back to active (admin/hr only)
+ * Notice reappears on student dashboard immediately
+ * @param {String} id - Notice ID
+ */
+export const restoreNoticeById = async (id) => {
+  const response = await api.patch(`/notices/${id}/restore`);
   return response.data;
 };

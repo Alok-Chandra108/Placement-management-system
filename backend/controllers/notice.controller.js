@@ -1,6 +1,10 @@
 const Notice = require('../models/Notice.model');
 const ApiResponse = require('../utils/ApiResponse');
 
+// ── Timeframe Constants ────────────────────────────────────────────────────────
+const ARCHIVE_AFTER_DAYS = 30;  // Auto-archive active notices after 30 days
+const PURGE_AFTER_DAYS   = 60;  // Permanently delete archived notices after 60 days
+
 /**
  * @desc    Create a new notice
  * @route   POST /api/notices
@@ -29,14 +33,14 @@ exports.createNotice = async (req, res, next) => {
 };
 
 /**
- * @desc    Get all active notices (with optional filtering & limit)
+ * @desc    Get all active (non-archived) notices (with optional filtering & limit)
  * @route   GET /api/notices
  * @access  Private (All logged-in users)
  * @query   category=Urgent|Placement|General, limit=3, page=1
  */
 exports.getAllNotices = async (req, res, next) => {
   try {
-    const filter = {}; // isActive: true is applied automatically by pre-find hook
+    const filter = {}; // isActive: true AND isArchived: false applied automatically by pre-find hook
 
     if (req.query.category && typeof req.query.category === 'string') {
       filter.category = req.query.category;
@@ -65,6 +69,52 @@ exports.getAllNotices = async (req, res, next) => {
     ]);
 
     return ApiResponse.success(res, 'Notices fetched successfully', {
+      notices,
+      total,
+      page,
+      pages: limit > 0 ? Math.ceil(total / limit) : 1,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Get all archived notices — sorted by archivedAt descending
+ * @route   GET /api/notices/archived
+ * @access  Private (Admin / HR only)
+ */
+exports.getArchivedNotices = async (req, res, next) => {
+  try {
+    const filter = { isActive: { $exists: true }, isArchived: true };
+
+    if (req.query.category && typeof req.query.category === 'string') {
+      filter.category = req.query.category;
+    }
+
+    if (req.query.search && typeof req.query.search === 'string') {
+      const escapeRegex = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      filter.title = { $regex: escapeRegex(req.query.search), $options: 'i' };
+    }
+
+    const limit = parseInt(req.query.limit, 10) || 0;
+    const page  = parseInt(req.query.page, 10)  || 1;
+    const skip  = limit > 0 ? (page - 1) * limit : 0;
+
+    const query = Notice.find(filter)
+      .populate('postedBy', 'fullName role')
+      .sort({ archivedAt: -1 });
+
+    if (limit > 0) {
+      query.skip(skip).limit(limit);
+    }
+
+    const [notices, total] = await Promise.all([
+      query,
+      Notice.countDocuments(filter),
+    ]);
+
+    return ApiResponse.success(res, 'Archived notices fetched successfully', {
       notices,
       total,
       page,
@@ -127,6 +177,74 @@ exports.updateNotice = async (req, res, next) => {
 };
 
 /**
+ * @desc    Manually archive a notice (admin action)
+ *          Sets isArchived=true, archivedAt=now — immediately hides from students
+ * @route   PATCH /api/notices/:id/archive
+ * @access  Private (Admin / HR)
+ */
+exports.archiveNotice = async (req, res, next) => {
+  try {
+    const notice = await Notice.findOne({
+      _id: req.params.id,
+      isActive: { $exists: true },
+    });
+
+    if (!notice) {
+      return ApiResponse.error(res, 'Notice not found', 404);
+    }
+
+    if (notice.isArchived) {
+      return ApiResponse.error(res, 'Notice is already archived', 400);
+    }
+
+    notice.isArchived = true;
+    notice.archivedAt = new Date();
+    await notice.save();
+
+    return ApiResponse.success(res, 'Notice archived successfully', notice);
+  } catch (error) {
+    if (error.name === 'CastError') {
+      return ApiResponse.error(res, 'Invalid notice ID format', 400);
+    }
+    next(error);
+  }
+};
+
+/**
+ * @desc    Restore an archived notice back to active
+ *          Clears isArchived and archivedAt — notice reappears on student dashboard
+ * @route   PATCH /api/notices/:id/restore
+ * @access  Private (Admin / HR)
+ */
+exports.restoreNotice = async (req, res, next) => {
+  try {
+    const notice = await Notice.findOne({
+      _id: req.params.id,
+      isActive: { $exists: true },
+    });
+
+    if (!notice) {
+      return ApiResponse.error(res, 'Notice not found', 404);
+    }
+
+    if (!notice.isArchived) {
+      return ApiResponse.error(res, 'Notice is not archived', 400);
+    }
+
+    notice.isArchived = false;
+    notice.archivedAt = null;
+    await notice.save();
+
+    return ApiResponse.success(res, 'Notice restored successfully', notice);
+  } catch (error) {
+    if (error.name === 'CastError') {
+      return ApiResponse.error(res, 'Invalid notice ID format', 400);
+    }
+    next(error);
+  }
+};
+
+/**
  * @desc    Soft-delete a notice (sets isActive = false)
  * @route   DELETE /api/notices/:id
  * @access  Private (Admin / HR)
@@ -153,4 +271,45 @@ exports.deleteNotice = async (req, res, next) => {
     }
     next(error);
   }
+};
+
+// ── Internal Cron Handlers ─────────────────────────────────────────────────────
+
+/**
+ * Auto-archive all active notices older than ARCHIVE_AFTER_DAYS (30 days).
+ * Called by the cron service daily at midnight.
+ */
+exports.runAutoArchive = async () => {
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - ARCHIVE_AFTER_DAYS);
+
+  const result = await Notice.updateMany(
+    {
+      isArchived: false,
+      isActive: true,
+      createdAt: { $lt: cutoff },
+    },
+    {
+      $set: { isArchived: true, archivedAt: new Date() },
+    }
+  );
+
+  return result.modifiedCount;
+};
+
+/**
+ * Permanently hard-delete archived notices older than PURGE_AFTER_DAYS (60 days) from archivedAt.
+ * Called by the cron service daily at midnight.
+ */
+exports.runPurgeArchived = async () => {
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - PURGE_AFTER_DAYS);
+
+  const result = await Notice.deleteMany({
+    isActive: { $exists: true },
+    isArchived: true,
+    archivedAt: { $lt: cutoff },
+  });
+
+  return result.deletedCount;
 };

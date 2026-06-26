@@ -35,17 +35,32 @@ const noticeSchema = new mongoose.Schema(
       type: Boolean,
       default: true, // Soft-delete: false = hidden from students
     },
+    // ── Archiving ──────────────────────────────────────────────────────────────
+    isArchived: {
+      type: Boolean,
+      default: false, // true = hidden from students, visible in admin archive tab
+    },
+    archivedAt: {
+      type: Date,
+      default: null, // Set when notice is archived (manual or auto); used for 60-day TTL purge
+    },
   },
   {
     timestamps: true,
   }
 );
 
-// Only return active notices in queries by default
+/**
+ * Pre-find hook — student-facing queries automatically exclude:
+ *   • Soft-deleted notices  (isActive: false)
+ *   • Archived notices      (isArchived: true)
+ *
+ * Admin bypasses this by passing { isActive: { $exists: true } } in the filter,
+ * which signals "raw" access (no default filtering applied).
+ */
 noticeSchema.pre(/^find/, function () {
-  // Allow bypassing for admin queries by passing { isActive: { $exists: true } }
   if (this.getFilter().isActive === undefined) {
-    this.where({ isActive: true });
+    this.where({ isActive: true, isArchived: false });
   }
 });
 
