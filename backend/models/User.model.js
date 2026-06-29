@@ -83,6 +83,12 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    readNotices: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Notice',
+      },
+    ],
     lastLogin: {
       type: Date,
     },

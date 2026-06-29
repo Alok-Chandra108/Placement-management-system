@@ -34,6 +34,37 @@ export const getNoticeById = createAsyncThunk(
   }
 );
 
+/**
+ * Fetch the list of notice IDs the logged-in user has read (from backend)
+ */
+export const fetchReadNotices = createAsyncThunk(
+  'notices/fetchRead',
+  async (_, thunkAPI) => {
+    try {
+      return await noticeApi.fetchReadNotices();
+    } catch (error) {
+      const message = error.response?.data?.message || error.message || error.toString();
+      return thunkAPI.rejectWithValue(message);
+    }
+  }
+);
+
+/**
+ * Mark a notice as read — persisted on the backend (syncs across devices)
+ */
+export const markNoticeAsRead = createAsyncThunk(
+  'notices/markRead',
+  async (id, thunkAPI) => {
+    try {
+      await noticeApi.markNoticeRead(id);
+      return id; // Return the ID so the reducer can update state immediately
+    } catch (error) {
+      const message = error.response?.data?.message || error.message || error.toString();
+      return thunkAPI.rejectWithValue(message);
+    }
+  }
+);
+
 // ── Initial State ─────────────────────────────────────────────────────
 
 const initialState = {
@@ -43,7 +74,7 @@ const initialState = {
   isLoading: false,
   isError: false,
   message: '',
-  readNotices: JSON.parse(localStorage.getItem('cpms_read_notices') || '[]'),
+  readNotices: [],   // Populated from backend API, NOT localStorage
 };
 
 // ── Slice ─────────────────────────────────────────────────────────────
@@ -67,13 +98,7 @@ export const noticeSlice = createSlice({
       state.isLoading = false;
       state.isError = false;
       state.message = '';
-    },
-    markNoticeAsRead: (state, action) => {
-      const id = action.payload;
-      if (!state.readNotices.includes(id)) {
-        state.readNotices.push(id);
-        localStorage.setItem('cpms_read_notices', JSON.stringify([...state.readNotices]));
-      }
+      state.readNotices = [];
     },
   },
   extraReducers: (builder) => {
@@ -110,9 +135,22 @@ export const noticeSlice = createSlice({
         state.isLoading = false;
         state.isError = true;
         state.message = action.payload;
+      })
+
+      // fetchReadNotices
+      .addCase(fetchReadNotices.fulfilled, (state, action) => {
+        state.readNotices = action.payload.data.readNotices.map((id) => id.toString());
+      })
+
+      // markNoticeAsRead
+      .addCase(markNoticeAsRead.fulfilled, (state, action) => {
+        const id = action.payload;
+        if (!state.readNotices.includes(id)) {
+          state.readNotices.push(id);
+        }
       });
   },
 });
 
-export const { resetNoticeState, clearCurrentNotice, clearNotices, markNoticeAsRead } = noticeSlice.actions;
+export const { resetNoticeState, clearCurrentNotice, clearNotices } = noticeSlice.actions;
 export default noticeSlice.reducer;

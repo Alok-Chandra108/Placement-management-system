@@ -8,6 +8,8 @@ const {
   archiveNotice,
   restoreNotice,
   getArchivedNotices,
+  markNoticeRead,
+  getReadNotices,
 } = require('../controllers/notice.controller');
 const { verifyAccessToken, restrictToRoles } = require('../middleware/auth.middleware');
 const { validateRequest } = require('../middleware/validateRequest.middleware');
@@ -26,6 +28,11 @@ router.use(verifyAccessToken);
 router.get('/archived', restrictToRoles('admin', 'hr'), getArchivedNotices);
 router.patch('/:id/archive', restrictToRoles('admin', 'hr'), archiveNotice);
 router.patch('/:id/restore', restrictToRoles('admin', 'hr'), restoreNotice);
+
+// ── Read-tracking (all authenticated users) ─────────────────────────────────────
+// IMPORTANT: /read must be defined BEFORE /:id to avoid route collision
+router.get('/read', getReadNotices);
+router.patch('/:id/read', markNoticeRead);
 
 // Route: /api/notices
 router

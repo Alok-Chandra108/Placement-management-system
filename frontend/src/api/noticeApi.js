@@ -76,3 +76,22 @@ export const restoreNoticeById = async (id) => {
   const response = await api.patch(`/notices/${id}/restore`);
   return response.data;
 };
+
+// ── Read-tracking API ─────────────────────────────────────────────────────────
+
+/**
+ * Mark a single notice as read for the logged-in user
+ * @param {String} id - Notice ID
+ */
+export const markNoticeRead = async (id) => {
+  const response = await api.patch(`/notices/${id}/read`);
+  return response.data;
+};
+
+/**
+ * Fetch the list of notice IDs the logged-in user has read
+ */
+export const fetchReadNotices = async () => {
+  const response = await api.get('/notices/read');
+  return response.data;
+};

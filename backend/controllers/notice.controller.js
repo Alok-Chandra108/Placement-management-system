@@ -1,4 +1,5 @@
 const Notice = require('../models/Notice.model');
+const User = require('../models/User.model');
 const ApiResponse = require('../utils/ApiResponse');
 
 // ── Timeframe Constants ────────────────────────────────────────────────────────
@@ -269,6 +270,53 @@ exports.deleteNotice = async (req, res, next) => {
     if (error.name === 'CastError') {
       return ApiResponse.error(res, 'Invalid notice ID format', 400);
     }
+    next(error);
+  }
+};
+
+// ── Read-tracking (per-user) ───────────────────────────────────────────────────
+
+/**
+ * @desc    Mark a notice as read for the logged-in user
+ * @route   PATCH /api/notices/:id/read
+ * @access  Private (All logged-in users)
+ */
+exports.markNoticeRead = async (req, res, next) => {
+  try {
+    const noticeId = req.params.id;
+
+    // Validate that the notice exists
+    const notice = await Notice.findById(noticeId);
+    if (!notice) {
+      return ApiResponse.error(res, 'Notice not found', 404);
+    }
+
+    // $addToSet ensures no duplicates
+    await User.findByIdAndUpdate(req.user.id, {
+      $addToSet: { readNotices: noticeId },
+    });
+
+    return ApiResponse.success(res, 'Notice marked as read');
+  } catch (error) {
+    if (error.name === 'CastError') {
+      return ApiResponse.error(res, 'Invalid notice ID format', 400);
+    }
+    next(error);
+  }
+};
+
+/**
+ * @desc    Get the list of notice IDs the logged-in user has read
+ * @route   GET /api/notices/read
+ * @access  Private (All logged-in users)
+ */
+exports.getReadNotices = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id).select('readNotices');
+    return ApiResponse.success(res, 'Read notices fetched', {
+      readNotices: user?.readNotices || [],
+    });
+  } catch (error) {
     next(error);
   }
 };

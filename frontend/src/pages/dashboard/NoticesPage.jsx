@@ -14,7 +14,7 @@ import {
   Inbox
 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
-import { getNotices, getNoticeById, clearCurrentNotice, markNoticeAsRead } from '../../features/notices/noticeSlice';
+import { getNotices, getNoticeById, clearCurrentNotice, markNoticeAsRead, fetchReadNotices } from '../../features/notices/noticeSlice';
 
 const categoryStyles = {
   Urgent:    { bg: 'bg-rose-50',    text: 'text-rose-600',    dot: 'bg-rose-500',   border: 'border-rose-100' },
@@ -44,6 +44,7 @@ const NoticesPage = () => {
     // Search is handled on frontend in this simple implementation, 
     // but the backend could be updated later for server-side search.
     dispatch(getNotices(params));
+    dispatch(fetchReadNotices());
   }, [dispatch, page, activeCategory]);
 
   const filteredNotices = notices.filter(notice => 
