@@ -121,10 +121,10 @@ axiosInstance.interceptors.response.use(
       const isValidationError = error.response.status === 400 && error.response.data?.errors;
       
       if (error.response.status >= 500 || !isValidationError) {
-        toast.error(message);
+        toast.error(message, { id: message });
       }
     } else if (!error.response && error.message !== 'canceled') {
-      toast.error('Network Error. Please check your connection.');
+      toast.error('Network Error. Please check your connection.', { id: 'network-error' });
     }
 
     return Promise.reject(error);
