@@ -30,7 +30,7 @@ transporter.verify((error) => {
     console.error('   Code:', error.code, '| Command:', error.command);
     console.error('   Message:', error.message);
     console.error('   Response:', error.response || 'N/A');
-    console.error('   GMAIL_USER set:', !!process.env.GMAIL_USER, '| Value:', process.env.GMAIL_USER);
+    console.error('   GMAIL_USER set:', !!process.env.GMAIL_USER);
     console.error('   GMAIL_APP_PASSWORD set:', !!process.env.GMAIL_APP_PASSWORD, '| Length:', (process.env.GMAIL_APP_PASSWORD || '').length);
     console.error('   NODE_ENV:', process.env.NODE_ENV);
     console.warn('   OTP and reset emails will NOT be sent until this is fixed.');
