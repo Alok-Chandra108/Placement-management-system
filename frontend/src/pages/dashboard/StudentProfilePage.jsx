@@ -30,6 +30,7 @@ import { profileSchema } from '../../schemas/profileSchema';
 import { fetchProfile, updateProfile, uploadResume, deleteResume } from '../../features/profile/profileThunks';
 import toast from 'react-hot-toast';
 import useAuth from '../../hooks/useAuth';
+import { useConfirm } from '../../context/ConfirmContext';
 import { calculateProfileCompletion } from '../../utils/profileUtils';
 
 // ── Animation Variants ──────────────────────────────────────────────
@@ -115,6 +116,7 @@ const InfoItem = ({ label, value, icon: Icon, isEditing, register, name, error, 
 const StudentProfilePage = () => {
   const dispatch = useDispatch();
   const { user } = useAuth();
+  const confirm = useConfirm();
   const { profile, loading, saving, uploading } = useSelector((state) => state.profile);
   const [isEditing, setIsEditing] = useState(false);
 
@@ -220,7 +222,15 @@ const StudentProfilePage = () => {
   };
 
   const handleResumeDelete = async () => {
-    if (window.confirm('Are you sure you want to delete your resume?')) {
+    const isConfirmed = await confirm({
+      title: 'Delete Resume?',
+      message: 'Are you sure you want to delete your resume? This action cannot be undone.',
+      confirmText: 'Yes, Delete',
+      cancelText: 'Cancel',
+      type: 'danger',
+    });
+
+    if (isConfirmed) {
       try {
         await dispatch(deleteResume()).unwrap();
         toast.success('Resume deleted');

@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Loader2 } from 'lucide-react';
 import AppRouter from './routes/AppRouter';
 import { refreshAccessToken } from './features/auth/authThunks';
+import { ConfirmProvider } from './context/ConfirmContext';
 
 function App() {
   const dispatch = useDispatch();
@@ -33,33 +34,35 @@ function App() {
 
   return (
     <BrowserRouter>
-      {/* React Hot Toast Notifications */}
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          duration: 4000,
-          style: {
-            fontFamily: "'Inter', sans-serif",
-            fontSize: '14px',
-            borderRadius: '8px',
-            background: '#333',
-            color: '#fff',
-          },
-          success: {
+      <ConfirmProvider>
+        {/* React Hot Toast Notifications */}
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 4000,
             style: {
-              background: '#1A7F4B',
+              fontFamily: "'Inter', sans-serif",
+              fontSize: '14px',
+              borderRadius: '8px',
+              background: '#333',
+              color: '#fff',
             },
-          },
-          error: {
-            style: {
-              background: '#C0392B',
+            success: {
+              style: {
+                background: '#1A7F4B',
+              },
             },
-          },
-        }}
-      />
-      
-      {/* All Application Routes */}
-      <AppRouter />
+            error: {
+              style: {
+                background: '#C0392B',
+              },
+            },
+          }}
+        />
+        
+        {/* All Application Routes */}
+        <AppRouter />
+      </ConfirmProvider>
     </BrowserRouter>
   );
 }
