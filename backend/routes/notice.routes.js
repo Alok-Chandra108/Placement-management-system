@@ -17,6 +17,8 @@ const {
   createNoticeValidation,
   updateNoticeValidation,
 } = require('../validators/notice.validators');
+const { ROLES } = require('../constants/roles');
+
 
 const router = express.Router();
 
@@ -25,9 +27,9 @@ router.use(verifyAccessToken);
 
 // ── Admin-only: Archive management ──────────────────────────────────────────────
 // IMPORTANT: /archived must be defined BEFORE /:id to avoid route collision
-router.get('/archived', restrictToRoles('admin', 'hr'), getArchivedNotices);
-router.patch('/:id/archive', restrictToRoles('admin', 'hr'), archiveNotice);
-router.patch('/:id/restore', restrictToRoles('admin', 'hr'), restoreNotice);
+router.get('/archived', restrictToRoles(ROLES.ADMIN), getArchivedNotices);
+router.patch('/:id/archive', restrictToRoles(ROLES.ADMIN), archiveNotice);
+router.patch('/:id/restore', restrictToRoles(ROLES.ADMIN), restoreNotice);
 
 // ── Read-tracking (all authenticated users) ─────────────────────────────────────
 // IMPORTANT: /read must be defined BEFORE /:id to avoid route collision
@@ -38,13 +40,13 @@ router.patch('/:id/read', markNoticeRead);
 router
   .route('/')
   .get(getAllNotices)                              // All logged-in users (students read)
-  .post(restrictToRoles('admin', 'hr'), ...createNoticeValidation, validateRequest, createNotice); // Admin / HR only
+  .post(restrictToRoles(ROLES.ADMIN), ...createNoticeValidation, validateRequest, createNotice); // Admin only
 
 // Route: /api/notices/:id
 router
   .route('/:id')
   .get(getNoticeById)                              // All logged-in users
-  .put(restrictToRoles('admin', 'hr'), ...updateNoticeValidation, validateRequest, updateNotice)     // Admin / HR only
-  .delete(restrictToRoles('admin', 'hr'), deleteNotice); // Admin / HR only
+  .put(restrictToRoles(ROLES.ADMIN), ...updateNoticeValidation, validateRequest, updateNotice)     // Admin only
+  .delete(restrictToRoles(ROLES.ADMIN), deleteNotice); // Admin only
 
 module.exports = router;

@@ -18,7 +18,6 @@ import DriveDetail from '../pages/dashboard/DriveDetail';
 import ApplicationsPage from '../pages/dashboard/ApplicationsPage';
 import NoticesPage from '../pages/dashboard/NoticesPage';
 import AdminDashboard from '../pages/dashboard/AdminDashboard';
-import HRDashboard from '../pages/dashboard/HRDashboard';
 import AdminOverview from '../pages/dashboard/admin/AdminOverview';
 import StudentDirectory from '../pages/dashboard/admin/StudentDirectory';
 import AdminNoticesPage from '../pages/dashboard/admin/AdminNoticesPage';
@@ -108,16 +107,6 @@ const AppRouter = () => {
         <Route path="notices" element={<AdminNoticesPage />} />
         <Route path="settings" element={<div className="p-8 text-center">Admin Settings — Coming Soon</div>} />
       </Route>
-      <Route
-        path="/dashboard/hr/*"
-        element={
-          <ProtectedRoute>
-            <RoleRoute allowedRoles={[ROLES.HR]}>
-              <HRDashboard />
-            </RoleRoute>
-          </ProtectedRoute>
-        }
-      />
 
       {/* Default redirect */}
       <Route path="/" element={<Navigate to="/login" replace />} />

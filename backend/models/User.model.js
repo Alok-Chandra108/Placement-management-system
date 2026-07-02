@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const { ROLES } = require('../constants/roles');
 
 const userSchema = new mongoose.Schema(
   {
@@ -30,8 +31,8 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['student', 'admin', 'hr'],
-      default: 'student',
+      enum: [ROLES.STUDENT, ROLES.ADMIN],
+      default: ROLES.STUDENT,
     },
     department: {
       type: String,

@@ -10,9 +10,9 @@ router.use(verifyAccessToken);
 router.post('/apply/:driveId', restrictToRoles(ROLES.STUDENT), applicationController.applyToDrive);
 router.get('/my-applications', restrictToRoles(ROLES.STUDENT), applicationController.getStudentApplications);
 
-// Admin/HR Routes
-router.get('/drive/:driveId', restrictToRoles(ROLES.ADMIN, ROLES.HR), applicationController.getDriveApplications);
-router.patch('/bulk-status', restrictToRoles(ROLES.ADMIN, ROLES.HR), applicationController.updateBulkApplicationStatus);
-router.patch('/:applicationId/status', restrictToRoles(ROLES.ADMIN, ROLES.HR), applicationController.updateApplicationStatus);
+// Admin Routes
+router.get('/drive/:driveId', restrictToRoles(ROLES.ADMIN), applicationController.getDriveApplications);
+router.patch('/bulk-status', restrictToRoles(ROLES.ADMIN), applicationController.updateBulkApplicationStatus);
+router.patch('/:applicationId/status', restrictToRoles(ROLES.ADMIN), applicationController.updateApplicationStatus);
 
 module.exports = router;

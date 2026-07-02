@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const { ROLES } = require('../constants/roles');
 
 const adminSchema = new mongoose.Schema(
   {
@@ -23,7 +24,8 @@ const adminSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      default: 'admin',
+      enum: [ROLES.ADMIN],
+      default: ROLES.ADMIN,
     },
     isVerified: {
       type: Boolean,

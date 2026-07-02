@@ -1,12 +1,13 @@
 const express = require('express');
 const { getDashboardStats, getAllStudents, getStudentById, getDriveReport } = require('../controllers/admin.controller');
 const { verifyAccessToken, restrictToRoles } = require('../middleware/auth.middleware');
+const { ROLES } = require('../constants/roles');
 
 const router = express.Router();
 
 // Apply auth middleware to all admin routes
 router.use(verifyAccessToken);
-router.use(restrictToRoles('admin'));
+router.use(restrictToRoles(ROLES.ADMIN));
 
 // Route: /api/admin/stats
 router.get('/stats', getDashboardStats);

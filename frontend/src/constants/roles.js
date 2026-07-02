@@ -1,7 +1,6 @@
 export const ROLES = {
   STUDENT: 'student',
   ADMIN: 'admin',
-  HR: 'hr',
 };
 
 export const DEPARTMENTS = [
@@ -32,5 +31,4 @@ export const YEARS_OF_STUDY = [
 export const DASHBOARD_ROUTES = {
   [ROLES.STUDENT]: '/dashboard/student',
   [ROLES.ADMIN]: '/dashboard/admin',
-  [ROLES.HR]: '/dashboard/hr',
 };

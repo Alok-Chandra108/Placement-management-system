@@ -5,6 +5,7 @@ const OTP = require('../models/OTP.model');
 const generateOTP = require('../utils/generateOTP');
 const ApiResponse = require('../utils/ApiResponse');
 const { sendOTPEmail, sendResetEmail, sendAdminOTPEmail } = require('../services/email.service');
+const { ROLES } = require('../constants/roles');
 
 /**
  * POST /api/auth/register
@@ -35,7 +36,7 @@ const register = async (req, res, next) => {
       department,
       yearOfStudy,
       password,
-      role: 'student',
+      role: ROLES.STUDENT,
       isVerified: false,
     });
 
@@ -417,7 +418,7 @@ const refreshTokenHandler = async (req, res, next) => {
       role: user.role,
     };
 
-    if (user.role === 'student' || user.role === 'hr') {
+    if (user.role === ROLES.STUDENT) {
       payloadUser = {
         ...payloadUser,
         department: user.department,

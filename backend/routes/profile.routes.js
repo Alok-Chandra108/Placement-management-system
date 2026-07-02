@@ -13,10 +13,12 @@ const { verifyAccessToken } = require('../middleware/auth.middleware');
 const { validateRequest } = require('../middleware/validateRequest.middleware');
 const { requireRole } = require('../middleware/role.middleware');
 const { upload } = require('../middleware/upload.middleware');
+const { ROLES } = require('../constants/roles');
+
 
 // All profile routes require authentication + student role
 router.use(verifyAccessToken);
-router.use(requireRole('student'));
+router.use(requireRole(ROLES.STUDENT));
 
 // GET  /api/profile/me — Fetch current student's profile
 router.get('/me', getMyProfile);
