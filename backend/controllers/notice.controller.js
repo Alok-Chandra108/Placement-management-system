@@ -158,9 +158,19 @@ exports.getNoticeById = async (req, res, next) => {
  */
 exports.updateNotice = async (req, res, next) => {
   try {
+    // Whitelist only the fields an admin is allowed to edit.
+    // Prevents injection of sensitive fields like isActive, isArchived, postedBy, archivedAt.
+    const ALLOWED_NOTICE_FIELDS = ['title', 'body', 'category', 'attachmentUrl', 'attachmentName'];
+    const updateData = {};
+    ALLOWED_NOTICE_FIELDS.forEach((field) => {
+      if (Object.prototype.hasOwnProperty.call(req.body, field)) {
+        updateData[field] = req.body[field];
+      }
+    });
+
     const notice = await Notice.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      updateData,
       { new: true, runValidators: true }
     ).populate('postedBy', 'fullName role');
 

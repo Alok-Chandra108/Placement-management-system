@@ -107,7 +107,17 @@ exports.updateDrive = async (req, res, next) => {
       return ApiResponse.error(res, 'Drive not found', 404);
     }
 
-    const updateData = { ...req.body };
+    // Whitelist editable fields — prevents injection of isActive, createdBy, etc.
+    const ALLOWED_DRIVE_FIELDS = [
+      'companyName', 'companyDescription', 'jobRole', 'ctc', 'location',
+      'jobType', 'eligibility', 'registrationDeadline', 'driveDate', 'status',
+    ];
+    const updateData = {};
+    ALLOWED_DRIVE_FIELDS.forEach((field) => {
+      if (Object.prototype.hasOwnProperty.call(req.body, field)) {
+        updateData[field] = req.body[field];
+      }
+    });
 
     if (req.file && req.file.path) {
       updateData.companyLogo = req.file.path;

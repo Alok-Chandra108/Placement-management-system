@@ -53,7 +53,7 @@ exports.applyToDrive = async (req, res, next) => {
     // 10th percent check
     if (
       drive.eligibility.minTenthPercent > 0 &&
-      (profile.tenthPercent == null || profile.tenthPercent < drive.eligibility.minTenthPercent)
+      (profile.tenthPercentage == null || profile.tenthPercentage < drive.eligibility.minTenthPercent)
     ) {
       return ApiResponse.error(res, `You do not meet the minimum 10th percentage requirement (${drive.eligibility.minTenthPercent}%).`, 400);
     }
@@ -61,7 +61,7 @@ exports.applyToDrive = async (req, res, next) => {
     // 12th percent check
     if (
       drive.eligibility.minTwelfthPercent > 0 &&
-      (profile.twelfthPercent == null || profile.twelfthPercent < drive.eligibility.minTwelfthPercent)
+      (profile.twelfthPercentage == null || profile.twelfthPercentage < drive.eligibility.minTwelfthPercent)
     ) {
       return ApiResponse.error(res, `You do not meet the minimum 12th percentage requirement (${drive.eligibility.minTwelfthPercent}%).`, 400);
     }
