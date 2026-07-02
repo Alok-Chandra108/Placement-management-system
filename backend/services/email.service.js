@@ -3,6 +3,22 @@ const SENDER_EMAIL = process.env.BREVO_SENDER_EMAIL || process.env.GMAIL_USER;
 const SENDER_NAME = 'MITE Placement Cell';
 
 /**
+ * Escape HTML special characters to prevent XSS in email templates.
+ * Converts &, <, >, ", ' to their safe HTML entity equivalents.
+ * @param {*} value - The value to escape (coerced to string)
+ * @returns {string} HTML-safe string
+ */
+const escapeHtml = (value) => {
+  if (value === null || value === undefined) return '';
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
+};
+
+/**
  * Send an email via Brevo's HTTP API (bypasses Render's SMTP block)
  * @param {object} options - { to, subject, html, senderName }
  */
@@ -57,7 +73,7 @@ const sendOTPEmail = async (fullName, email, otp) => {
         <!-- Body -->
         <tr>
           <td style="background-color:#ffffff;padding:40px 32px;">
-            <p style="color:#1A1D21;font-size:16px;font-weight:600;margin:0 0 8px;">Hi ${fullName},</p>
+            <p style="color:#1A1D21;font-size:16px;font-weight:600;margin:0 0 8px;">Hi ${escapeHtml(fullName)},</p>
             <p style="color:#495057;font-size:14px;line-height:1.6;margin:0 0 24px;">
               Use the code below to verify your email address and activate your placement portal account.
             </p>
@@ -128,7 +144,7 @@ const sendResetEmail = async (fullName, email, resetURL) => {
         <!-- Body -->
         <tr>
           <td style="background-color:#ffffff;padding:40px 32px;">
-            <p style="color:#1A1D21;font-size:16px;font-weight:600;margin:0 0 8px;">Hi ${fullName},</p>
+            <p style="color:#1A1D21;font-size:16px;font-weight:600;margin:0 0 8px;">Hi ${escapeHtml(fullName)},</p>
             <p style="color:#495057;font-size:14px;line-height:1.6;margin:0 0 24px;">
               We received a request to reset your password. Click the button below to set a new password.
             </p>
@@ -202,7 +218,7 @@ const sendAdminOTPEmail = async (fullName, email, otp) => {
         <!-- Body -->
         <tr>
           <td style="background-color:#1e1e2e;padding:40px 32px;">
-            <p style="color:#e2e8f0;font-size:16px;font-weight:600;margin:0 0 8px;">Hi ${fullName},</p>
+            <p style="color:#e2e8f0;font-size:16px;font-weight:600;margin:0 0 8px;">Hi ${escapeHtml(fullName)},</p>
             <p style="color:#94a3b8;font-size:14px;line-height:1.7;margin:0 0 28px;">
               A sign-in attempt was made on the <strong style="color:#e2e8f0;">MITE Admin Dashboard</strong>.
               Use the code below to complete your login. This code is valid for <strong style="color:#f59e0b;">10 minutes</strong>.
@@ -278,7 +294,7 @@ const sendStatusUpdateEmail = async (fullName, email, companyName, jobRole, newS
   const remarksBlock = remarks
     ? `<div style="background:#F8F9FA;border-left:3px solid #F48120;border-radius:6px;padding:14px 18px;margin:20px 0;">
          <p style="color:#495057;font-size:13px;margin:0 0 4px;font-weight:600;">Remarks from Placement Cell:</p>
-         <p style="color:#495057;font-size:14px;margin:0;line-height:1.6;">${remarks}</p>
+         <p style="color:#495057;font-size:14px;margin:0;line-height:1.6;">${escapeHtml(remarks)}</p>
        </div>`
     : '';
 
@@ -301,10 +317,10 @@ const sendStatusUpdateEmail = async (fullName, email, companyName, jobRole, newS
         <!-- Body -->
         <tr>
           <td style="background-color:#ffffff;padding:40px 32px;">
-            <p style="color:#1A1D21;font-size:16px;font-weight:600;margin:0 0 8px;">Hi ${fullName},</p>
+            <p style="color:#1A1D21;font-size:16px;font-weight:600;margin:0 0 8px;">Hi ${escapeHtml(fullName)},</p>
             <p style="color:#495057;font-size:14px;line-height:1.6;margin:0 0 24px;">
               There has been an update on your application for 
-              <strong>${jobRole}</strong> at <strong>${companyName}</strong>.
+              <strong>${escapeHtml(jobRole)}</strong> at <strong>${escapeHtml(companyName)}</strong>.
             </p>
             <!-- Status Badge -->
             <div style="text-align:center;margin:0 0 24px;">
@@ -343,7 +359,7 @@ const sendStatusUpdateEmail = async (fullName, email, companyName, jobRole, newS
   try {
     const data = await sendViaBrev({
       to: email,
-      subject: `Application Update: ${companyName} — ${statusInfo.label}`,
+      subject: `Application Update: ${escapeHtml(companyName)} — ${statusInfo.label}`,
       html,
     });
     console.log(`📧 Status update email sent to ${email} (${newStatus}) | messageId: ${data?.messageId}`);
