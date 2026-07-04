@@ -12,6 +12,7 @@ exports.createDrive = async (req, res, next) => {
     const driveData = {
       ...req.body,
       createdBy: req.user.id,
+      createdByModel: req.user.role === 'admin' ? 'Admin' : 'User',
     };
 
     if (req.file && req.file.path) {

@@ -88,8 +88,14 @@ const driveSchema = new mongoose.Schema(
     },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
+      refPath: 'createdByModel', // dynamic ref — resolves to 'Admin' or 'User'
       required: true,
+    },
+    createdByModel: {
+      type: String,
+      required: true,
+      enum: ['Admin', 'User'],
+      default: 'Admin', // drives are always created by admins
     },
     isActive: {
       type: Boolean,

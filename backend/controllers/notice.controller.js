@@ -22,6 +22,7 @@ exports.createNotice = async (req, res, next) => {
       attachmentUrl: attachmentUrl || null,
       attachmentName: attachmentName || null,
       postedBy: req.user.id,
+      postedByModel: req.user.role === 'admin' ? 'Admin' : 'User',
     });
 
     // Populate postedBy for the response

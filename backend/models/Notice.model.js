@@ -28,8 +28,14 @@ const noticeSchema = new mongoose.Schema(
     },
     postedBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
+      refPath: 'postedByModel', // dynamic ref — resolves to 'Admin' or 'User'
       required: true,
+    },
+    postedByModel: {
+      type: String,
+      required: true,
+      enum: ['Admin', 'User'],
+      default: 'Admin', // notices are always posted by admins
     },
     isActive: {
       type: Boolean,
