@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const jwt = require('jsonwebtoken');
 const User = require('../models/User.model');
 const Admin = require('../models/Admin.model');
 const OTP = require('../models/OTP.model');
@@ -362,7 +363,6 @@ const refreshTokenHandler = async (req, res, next) => {
     }
 
     // Verify JWT
-    const jwt = require('jsonwebtoken');
     let decoded;
     try {
       decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET);

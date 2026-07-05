@@ -106,8 +106,7 @@ cpms-mini-project/
 │   ├── scripts/
 │   │   └── seedAdmin.js           # Seed initial admin user
 │   ├── services/
-│   │   ├── email.service.js       # All email templates (OTP, reset, welcome)
-│   │   └── token.service.js       # JWT sign/verify helpers
+│   │   └── email.service.js       # All email templates (OTP, reset, welcome)
 │   ├── utils/
 │   │   ├── ApiResponse.js         # Standardised API response wrapper
 │   │   └── generateOTP.js         # OTP generator utility
