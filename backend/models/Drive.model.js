@@ -118,9 +118,15 @@ driveSchema.pre('save', function () {
   if (this.status !== 'closed') {
     if (now > this.registrationDeadline) {
       this.status = 'closed';
-    } else if (now >= this.createdAt && now <= this.registrationDeadline) {
-      this.status = 'open'; // Assuming once created, it's open unless explicitly upcoming
+    } else if (this.isNew) {
+      // For new documents, auto-transition to 'open' if it defaulted to 'upcoming' or was explicitly set to 'open'
+      const isUpcomingDefaulted = this.status === 'upcoming' && (typeof this.$isDefault === 'function' ? this.$isDefault('status') : true);
+      const isOpenExplicit = this.status === 'open';
+      if (isUpcomingDefaulted || isOpenExplicit) {
+        this.status = 'open';
+      }
     }
+    // Existing documents keep their status (e.g. 'upcoming' stays 'upcoming') unless expired
   }
 });
 
