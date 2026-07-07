@@ -270,7 +270,7 @@ const adminLogin = async (req, res, next) => {
       isMatch = await admin.comparePassword(password);
     } else {
       const bcrypt = require('bcrypt');
-      await bcrypt.compare(password, '$2b$10$abcdefghijklmnopqrstuv');
+      await bcrypt.compare(password, '$2b$10$2vNHT6Cc9xZWHWI.Gy7WZukBvYgLddwIAwC9kJ0AYcDUNuZxxf1dG');
     }
 
     if (!admin || !isMatch) {
