@@ -1,40 +1,47 @@
-# Campus Placement Management System (CPMS) - MITE
+﻿# Campus Placement Management System (CPMS) — MITE
 
-A modern, full-stack recruitment portal designed for the **Mangalore Institute of Technology & Engineering (MITE)**. This platform facilitates seamless interaction between students, college administrators, and HR representatives during the campus placement process.
+A modern, full-stack campus recruitment portal designed for the **Mangalore Institute of Technology & Engineering (MITE)**. The platform facilitates seamless interaction between **students** and **administrators** throughout the entire placement lifecycle.
 
 ---
 
 ## 🚀 Overview
 
-CPMS is built using the **MERN** stack, focusing on professional aesthetics, secure authentication, and real-time data tracking. It provides a centralized hub for managing student profiles, recruitment drives, placement applications, and institutional notices.
+CPMS is built on the **MERN** stack, focusing on professional aesthetics, secure authentication, transactional email delivery, and real-time data tracking. It provides a centralized hub for managing student profiles, recruitment drives, placement applications, institutional notices, and placement analytics.
 
 ### Key Features
-- **Multi-role Authentication**: Secure login for Students, Admins, and HRs with JWT-based access & refresh token sessions.
-- **OTP Verification**: Email-based OTP verification via Nodemailer for secure student onboarding.
-- **Password Recovery**: Forgot password / reset password flow with time-limited secure tokens.
-- **Admin Change Password**: Dedicated admin password change with extra validation.
-- **Student Dashboard**: Real-time tracking of profile completion, applied jobs, eligibility, and upcoming placement drives.
-- **Smart Eligibility Engine**: Automated eligibility checks (CGPA, backlogs, branch, course) for recruitment drives.
+
+- **Two-Role System**: Secure login for **Students** and **Admins** only. JWT-based access & refresh token sessions with httpOnly cookies.
+- **Admin Two-Step OTP Login**: Admin authentication uses a two-step flow — password verification followed by a time-limited OTP delivered via Brevo transactional email.
+- **OTP Email Verification**: Email-based OTP verification (10-minute TTL) for secure student onboarding.
+- **Password Recovery**: Forgot password / reset password flow with a 15-minute time-limited secure token.
+- **Admin Change Password**: Dedicated admin password change with extra validation and `mustChangePassword` flag enforcement.
+- **Student Dashboard**: Real-time tracking of profile completion, applied jobs, eligibility status, and upcoming placement drives.
+- **Smart Eligibility Engine**: Automated eligibility checks (CGPA, 10th %, 12th %, backlogs, branch, course) per drive.
 - **Resume Management**: Secure PDF resume uploads (max 2MB) and deletion powered by Cloudinary via Multer.
-- **Placement Drives**: Full CRUD for recruitment drives with company logo uploads (image upload via Cloudinary), eligibility configuration, and drive details.
-- **Applications System**: Students can apply to drives; admins/HRs can view applicants and update application statuses.
-- **Notices Board**: Admins/HRs can create, update, and delete notices; all logged-in users can view them.
-- **Student Directory**: Admin view of all registered students with profile modal and export functionality.
-- **Analytics Dashboard**: Admin component with placement analytics using Recharts.
+- **Placement Drives**: Full CRUD for recruitment drives with company logo uploads (Cloudinary), smart status engine (`upcoming` → `open` → `closed`), and detailed eligibility configuration.
+- **Applications System**: Students apply to drives; admins view applicants, update individual or bulk application statuses.
+- **Application Status Emails**: Automatic HTML emails sent to students via Brevo whenever their application status is updated — includes styled status badge and optional admin remarks.
+- **Notices Board**: Admin creates, updates, archives, and deletes notices. Students view active notices with per-user read-tracking. PDF attachments via Cloudinary are supported.
+- **Notice Lifecycle (Auto-Archive & Purge)**: A scheduled `node-cron` job runs daily at midnight IST — automatically archives notices older than 30 days and permanently purges archived notices older than 60 days.
+- **Student Directory**: Admin view of all registered students with profile modal and PDF/CSV export.
+- **Analytics Dashboard**: Admin placement analytics powered by Recharts.
 - **PDF Export**: Export reports using jsPDF and jspdf-autotable.
-- **Professional UI**: Premium corporate UI with Tailwind CSS, Framer Motion animations, and Lucide icons.
-- **Role-Based Access Control (RBAC)**: Strict permission handling across student, admin, and HR roles.
-- **Rate Limiting**: API-level and auth-level rate limiting to prevent abuse.
-- **Security**: Helmet headers, hashed refresh tokens stored in DB, httpOnly cookies.
-- **Docker Containerization**: Multi-stage Docker builds for frontend (served via Nginx Alpine) and backend, with Docker Compose orchestration for production and hot-reloading dev environments.
-- **Automated CI/CD Pipeline**: GitHub Actions workflow (`ci.yml`) for continuous integration, automated testing, and Docker build verification on every push to `main`.
+- **Drive Reports**: Admin endpoint to generate per-drive applicant reports.
+- **Transactional Email (Brevo)**: All system emails (student OTP, admin OTP, password reset, status updates) are delivered via the **Brevo HTTP API** — bypassing SMTP restrictions on cloud providers like Render.
+- **Professional UI**: Premium corporate UI with Tailwind CSS v3, Framer Motion animations, and Lucide icons.
+- **Role-Based Access Control (RBAC)**: Strict permission enforcement across student and admin roles.
+- **Rate Limiting**: API-level, auth-level, and sensitive-operation rate limiting.
+- **Security**: Helmet security headers, bcrypt password hashing, hashed refresh tokens in DB, httpOnly cookies, XSS-safe HTML email templates.
+- **Automated Tests**: Jest + Supertest backend test suite.
+- **Docker Containerization**: Multi-stage Docker builds for frontend (Nginx Alpine) and backend, with Docker Compose for production and hot-reload dev environments.
+- **Automated CI/CD**: GitHub Actions pipeline (`ci.yml`) for test execution and Docker image verification on every push to `main`.
 
 ---
 
 ## 🛠️ Tech Stack
 
 ### Frontend
-- **Framework**: React 19 (Vite 8)
+- **Framework**: React 19 (Vite)
 - **State Management**: Redux Toolkit (`authSlice`, `profileSlice`, `driveSlice`, `applicationSlice`, `noticeSlice`)
 - **Styling**: Tailwind CSS v3
 - **Animations**: Framer Motion
@@ -42,26 +49,29 @@ CPMS is built using the **MERN** stack, focusing on professional aesthetics, sec
 - **Forms & Validation**: React Hook Form + Zod (via `@hookform/resolvers`)
 - **Charts**: Recharts
 - **PDF Export**: jsPDF + jspdf-autotable
-- **HTTP Client**: Axios (with automatic token refresh interceptor)
+- **HTTP Client**: Axios (with automatic silent token refresh interceptor)
 - **Routing**: React Router DOM v7
 - **Notifications**: React Hot Toast
+- **Context**: Custom `ConfirmContext` for global confirmation dialogs
 
 ### Backend
-- **Environment**: Node.js
+- **Environment**: Node.js 20
 - **Framework**: Express.js v5
 - **Database**: MongoDB (Mongoose ODM v9)
-- **File Storage**: Cloudinary (resumes via `multer-storage-cloudinary`; images via `multer`)
-- **Authentication**: JWT (Access Token 15m + Refresh Token 7d, stored as hashed in DB)
-- **Email Service**: Nodemailer (Gmail SMTP) — OTP, password reset, welcome emails
+- **File Storage**: Cloudinary (resumes via `multer-storage-cloudinary`; images & PDFs via `multer`)
+- **Authentication**: JWT (Access Token 15m + Refresh Token 7d, stored as bcrypt hash in DB)
+- **Email Service**: **Brevo HTTP API** — OTP, admin OTP, password reset, and application status update emails
+- **Scheduled Jobs**: `node-cron` — daily notice auto-archive (30 days) + purge (60 days) at midnight IST
 - **Validation**: `express-validator` (per-route validation chains)
-- **Security**: Helmet, `express-rate-limit`, bcrypt, httpOnly cookies
-- **Logging**: Morgan (dev mode / admin route in production)
+- **Security**: Helmet, `express-rate-limit`, bcrypt, httpOnly cookies, HTML-escaped email templates
+- **Logging**: Morgan (dev mode; admin routes only in production)
+- **Testing**: Jest + Supertest
 
 ### Deployment & DevOps
-- **Containerization**: Docker & Docker Compose (Multi-stage builds, dev & prod orchestration)
-- **Web Server**: Nginx Alpine (Serving production React build with SPA routing)
-- **CI/CD**: GitHub Actions (`.github/workflows/ci.yml` for automated testing and image verification)
-- **Cloud Hosting**: Render (Node.js web service & Static site via `render.yaml`)
+- **Containerization**: Docker & Docker Compose (multi-stage builds, dev & prod orchestration)
+- **Web Server**: Nginx Alpine (serving production React SPA with `try_files` fallback routing)
+- **CI/CD**: GitHub Actions (`.github/workflows/ci.yml` — automated test run + Docker build verification)
+- **Cloud Hosting**: Render (Node.js web service & static site via `render.yaml`)
 
 ---
 
@@ -71,57 +81,61 @@ CPMS is built using the **MERN** stack, focusing on professional aesthetics, sec
 cpms-mini-project/
 ├── .github/
 │   └── workflows/
-│       └── ci.yml                # GitHub Actions automated CI build & test pipeline
-├── ci_cd_guide.md                # Comprehensive CI/CD and DevOps documentation
+│       └── ci.yml                # GitHub Actions CI pipeline (test + Docker build)
+├── ci_cd_guide.md                # Comprehensive CI/CD & DevOps documentation
 ├── docker-compose.yml            # Production Docker Compose orchestration
-├── docker-compose.dev.yml        # Development Docker Compose orchestration with hot-reload
-├── render.yaml                   # Render deployment configuration
+├── docker-compose.dev.yml        # Development Docker Compose with hot-reload volume mounts
+├── render.yaml                   # Render cloud deployment configuration
+│
 ├── backend/
-│   ├── Dockerfile                # Multi-stage Dockerfile (base, dev, prod targets)
+│   ├── Dockerfile                # Multi-stage: base → development → production
 │   ├── app.js                    # Express app setup (middleware, routes, error handler)
-│   ├── server.js                 # HTTP server entry point
+│   ├── server.js                 # HTTP server entry point + starts notice archive cron
+│   ├── __tests__/
+│   │   └── app.test.js           # Backend integration tests (Jest + Supertest)
 │   ├── config/
-│   │   ├── cloudinary.js         # Cloudinary SDK config
+│   │   ├── cloudinary.js         # Cloudinary SDK configuration
 │   │   ├── db.js                 # MongoDB connection
-│   │   └── nodemailer.js         # Nodemailer transporter config
+│   │   └── nodemailer.js         # Nodemailer config (kept as fallback reference)
 │   ├── constants/
-│   │   └── roles.js              # Role constants (student, admin, hr)
+│   │   └── roles.js              # Role constants: student, admin
 │   ├── controllers/
-│   │   ├── auth.controller.js    # Register, OTP verify, login, logout, refresh, forgot/reset password
-│   │   ├── admin.controller.js   # Admin-specific operations
+│   │   ├── auth.controller.js    # Register, OTP verify, login, admin-login (OTP), logout, refresh, forgot/reset password, admin-change-password
+│   │   ├── admin.controller.js   # Dashboard stats, student directory, student by ID, drive reports
 │   │   ├── profile.controller.js # Student profile CRUD + resume upload/delete
 │   │   ├── drive.controller.js   # Placement drive CRUD (with logo upload)
-│   │   ├── application.controller.js # Apply to drive, view applications, update status
-│   │   └── notice.controller.js  # Notice board CRUD
+│   │   ├── application.controller.js # Apply, view applications, individual & bulk status update
+│   │   └── notice.controller.js  # Notice CRUD, archive, restore, auto-archive/purge runners, read-tracking
 │   ├── middleware/
 │   │   ├── auth.middleware.js     # verifyAccessToken, restrictToRoles
-│   │   ├── role.middleware.js     # requireRole (student-only routes)
-│   │   ├── upload.middleware.js   # Multer: resume (PDF, 2MB) + image (logo) upload
+│   │   ├── role.middleware.js     # requireRole helper
+│   │   ├── upload.middleware.js   # Multer: resume (PDF, 2MB) + image (logo) + PDF (notice attachment)
 │   │   ├── rateLimiter.js         # apiLimiter, authLimiter, sensitiveLimiter
 │   │   ├── validateRequest.middleware.js # express-validator error aggregator
 │   │   └── error.middleware.js    # Global error handler
 │   ├── models/
-│   │   ├── User.model.js          # User schema (all roles, refresh token hash)
-│   │   ├── Admin.model.js         # Admin model
+│   │   ├── User.model.js          # Student schema (USN, department, yearOfStudy, readNotices, refresh token)
+│   │   ├── Admin.model.js         # Admin schema (readNotices, mustChangePassword, refresh token)
 │   │   ├── StudentProfile.model.js # Full student academic & personal profile
-│   │   ├── Drive.model.js         # Placement drive schema (eligibility, company info)
-│   │   ├── Application.model.js   # Student drive application + status
-│   │   ├── Notice.model.js        # Notice board schema
-│   │   └── OTP.model.js           # OTP storage with TTL expiry
+│   │   ├── Drive.model.js         # Drive schema (eligibility, status engine, companyLogo, dynamic createdBy)
+│   │   ├── Application.model.js   # Application schema (status pipeline, remarks, resumeSnapshot)
+│   │   ├── Notice.model.js        # Notice schema (category, PDF attachment, isArchived, archivedAt)
+│   │   └── OTP.model.js           # OTP storage with TTL expiry index
 │   ├── routes/
 │   │   ├── auth.routes.js         # /api/auth/*
 │   │   ├── profile.routes.js      # /api/profile/* (student only)
-│   │   ├── drive.routes.js        # /api/drives/*
+│   │   ├── drive.routes.js        # /api/drives/* (admin-only for write ops)
 │   │   ├── application.routes.js  # /api/applications/*
-│   │   ├── notice.routes.js       # /api/notices/*
-│   │   └── admin.routes.js        # /api/admin/*
+│   │   ├── notice.routes.js       # /api/notices/* (with archive & read-tracking sub-routes)
+│   │   └── admin.routes.js        # /api/admin/* (admin-only)
 │   ├── scripts/
-│   │   └── seedAdmin.js           # Seed initial admin user
+│   │   └── seedAdmin.js           # Seeds the initial admin user
 │   ├── services/
-│   │   └── email.service.js       # All email templates (OTP, reset, welcome)
+│   │   ├── email.service.js       # Brevo HTTP API: sendOTPEmail, sendAdminOTPEmail, sendResetEmail, sendStatusUpdateEmail
+│   │   └── noticeArchiveCron.js   # node-cron: auto-archive (30d) + purge (60d) @ midnight IST
 │   ├── utils/
 │   │   ├── ApiResponse.js         # Standardised API response wrapper
-│   │   └── generateOTP.js         # OTP generator utility
+│   │   └── generateOTP.js         # 6-digit OTP generator
 │   └── validators/
 │       ├── auth.validators.js     # Validation chains for all auth routes
 │       ├── profile.validators.js  # Profile update validation
@@ -129,29 +143,32 @@ cpms-mini-project/
 │       └── notice.validators.js   # Notice create/update validation
 │
 └── frontend/
-    ├── Dockerfile                 # Multi-stage Docker build (Node build + Nginx alpine)
-    ├── nginx.conf                 # Nginx SPA routing config (try_files for React Router)
+    ├── Dockerfile                 # Multi-stage: Node 20 (Vite build) → Nginx Alpine (serve)
+    ├── nginx.conf                 # Nginx SPA routing (try_files for React Router)
     ├── index.html
     ├── vite.config.js
     ├── tailwind.config.js
-    ├── vercel.json
     └── src/
-        ├── main.jsx               # React root, Redux Provider, QueryClient
+        ├── main.jsx               # React root, Redux Provider
         ├── App.jsx                # App entry with router
         ├── app/
         │   └── store.js           # Redux store configuration
         ├── api/
-        │   ├── axiosInstance.js   # Axios base instance + refresh token interceptor
+        │   ├── axiosInstance.js   # Axios base instance + silent token refresh interceptor
         │   ├── authApi.js         # Auth API calls
         │   ├── profileApi.js      # Profile API calls
         │   ├── driveApi.js        # Drive API calls
-        │   ├── applicationApi.js  # Application API calls
-        │   ├── noticeApi.js       # Notice API calls
+        │   ├── applicationApi.js  # Application API calls (incl. bulk status)
+        │   ├── noticeApi.js       # Notice API calls (incl. archive, read-tracking)
         │   └── adminApi.js        # Admin API calls
+        ├── constants/
+        │   └── roles.js           # ROLES, DEPARTMENTS, YEARS_OF_STUDY, DASHBOARD_ROUTES
+        ├── context/
+        │   └── ConfirmContext.jsx # Global confirmation dialog context
         ├── features/
         │   ├── auth/
-        │   │   ├── authSlice.js   # Auth state (user, tokens)
-        │   │   └── authThunks.js  # Async login/logout/refresh thunks
+        │   │   ├── authSlice.js
+        │   │   └── authThunks.js
         │   ├── profile/
         │   │   ├── profileSlice.js
         │   │   └── profileThunks.js
@@ -168,7 +185,7 @@ cpms-mini-project/
         │   │   ├── VerifyEmailPage.jsx
         │   │   ├── ForgotPasswordPage.jsx
         │   │   ├── ResetPasswordPage.jsx
-        │   │   ├── AdminLoginPage.jsx
+        │   │   ├── AdminLoginPage.jsx          # Two-step: password → Brevo OTP verification
         │   │   └── AdminChangePasswordPage.jsx
         │   └── dashboard/
         │       ├── StudentDashboard.jsx
@@ -177,25 +194,24 @@ cpms-mini-project/
         │       ├── DrivesPage.jsx
         │       ├── DriveDetail.jsx
         │       ├── ApplicationsPage.jsx
-        │       ├── NoticesPage.jsx
-        │       ├── HRDashboard.jsx
+        │       ├── NoticesPage.jsx              # Per-notice read-tracking
         │       ├── AdminDashboard.jsx
         │       └── admin/
         │           ├── AdminOverview.jsx
         │           ├── AdminDrivesPage.jsx
-        │           ├── AdminNoticesPage.jsx
+        │           ├── AdminNoticesPage.jsx     # Active + archived tabs, notice CRUD
         │           ├── DriveApplicationsPage.jsx
         │           ├── StudentDirectory.jsx
         │           ├── StudentProfileModal.jsx
         │           └── components/
         │               ├── DriveModal.jsx              # Create/Edit drive with logo upload
         │               ├── DriveDetailsModal.jsx       # View drive details
-        │               ├── AnalyticsDashboard.jsx      # Recharts analytics
-        │               └── ApplicationStatusManager.jsx
+        │               ├── AnalyticsDashboard.jsx      # Recharts placement analytics
+        │               └── ApplicationStatusManager.jsx # Individual + bulk status management
         ├── routes/
-        │   ├── AppRouter.jsx       # All app routes
+        │   ├── AppRouter.jsx       # All app routes (student + admin)
         │   ├── ProtectedRoute.jsx  # Auth guard
-        │   ├── PublicRoute.jsx     # Redirect if logged in
+        │   ├── PublicRoute.jsx     # Redirect if already logged in
         │   └── RoleRoute.jsx       # Role-based route guard
         ├── components/
         │   ├── CompanyLogo.jsx
@@ -227,39 +243,36 @@ cpms-mini-project/
 ## ⚙️ Setup & Installation
 
 ### Prerequisites
-- **Node.js**: v18+ (for manual local setup)
-- **Docker & Docker Compose**: Recommended for containerized deployment
-- **MongoDB Atlas account**: Or local MongoDB instance
-- **Cloudinary account**: For student resume (PDF) and company logo (image) uploads
-- **Gmail App Password**: For Nodemailer email notifications & OTP verification
+- **Node.js**: v20+ (for manual local setup)
+- **Docker & Docker Compose**: Recommended for containerized setup
+- **MongoDB Atlas**: Or a local MongoDB instance
+- **Cloudinary account**: For resume (PDF), company logo (image), and notice attachment (PDF) uploads
+- **Brevo account**: For all transactional emails (OTP, admin OTP, password reset, status updates)
 
 ---
 
 ### Option A: 🐳 Running with Docker (Recommended)
 
-You can spin up the entire application stack using Docker Compose without needing local Node.js environments.
-
-1. **Clone the repository & configure environment variables**
+1. **Clone and configure environment variables**
    ```bash
    git clone https://github.com/Alok-Chandra108/Placement-management-system.git
    cd cpms-mini-project
-   # Ensure backend/.env and frontend/.env are created (see Environment Variables below)
+   # Create backend/.env (see Environment Variables below)
    ```
 
-2. **Run in Production Mode (Nginx + Node.js)**
+2. **Production Mode (Nginx + Node.js)**
    ```bash
    docker compose up --build -d
    ```
-   - **Frontend (Nginx)**: Accessible at `http://localhost` (Port 80)
-   - **Backend API**: Accessible at `http://localhost:5000`
+   - **Frontend (Nginx)**: `http://localhost` (Port 80)
+   - **Backend API**: `http://localhost:5000`
 
-3. **Run in Development Mode (Live Reloading)**
-   For local development with hot-reloading across frontend and backend:
+3. **Development Mode (Live Reloading)**
    ```bash
    docker compose -f docker-compose.dev.yml up --build
    ```
-   - **Frontend Dev Server**: Accessible at `http://localhost:5173`
-   - **Backend Dev Server**: Accessible at `http://localhost:5000`
+   - **Frontend Dev Server**: `http://localhost:5173`
+   - **Backend Dev Server**: `http://localhost:5000`
 
 ---
 
@@ -275,7 +288,7 @@ You can spin up the entire application stack using Docker Compose without needin
    ```bash
    cd backend
    npm install
-   # Create .env file (see Environment Variables below)
+   # Create .env (see Environment Variables below)
    npm run dev
    ```
 
@@ -283,14 +296,19 @@ You can spin up the entire application stack using Docker Compose without needin
    ```bash
    cd frontend
    npm install
-   # Create .env file (see Environment Variables below)
    npm run dev
    ```
 
-4. **Seed Admin User** *(first-time setup)*
+4. **Seed Admin User** *(first-time setup only)*
    ```bash
    cd backend
    node scripts/seedAdmin.js
+   ```
+
+5. **Run Backend Tests**
+   ```bash
+   cd backend
+   npm test
    ```
 
 ---
@@ -308,8 +326,9 @@ JWT_REFRESH_SECRET=your_refresh_secret
 JWT_ACCESS_EXPIRY=15m
 JWT_REFRESH_EXPIRY=7d
 
-GMAIL_USER=your_email@gmail.com
-GMAIL_APP_PASSWORD=your_gmail_app_password
+# Brevo transactional email (replaces Gmail SMTP)
+BREVO_API_KEY=your_brevo_api_key
+BREVO_SENDER_EMAIL=your_verified_brevo_sender@example.com
 
 CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
@@ -319,72 +338,125 @@ FRONTEND_URL=http://localhost:5173
 ADMIN_EMAIL=admin@mite.ac.in
 ```
 
+> **Note:** Gmail SMTP (`GMAIL_USER`, `GMAIL_APP_PASSWORD`) is no longer used. All transactional emails are delivered via the **Brevo HTTP API**, which is not blocked by Render's cloud infrastructure.
+
 ### Frontend (`frontend/.env`)
 ```env
 VITE_API_BASE_URL=http://localhost:5000/api
-VITE_COLLEGE_DOMAIN=mite.ac.in
-VITE_COLLEGE_NAME="Mangalore Institute of Technology & Engineering"
 ```
 
 ---
 
 ## 🌐 API Routes
 
-| Method | Endpoint | Role | Description |
-|--------|----------|------|-------------|
+### Auth (`/api/auth`)
+
+| Method | Endpoint | Access | Description |
+|--------|----------|--------|-------------|
 | POST | `/api/auth/register` | Public | Student registration |
-| POST | `/api/auth/verify-email` | Public | OTP email verification |
+| POST | `/api/auth/verify-email` | Public | OTP email verification (10-min TTL) |
 | POST | `/api/auth/resend-otp` | Public | Resend OTP |
 | PUT | `/api/auth/update-verify-email` | Public | Update email & re-verify |
-| POST | `/api/auth/login` | Public | Student/HR login |
-| POST | `/api/auth/admin-login` | Public | Admin login |
+| POST | `/api/auth/login` | Public | Student login |
+| POST | `/api/auth/admin-login` | Public | Admin login — step 1: password; step 2: OTP via Brevo |
 | POST | `/api/auth/refresh-token` | Public | Refresh access token |
-| POST | `/api/auth/forgot-password` | Public | Send password reset email |
+| POST | `/api/auth/forgot-password` | Public | Send password reset email (15-min TTL) |
 | POST | `/api/auth/validate-reset-token` | Public | Validate reset token |
 | POST | `/api/auth/reset-password` | Public | Reset password |
 | POST | `/api/auth/logout` | Auth | Logout & clear tokens |
 | POST | `/api/auth/admin-change-password` | Admin | Change admin password |
+
+### Profile (`/api/profile`)
+
+| Method | Endpoint | Access | Description |
+|--------|----------|--------|-------------|
 | GET | `/api/profile/me` | Student | Get own profile |
 | PUT | `/api/profile/me` | Student | Update own profile |
-| POST | `/api/profile/resume` | Student | Upload resume (PDF, ≤2MB) |
+| POST | `/api/profile/resume` | Student | Upload resume (PDF ≤ 2MB) |
 | DELETE | `/api/profile/resume` | Student | Delete resume |
-| GET | `/api/drives` | Auth | List all drives |
-| POST | `/api/drives` | Admin/HR | Create drive (with logo) |
+
+### Drives (`/api/drives`)
+
+| Method | Endpoint | Access | Description |
+|--------|----------|--------|-------------|
+| GET | `/api/drives` | Auth | List all active drives |
+| POST | `/api/drives` | Admin | Create drive (with optional logo upload) |
 | GET | `/api/drives/:id` | Auth | Get drive details |
-| PATCH | `/api/drives/:id` | Admin/HR | Update drive |
-| DELETE | `/api/drives/:id` | Admin/HR | Delete drive |
+| PATCH | `/api/drives/:id` | Admin | Update drive |
+| DELETE | `/api/drives/:id` | Admin | Soft-delete drive |
+
+### Applications (`/api/applications`)
+
+| Method | Endpoint | Access | Description |
+|--------|----------|--------|-------------|
 | POST | `/api/applications/apply/:driveId` | Student | Apply to a drive |
-| GET | `/api/applications/my-applications` | Student | My applications |
-| GET | `/api/applications/drive/:driveId` | Admin/HR | Applicants for a drive |
-| PATCH | `/api/applications/:applicationId/status` | Admin/HR | Update application status |
-| GET | `/api/notices` | Auth | List all notices |
-| POST | `/api/notices` | Admin/HR | Create notice |
+| GET | `/api/applications/my-applications` | Student | My applications list |
+| GET | `/api/applications/drive/:driveId` | Admin | All applicants for a drive |
+| PATCH | `/api/applications/:applicationId/status` | Admin | Update individual status (triggers Brevo email to student) |
+| PATCH | `/api/applications/bulk-status` | Admin | Bulk update multiple application statuses |
+
+### Notices (`/api/notices`)
+
+| Method | Endpoint | Access | Description |
+|--------|----------|--------|-------------|
+| GET | `/api/notices` | Auth | List active, non-archived notices |
+| POST | `/api/notices` | Admin | Create notice (optional PDF attachment via Cloudinary) |
 | GET | `/api/notices/:id` | Auth | Get notice details |
-| PUT | `/api/notices/:id` | Admin/HR | Update notice |
-| DELETE | `/api/notices/:id` | Admin/HR | Delete notice |
+| PUT | `/api/notices/:id` | Admin | Update notice |
+| DELETE | `/api/notices/:id` | Admin | Delete notice |
+| GET | `/api/notices/archived` | Admin | List archived notices |
+| PATCH | `/api/notices/:id/archive` | Admin | Manually archive a notice |
+| PATCH | `/api/notices/:id/restore` | Admin | Restore an archived notice |
+| GET | `/api/notices/read` | Auth | Get IDs of notices read by current user |
+| PATCH | `/api/notices/:id/read` | Auth | Mark a notice as read |
+
+### Admin (`/api/admin`)
+
+| Method | Endpoint | Access | Description |
+|--------|----------|--------|-------------|
+| GET | `/api/admin/stats` | Admin | Dashboard placement statistics |
+| GET | `/api/admin/students` | Admin | All registered students |
+| GET | `/api/admin/students/:id` | Admin | Get student profile by ID |
+| GET | `/api/admin/reports/drive/:driveId` | Admin | Drive-specific applicant report |
+
+---
+
+## 📧 Email System (Brevo)
+
+All system emails are delivered via the **Brevo HTTP API** (`https://api.brevo.com/v3/smtp/email`) with custom-branded HTML templates:
+
+| Email Type | Trigger | Template Style |
+|------------|---------|---------------|
+| Student OTP | Registration / resend-OTP | MITE branded, orange OTP block, 10-min expiry |
+| Admin OTP | Admin login step 2 | Dark security-themed, gradient OTP block, warning notice |
+| Password Reset | Forgot password | MITE branded, CTA button, 15-min expiry |
+| Application Status Update | Admin updates application status | Status badge with colour coding + optional remarks block |
+
+The status update email is **non-blocking** — a delivery failure does not fail the API response.
 
 ---
 
 ## 🚢 Deployment & DevOps
 
-This project is built with industry-standard DevOps practices, supporting containerized orchestration, continuous integration, and cloud hosting:
-
 ### Containerization & Orchestration
-- **Docker Multi-Stage Builds**:
-  - **Frontend (`frontend/Dockerfile`)**: Compiles Vite production bundle in a Node Alpine stage and serves static assets via an Nginx Alpine container configured with fallback routing (`try_files $uri $uri/ /index.html`).
-  - **Backend (`backend/Dockerfile`)**: Optimized multi-stage build targeting both development (`npm run dev`) and production (`npm start`) environments.
-- **Docker Compose**:
-  - **`docker-compose.yml`**: Production stack running backend on port `5000` and frontend Nginx on port `80` over a shared bridge network (`cpms-network`).
-  - **`docker-compose.dev.yml`**: Development environment with live volume mounts (`./frontend:/app`, `./backend:/app`) for seamless hot-reloading.
 
-### Continuous Integration & Delivery (CI/CD)
-- **GitHub Actions Pipeline (`.github/workflows/ci.yml`)**: Automated CI workflow triggered on pushes and pull requests to `main`. It automatically sets up Node.js, runs automated dependency checks and tests across both frontend and backend, and verifies that Docker container images build cleanly without errors.
-- **DevOps Documentation**: For a comprehensive deep-dive into our CI/CD workflows, container registry integration (Docker Hub / GHCR), and automated server deployment via SSH, refer to [ci_cd_guide.md](file:///c:/Users/Alok%20Chandra/cpms-mini-project/ci_cd_guide.md).
+- **Docker Multi-Stage Builds**:
+  - **Frontend (`frontend/Dockerfile`)**: Stage 1 (Node 20 Alpine) — `npm run build` produces `dist/`. Stage 2 (Nginx Alpine) — serves `dist/` with SPA fallback routing via `nginx.conf`.
+  - **Backend (`backend/Dockerfile`)**: Three stages — `base` (shared deps), `development` (nodemon hot-reload), `production` (lean, `--omit=dev`).
+- **Docker Compose**:
+  - **`docker-compose.yml`**: Production — backend on `5000`, frontend Nginx on `80`, connected via `cpms-network` bridge.
+  - **`docker-compose.dev.yml`**: Development override — live volume mounts for hot-reloading on both services.
+
+### CI/CD (GitHub Actions)
+
+- **`.github/workflows/ci.yml`**: Triggers on push/PR to `main`. Sets up Node.js 20, installs deps, runs Jest tests (`npm test`) for backend and frontend, then verifies Docker image builds for both services.
+- For a deep-dive into registry integration and SSH-based auto-deployment, see [ci_cd_guide.md](ci_cd_guide.md).
 
 ### Cloud Hosting (Render)
-- Configured for seamless deployment via `render.yaml`:
-  - **Backend**: Node.js web service (`cpms-backend`) running `npm start` from `backend/`.
-  - **Frontend**: Static site (`cpms-frontend`) building via `npm run build` from `frontend/`, serving `dist/`.
+
+Configured via `render.yaml`:
+- **Backend** (`cpms-backend`): Node.js web service, `npm start` from `backend/`
+- **Frontend** (`cpms-frontend`): Static site, `npm run build` from `frontend/`, serving `dist/`
 
 ---
 
