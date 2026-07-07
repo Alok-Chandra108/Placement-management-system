@@ -1,6 +1,10 @@
 const Notice = require('../models/Notice.model');
 const User = require('../models/User.model');
+const Admin = require('../models/Admin.model');
 const ApiResponse = require('../utils/ApiResponse');
+
+// Helper: return the correct model based on the authenticated user's role
+const getActorModel = (role) => (role === 'admin' ? Admin : User);
 
 // ── Timeframe Constants ────────────────────────────────────────────────────────
 const ARCHIVE_AFTER_DAYS = 30;  // Auto-archive active notices after 30 days
@@ -302,8 +306,11 @@ exports.markNoticeRead = async (req, res, next) => {
       return ApiResponse.error(res, 'Notice not found', 404);
     }
 
+    // Route to the correct collection — Admin docs live in Admin, students in User
+    const ActorModel = getActorModel(req.user.role);
+
     // $addToSet ensures no duplicates
-    await User.findByIdAndUpdate(req.user.id, {
+    await ActorModel.findByIdAndUpdate(req.user.id, {
       $addToSet: { readNotices: noticeId },
     });
 
@@ -323,9 +330,11 @@ exports.markNoticeRead = async (req, res, next) => {
  */
 exports.getReadNotices = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.id).select('readNotices');
+    // Route to the correct collection — Admin docs live in Admin, students in User
+    const ActorModel = getActorModel(req.user.role);
+    const actor = await ActorModel.findById(req.user.id).select('readNotices');
     return ApiResponse.success(res, 'Read notices fetched', {
-      readNotices: user?.readNotices || [],
+      readNotices: actor?.readNotices || [],
     });
   } catch (error) {
     next(error);
