@@ -26,6 +26,8 @@ CPMS is built using the **MERN** stack, focusing on professional aesthetics, sec
 - **Role-Based Access Control (RBAC)**: Strict permission handling across student, admin, and HR roles.
 - **Rate Limiting**: API-level and auth-level rate limiting to prevent abuse.
 - **Security**: Helmet headers, hashed refresh tokens stored in DB, httpOnly cookies.
+- **Docker Containerization**: Multi-stage Docker builds for frontend (served via Nginx Alpine) and backend, with Docker Compose orchestration for production and hot-reloading dev environments.
+- **Automated CI/CD Pipeline**: GitHub Actions workflow (`ci.yml`) for continuous integration, automated testing, and Docker build verification on every push to `main`.
 
 ---
 
@@ -55,9 +57,11 @@ CPMS is built using the **MERN** stack, focusing on professional aesthetics, sec
 - **Security**: Helmet, `express-rate-limit`, bcrypt, httpOnly cookies
 - **Logging**: Morgan (dev mode / admin route in production)
 
-### Deployment
-- **Backend**: Render (Node.js web service — `render.yaml`)
-- **Frontend**: Render (Static site — Vite build, `dist/`)
+### Deployment & DevOps
+- **Containerization**: Docker & Docker Compose (Multi-stage builds, dev & prod orchestration)
+- **Web Server**: Nginx Alpine (Serving production React build with SPA routing)
+- **CI/CD**: GitHub Actions (`.github/workflows/ci.yml` for automated testing and image verification)
+- **Cloud Hosting**: Render (Node.js web service & Static site via `render.yaml`)
 
 ---
 
@@ -65,7 +69,15 @@ CPMS is built using the **MERN** stack, focusing on professional aesthetics, sec
 
 ```text
 cpms-mini-project/
+├── .github/
+│   └── workflows/
+│       └── ci.yml                # GitHub Actions automated CI build & test pipeline
+├── ci_cd_guide.md                # Comprehensive CI/CD and DevOps documentation
+├── docker-compose.yml            # Production Docker Compose orchestration
+├── docker-compose.dev.yml        # Development Docker Compose orchestration with hot-reload
+├── render.yaml                   # Render deployment configuration
 ├── backend/
+│   ├── Dockerfile                # Multi-stage Dockerfile (base, dev, prod targets)
 │   ├── app.js                    # Express app setup (middleware, routes, error handler)
 │   ├── server.js                 # HTTP server entry point
 │   ├── config/
@@ -117,6 +129,8 @@ cpms-mini-project/
 │       └── notice.validators.js   # Notice create/update validation
 │
 └── frontend/
+    ├── Dockerfile                 # Multi-stage Docker build (Node build + Nginx alpine)
+    ├── nginx.conf                 # Nginx SPA routing config (try_files for React Router)
     ├── index.html
     ├── vite.config.js
     ├── tailwind.config.js
@@ -213,12 +227,43 @@ cpms-mini-project/
 ## ⚙️ Setup & Installation
 
 ### Prerequisites
-- Node.js v18+
-- MongoDB Atlas account (or local MongoDB)
-- Cloudinary account (for resume and logo uploads)
-- Gmail App Password (for email services)
+- **Node.js**: v18+ (for manual local setup)
+- **Docker & Docker Compose**: Recommended for containerized deployment
+- **MongoDB Atlas account**: Or local MongoDB instance
+- **Cloudinary account**: For student resume (PDF) and company logo (image) uploads
+- **Gmail App Password**: For Nodemailer email notifications & OTP verification
 
-### Quick Start
+---
+
+### Option A: 🐳 Running with Docker (Recommended)
+
+You can spin up the entire application stack using Docker Compose without needing local Node.js environments.
+
+1. **Clone the repository & configure environment variables**
+   ```bash
+   git clone https://github.com/Alok-Chandra108/Placement-management-system.git
+   cd cpms-mini-project
+   # Ensure backend/.env and frontend/.env are created (see Environment Variables below)
+   ```
+
+2. **Run in Production Mode (Nginx + Node.js)**
+   ```bash
+   docker compose up --build -d
+   ```
+   - **Frontend (Nginx)**: Accessible at `http://localhost` (Port 80)
+   - **Backend API**: Accessible at `http://localhost:5000`
+
+3. **Run in Development Mode (Live Reloading)**
+   For local development with hot-reloading across frontend and backend:
+   ```bash
+   docker compose -f docker-compose.dev.yml up --build
+   ```
+   - **Frontend Dev Server**: Accessible at `http://localhost:5173`
+   - **Backend Dev Server**: Accessible at `http://localhost:5000`
+
+---
+
+### Option B: 💻 Manual Local Setup
 
 1. **Clone the repository**
    ```bash
@@ -320,12 +365,26 @@ VITE_COLLEGE_NAME="Mangalore Institute of Technology & Engineering"
 
 ---
 
-## 🚢 Deployment
+## 🚢 Deployment & DevOps
 
-This project is configured for deployment on **Render** via `render.yaml`:
+This project is built with industry-standard DevOps practices, supporting containerized orchestration, continuous integration, and cloud hosting:
 
-- **Backend**: Node.js web service (`cpms-backend`) — `npm start` from `backend/`
-- **Frontend**: Static site (`cpms-frontend`) — `npm run build` from `frontend/`, serving `dist/`
+### Containerization & Orchestration
+- **Docker Multi-Stage Builds**:
+  - **Frontend (`frontend/Dockerfile`)**: Compiles Vite production bundle in a Node Alpine stage and serves static assets via an Nginx Alpine container configured with fallback routing (`try_files $uri $uri/ /index.html`).
+  - **Backend (`backend/Dockerfile`)**: Optimized multi-stage build targeting both development (`npm run dev`) and production (`npm start`) environments.
+- **Docker Compose**:
+  - **`docker-compose.yml`**: Production stack running backend on port `5000` and frontend Nginx on port `80` over a shared bridge network (`cpms-network`).
+  - **`docker-compose.dev.yml`**: Development environment with live volume mounts (`./frontend:/app`, `./backend:/app`) for seamless hot-reloading.
+
+### Continuous Integration & Delivery (CI/CD)
+- **GitHub Actions Pipeline (`.github/workflows/ci.yml`)**: Automated CI workflow triggered on pushes and pull requests to `main`. It automatically sets up Node.js, runs automated dependency checks and tests across both frontend and backend, and verifies that Docker container images build cleanly without errors.
+- **DevOps Documentation**: For a comprehensive deep-dive into our CI/CD workflows, container registry integration (Docker Hub / GHCR), and automated server deployment via SSH, refer to [ci_cd_guide.md](file:///c:/Users/Alok%20Chandra/cpms-mini-project/ci_cd_guide.md).
+
+### Cloud Hosting (Render)
+- Configured for seamless deployment via `render.yaml`:
+  - **Backend**: Node.js web service (`cpms-backend`) running `npm start` from `backend/`.
+  - **Frontend**: Static site (`cpms-frontend`) building via `npm run build` from `frontend/`, serving `dist/`.
 
 ---
 
