@@ -264,9 +264,21 @@ exports.updateBulkApplicationStatus = async (req, res, next) => {
     if (notifiableStatuses.includes(status)) {
       try {
         const applications = await Application.find({ _id: { $in: applicationIds } });
+        
+        const studentIds = [...new Set(applications.map(app => app.studentId?.toString()).filter(Boolean))];
+        const driveIds = [...new Set(applications.map(app => app.driveId?.toString()).filter(Boolean))];
+
+        const [users, drives] = await Promise.all([
+          User.find({ _id: { $in: studentIds } }).select('fullName email').lean(),
+          Drive.find({ _id: { $in: driveIds } }).select('companyName jobRole').lean()
+        ]);
+
+        const userMap = new Map(users.map(u => [u._id.toString(), u]));
+        const driveMap = new Map(drives.map(d => [d._id.toString(), d]));
+
         for (const application of applications) {
-          const studentUser = await User.findById(application.studentId).select('fullName email');
-          const drive = await Drive.findById(application.driveId).select('companyName jobRole');
+          const studentUser = userMap.get(application.studentId?.toString());
+          const drive = driveMap.get(application.driveId?.toString());
 
           if (studentUser && drive) {
              // Let it run asynchronously to avoid blocking the response for too long
