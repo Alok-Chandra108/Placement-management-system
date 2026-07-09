@@ -49,9 +49,11 @@ exports.getAllStudents = async (req, res, next) => {
     const query = { role: 'student' };
     
     if (search) {
+      const escapeRegex = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const escapedSearch = escapeRegex(search);
       query.$or = [
-        { fullName: { $regex: search, $options: 'i' } },
-        { usnNumber: { $regex: search, $options: 'i' } }
+        { fullName: { $regex: escapedSearch, $options: 'i' } },
+        { usnNumber: { $regex: escapedSearch, $options: 'i' } }
       ];
     }
     
