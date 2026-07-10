@@ -136,7 +136,7 @@ exports.getDriveReport = async (req, res, next) => {
     const { driveId } = req.params;
 
     // Fetch the drive details
-    const drive = await Drive.findById(driveId).select('companyName jobTitle date status');
+    const drive = await Drive.findById(driveId).select('companyName jobRole driveDate status');
     if (!drive) {
       return res.status(404).json({ success: false, message: 'Drive not found' });
     }
