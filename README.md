@@ -1,4 +1,4 @@
-﻿# Campus Placement Management System (CPMS) — MITE
+# Campus Placement Management System (CPMS) — MITE
 
 A modern, full-stack campus recruitment portal designed for the **Mangalore Institute of Technology & Engineering (MITE)**. The platform facilitates seamless interaction between **students** and **administrators** throughout the entire placement lifecycle.
 
@@ -108,7 +108,6 @@ cpms-mini-project/
 │   │   └── notice.controller.js  # Notice CRUD, archive, restore, auto-archive/purge runners, read-tracking
 │   ├── middleware/
 │   │   ├── auth.middleware.js     # verifyAccessToken, restrictToRoles
-│   │   ├── role.middleware.js     # requireRole helper
 │   │   ├── upload.middleware.js   # Multer: resume (PDF, 2MB) + image (logo) + PDF (notice attachment)
 │   │   ├── rateLimiter.js         # apiLimiter, authLimiter, sensitiveLimiter
 │   │   ├── validateRequest.middleware.js # express-validator error aggregator
