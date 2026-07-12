@@ -142,7 +142,7 @@ cpms-mini-project/
 │       └── notice.validators.js   # Notice create/update validation
 │
 └── frontend/
-    ├── Dockerfile                 # Multi-stage: Node 20 (Vite build) → Nginx Alpine (serve)
+    ├── Dockerfile                 # Multi-stage: base → development → build → production
     ├── nginx.conf                 # Nginx SPA routing (try_files for React Router)
     ├── index.html
     ├── vite.config.js
@@ -440,7 +440,7 @@ The status update email is **non-blocking** — a delivery failure does not fail
 ### Containerization & Orchestration
 
 - **Docker Multi-Stage Builds**:
-  - **Frontend (`frontend/Dockerfile`)**: Stage 1 (Node 20 Alpine) — `npm run build` produces `dist/`. Stage 2 (Nginx Alpine) — serves `dist/` with SPA fallback routing via `nginx.conf`.
+  - **Frontend (`frontend/Dockerfile`)**: Four stages — `base` (shared deps), `development` (Vite dev server on `5173`), `build` (`npm run build` produces `dist/`), and `production` (Nginx Alpine serving `dist/` via `nginx.conf`).
   - **Backend (`backend/Dockerfile`)**: Three stages — `base` (shared deps), `development` (nodemon hot-reload), `production` (lean, `--omit=dev`).
 - **Docker Compose**:
   - **`docker-compose.yml`**: Production — backend on `5000`, frontend Nginx on `80`, connected via `cpms-network` bridge.
