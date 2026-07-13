@@ -125,11 +125,11 @@ const studentProfileSchema = new mongoose.Schema(
     // ── Resume ──────────────────────────────────────────────────
     resumeUrl: {
       type: String,
-      default: '',
+      default: null,
     },
     resumePublicId: {
       type: String,
-      default: '',
+      default: null,
     },
 
     // ── Social / Links ──────────────────────────────────────────

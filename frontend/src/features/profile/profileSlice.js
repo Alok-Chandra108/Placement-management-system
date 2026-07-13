@@ -75,8 +75,8 @@ const profileSlice = createSlice({
       .addCase(deleteResume.fulfilled, (state) => {
         state.saving = false;
         if (state.profile) {
-          state.profile.resumeUrl = '';
-          state.profile.resumePublicId = '';
+          state.profile.resumeUrl = null;
+          state.profile.resumePublicId = null;
         }
       })
       .addCase(deleteResume.rejected, (state, action) => {

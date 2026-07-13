@@ -173,8 +173,8 @@ const deleteResume = async (req, res, next) => {
       // as the file might already be gone from Cloudinary.
     }
 
-    profile.resumeUrl = '';
-    profile.resumePublicId = '';
+    profile.resumeUrl = null;
+    profile.resumePublicId = null;
     await profile.save();
 
     return ApiResponse.success(res, 'Resume deleted successfully');
