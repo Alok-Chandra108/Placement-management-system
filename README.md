@@ -95,8 +95,7 @@ cpms-mini-project/
 │   │   └── app.test.js           # Backend integration tests (Jest + Supertest)
 │   ├── config/
 │   │   ├── cloudinary.js         # Cloudinary SDK configuration
-│   │   ├── db.js                 # MongoDB connection
-│   │   └── nodemailer.js         # Nodemailer config (kept as fallback reference)
+│   │   └── db.js                 # MongoDB connection
 │   ├── constants/
 │   │   └── roles.js              # Role constants: student, admin
 │   ├── controllers/
