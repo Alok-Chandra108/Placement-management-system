@@ -20,9 +20,13 @@ app.set('trust proxy', 1);
 app.use(helmet());
 
 // CORS — whitelist frontend URL
+const allowedOrigins = process.env.FRONTEND_URL
+  ? process.env.FRONTEND_URL.split(',').map((url) => url.trim())
+  : ['http://localhost:5173'];
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: allowedOrigins,
     credentials: true, // Allow cookies
   })
 );
