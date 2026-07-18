@@ -1,22 +1,37 @@
 const rateLimit = require('express-rate-limit');
 
 /**
- * Rate limiter for auth routes (login, register)
- * 100 requests per 15 minutes (configurable)
+ * Strict rate limiter for login endpoints (prevent brute force)
+ * 5 requests per 15 minutes
  */
-const authLimiter = rateLimit({
+const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: parseInt(process.env.AUTH_LIMIT_MAX, 10) || 100,
+  max: 5,
   message: {
     success: false,
-    message: 'Too many attempts. Please try again in 15 minutes.',
+    message: 'Too many login attempts. Please try again in 15 minutes.',
   },
   standardHeaders: true,
   legacyHeaders: false,
 });
 
 /**
- * Rate limiter for sensitive routes (forgot-password, resend-otp)
+ * Rate limiter for registration (prevent abuse)
+ * 3 requests per 15 minutes
+ */
+const registerLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 3,
+  message: {
+    success: false,
+    message: 'Too many registration attempts. Please try again in 15 minutes.',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+/**
+ * Rate limiter for sensitive operations (forgot-password, reset-password)
  * 3 requests per hour
  */
 const sensitiveLimiter = rateLimit({
@@ -45,4 +60,4 @@ const apiLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-module.exports = { authLimiter, sensitiveLimiter, apiLimiter };
+module.exports = { loginLimiter, registerLimiter, sensitiveLimiter, apiLimiter };

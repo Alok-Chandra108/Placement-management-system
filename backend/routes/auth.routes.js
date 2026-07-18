@@ -27,19 +27,19 @@ const {
 } = require('../validators/auth.validators');
 const { verifyAccessToken } = require('../middleware/auth.middleware');
 const { validateRequest } = require('../middleware/validateRequest.middleware');
-const { authLimiter, sensitiveLimiter } = require('../middleware/rateLimiter');
+const { loginLimiter, registerLimiter, sensitiveLimiter } = require('../middleware/rateLimiter');
 
 // Public routes
-router.post('/register', authLimiter, registerValidation, validateRequest, register);
+router.post('/register', registerLimiter, registerValidation, validateRequest, register);
 router.post('/verify-email', verifyEmailValidation, validateRequest, verifyEmail);
 router.post('/resend-otp', sensitiveLimiter, resendOTPValidation, validateRequest, resendOTP);
 router.put('/update-verify-email', sensitiveLimiter, updateVerifyEmailValidation, validateRequest, updateVerifyEmail);
-router.post('/login', authLimiter, loginValidation, validateRequest, login);
-router.post('/admin-login', authLimiter, loginValidation, validateRequest, adminLogin);
-router.post('/refresh-token', refreshTokenHandler);
+router.post('/login', loginLimiter, loginValidation, validateRequest, login);
+router.post('/admin-login', loginLimiter, loginValidation, validateRequest, adminLogin);
+router.post('/refresh-token', loginLimiter, refreshTokenHandler);
 router.post('/forgot-password', sensitiveLimiter, forgotPasswordValidation, validateRequest, forgotPassword);
 router.post('/validate-reset-token', validateResetTokenValidation, validateRequest, validateResetToken);
-router.post('/reset-password', resetPasswordValidation, validateRequest, resetPassword);
+router.post('/reset-password', sensitiveLimiter, resetPasswordValidation, validateRequest, resetPassword);
 
 // Protected routes
 router.post('/logout', verifyAccessToken, logout);
