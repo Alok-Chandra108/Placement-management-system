@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
 const User = require('../models/User.model');
 const Admin = require('../models/Admin.model');
 const OTP = require('../models/OTP.model');
@@ -7,6 +8,10 @@ const generateOTP = require('../utils/generateOTP');
 const ApiResponse = require('../utils/ApiResponse');
 const { sendOTPEmail, sendResetEmail, sendAdminOTPEmail } = require('../services/email.service');
 const { ROLES } = require('../constants/roles');
+
+// Generate a dummy hash at module load time for timing-safe comparisons
+// This prevents timing attacks that could reveal if an admin exists
+const DUMMY_HASH = bcrypt.hashSync('dummy_password_for_timing_safety', 10);
 
 /**
  * POST /api/auth/register
@@ -264,13 +269,14 @@ const adminLogin = async (req, res, next) => {
     // Find ONLY in Admin collection
     const admin = await Admin.findOne({ email: sanitizedEmail });
 
-    // Timing-safe: always compare even if admin not found (use dummy string)
+    // Timing-safe: always compare even if admin not found (use dummy hash)
+    // This prevents timing attacks that could reveal if an admin account exists
     let isMatch = false;
     if (admin) {
       isMatch = await admin.comparePassword(password);
     } else {
-      const bcrypt = require('bcrypt');
-      await bcrypt.compare(password, '$2b$10$2vNHT6Cc9xZWHWI.Gy7WZukBvYgLddwIAwC9kJ0AYcDUNuZxxf1dG');
+      // Use pre-generated dummy hash to ensure consistent timing
+      await bcrypt.compare(password, DUMMY_HASH);
     }
 
     if (!admin || !isMatch) {
