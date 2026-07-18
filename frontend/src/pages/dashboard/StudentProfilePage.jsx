@@ -32,6 +32,7 @@ import toast from 'react-hot-toast';
 import useAuth from '../../hooks/useAuth';
 import { useConfirm } from '../../context/ConfirmContext';
 import { calculateProfileCompletion } from '../../utils/profileUtils';
+import DatePicker from '../../components/DatePicker';
 
 // ── Animation Variants ──────────────────────────────────────────────
 const fadeUp = {
@@ -85,24 +86,34 @@ const SectionHeader = ({ icon: Icon, title, isEditing, onEdit, onCancel, onSave,
   </div>
 );
 
-const InfoItem = ({ label, value, icon: Icon, isEditing, register, name, error, type = "text", placeholder }) => (
+const InfoItem = ({ label, value, icon: Icon, isEditing, register, name, error, type = "text", placeholder, onChange, currentValue }) => (
   <div className="space-y-1.5">
     <div className="flex items-center gap-2 text-xs font-medium text-neutral-500 uppercase tracking-wider">
       {Icon && <Icon className="h-3.5 w-3.5" />}
       {label}
     </div>
     {isEditing ? (
-      <div className="relative">
-        <input
-          type={type}
-          {...register(name)}
+      type === "date" ? (
+        <DatePicker
+          value={currentValue}
+          onChange={onChange}
+          name={name}
+          error={error}
           placeholder={placeholder || label}
-          className={`w-full px-4 py-2.5 bg-neutral-50 border rounded-xl text-sm transition-all focus:ring-2 focus:ring-brand-blue/20 outline-none ${
-            error ? 'border-red-300 bg-red-50' : 'border-neutral-200 focus:border-brand-blue'
-          }`}
         />
-        {error && <p className="mt-1 text-[11px] text-red-500 font-medium pl-1">{error.message}</p>}
-      </div>
+      ) : (
+        <div className="relative">
+          <input
+            type={type}
+            {...register(name)}
+            placeholder={placeholder || label}
+            className={`w-full px-4 py-2.5 bg-neutral-50 border rounded-xl text-sm transition-all focus:ring-2 focus:ring-brand-blue/20 outline-none ${
+              error ? 'border-red-300 bg-red-50' : 'border-neutral-200 focus:border-brand-blue'
+            }`}
+          />
+          {error && <p className="mt-1 text-[11px] text-red-500 font-medium pl-1">{error.message}</p>}
+        </div>
+      )
     ) : (
       <p className="text-[15px] font-semibold text-neutral-800 break-words">
         {value || <span className="text-neutral-400 font-normal italic">Not provided</span>}
@@ -433,6 +444,8 @@ const StudentProfilePage = () => {
                 name="dateOfBirth"
                 error={errors.dateOfBirth}
                 type="date"
+                onChange={(e) => setValue('dateOfBirth', e.target.value)}
+                currentValue={watch('dateOfBirth')}
               />
               <div className="space-y-1.5">
                 <div className="flex items-center gap-2 text-xs font-medium text-neutral-500 uppercase tracking-wider">
