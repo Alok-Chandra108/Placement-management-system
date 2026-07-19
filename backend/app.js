@@ -57,15 +57,67 @@ app.use(
   })
 );
 
-// CORS — whitelist frontend URL
-const allowedOrigins = process.env.FRONTEND_URL
-  ? process.env.FRONTEND_URL.split(',').map((url) => url.trim())
-  : ['http://localhost:5173'];
+// CORS - Strict production whitelist
+const getAllowedOrigins = () => {
+  const envOrigins = process.env.FRONTEND_URL;
+  
+  // In production, require explicit FRONTEND_URL configuration
+  if (process.env.NODE_ENV === 'production') {
+    if (!envOrigins || envOrigins.trim() === '') {
+      console.error('ERROR: FRONTEND_URL must be set in production');
+      return []; // Empty array denies all origins in production
+    }
+    
+    return envOrigins
+      .split(',')
+      .map((url) => url.trim())
+      .filter((origin) => {
+        // Validate origin format
+        try {
+          const urlObj = new URL(origin);
+          // Only allow HTTPS in production
+          if (urlObj.protocol !== 'https:') {
+            console.warn(`WARNING: Origin ${origin} rejected - only HTTPS allowed in production`);
+            return false;
+          }
+          // Reject wildcards in production
+          if (origin.includes('*')) {
+            console.warn(`WARNING: Origin ${origin} rejected - wildcards not allowed`);
+            return false;
+          }
+          return true;
+        } catch (e) {
+          console.warn(`WARNING: Invalid origin ${origin} - ${e.message}`);
+          return false;
+        }
+      });
+  }
+  
+  // In development, allow localhost
+  const devOrigins = envOrigins
+    ? envOrigins.split(',').map((url) => url.trim())
+    : ['http://localhost:5173'];
+  
+  return devOrigins.filter((origin) => {
+    try {
+      const urlObj = new URL(origin);
+      return urlObj.protocol === 'http:' || urlObj.protocol === 'https:';
+    } catch (e) {
+      console.warn(`Invalid origin ${origin} - ${e.message}`);
+      return false;
+    }
+  });
+};
+
+const allowedOrigins = getAllowedOrigins();
+
+console.log(`CORS: Allowing ${allowedOrigins.length} origin(s):`, allowedOrigins);
 
 app.use(
   cors({
     origin: allowedOrigins,
     credentials: true, // Allow cookies
+    maxAge: 86400, // Cache preflight for 24 hours
   })
 );
 
