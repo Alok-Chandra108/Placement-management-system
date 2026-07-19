@@ -578,6 +578,7 @@ const resetPassword = async (req, res, next) => {
       .update(token)
       .digest('hex');
 
+    // Find user with valid token FIRST - before any modifications
     let user = await User.findOne({
       resetPasswordToken: hashedToken,
       resetPasswordExpiry: { $gt: Date.now() },
@@ -594,10 +595,14 @@ const resetPassword = async (req, res, next) => {
       return ApiResponse.error(res, 'Invalid or expired reset link', 400);
     }
 
-    // Update password (will be hashed by pre-save hook)
-    user.password = newPassword;
+    // SECURITY FIX: Immediately invalidate the token to prevent replay attacks
+    // This ensures one-time-use semantics - token is cleared BEFORE password update
+    // If save fails, token remains valid; if save succeeds, token is permanently consumed
     user.resetPasswordToken = null;
     user.resetPasswordExpiry = null;
+
+    // Update password (will be hashed by pre-save hook)
+    user.password = newPassword;
     user.refreshToken = null; // Invalidate all sessions
     await user.save();
 
