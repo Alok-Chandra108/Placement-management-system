@@ -7,6 +7,7 @@ const OTP = require('../models/OTP.model');
 const generateOTP = require('../utils/generateOTP');
 const ApiResponse = require('../utils/ApiResponse');
 const { sendOTPEmail, sendResetEmail, sendAdminOTPEmail } = require('../services/email.service');
+const { addToBlacklist, isBlacklisted } = require('../services/tokenBlacklist.service');
 const { ROLES } = require('../constants/roles');
 
 // Generate a dummy hash at module load time for timing-safe comparisons
@@ -330,6 +331,26 @@ const adminLogin = async (req, res, next) => {
  */
 const logout = async (req, res, next) => {
   try {
+    // Extract refresh token (same logic as refreshTokenHandler)
+    const token = req.body?.refreshToken || req.cookies?.refreshToken;
+
+    // If token exists, blacklist it
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+        const tokenHash = crypto
+          .createHash('sha256')
+          .update(token)
+          .digest('hex');
+
+        // Add to blacklist with remaining TTL
+        await addToBlacklist(tokenHash, decoded.exp);
+      } catch (err) {
+        // Token invalid/expired - ignore and continue with logout
+        console.log('Logout: Token verification failed, continuing with logout');
+      }
+    }
+
     // Clear refresh token from user document
     const user = await User.findByIdAndUpdate(req.user._id, {
       refreshToken: null,
@@ -376,6 +397,17 @@ const refreshTokenHandler = async (req, res, next) => {
       return ApiResponse.error(res, 'Invalid or expired refresh token', 401);
     }
 
+    // Check if token is blacklisted (revoked)
+    const tokenHash = crypto
+      .createHash('sha256')
+      .update(token)
+      .digest('hex');
+
+    const blacklisted = await isBlacklisted(tokenHash);
+    if (blacklisted) {
+      return ApiResponse.error(res, 'Token has been revoked', 401);
+    }
+
     // Find user and compare stored hash
     let user = await User.findById(decoded.id);
 
@@ -387,16 +419,14 @@ const refreshTokenHandler = async (req, res, next) => {
       return ApiResponse.error(res, 'Invalid refresh token', 401);
     }
 
-    const tokenHash = crypto
-      .createHash('sha256')
-      .update(token)
-      .digest('hex');
-
     if (tokenHash !== user.refreshToken) {
       return ApiResponse.error(res, 'Refresh token mismatch', 401);
     }
 
     // --- Token Rotation ---
+    // Add old token to blacklist before issuing new ones
+    await addToBlacklist(tokenHash, decoded.exp);
+
     // Issue new access token AND new refresh token (old one is invalidated)
     const newAccessToken = user.generateAccessToken();
     const newRefreshToken = user.generateRefreshToken();

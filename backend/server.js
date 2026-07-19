@@ -1,6 +1,7 @@
 require('dotenv').config();
 const app = require('./app');
 const connectDB = require('./config/db');
+const { connectRedis } = require('./config/redis');
 const { startNoticeArchiveCron } = require('./services/noticeArchiveCron');
 
 const PORT = process.env.PORT || 5000;
@@ -21,6 +22,7 @@ process.on('uncaughtException', (error) => {
 const startServer = async () => {
   try {
     await connectDB();
+    await connectRedis();
 
     // Start scheduled background jobs
     startNoticeArchiveCron();
