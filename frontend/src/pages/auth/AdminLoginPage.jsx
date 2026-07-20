@@ -59,7 +59,6 @@ const AdminLoginPage = () => {
       dispatch(setCredentials({
         user: res.data.data.user,
         accessToken: res.data.data.accessToken,
-        refreshToken: res.data.data.refreshToken,
       }));
 
       if (user.mustChangePassword) {

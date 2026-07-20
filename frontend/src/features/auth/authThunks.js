@@ -1,6 +1,6 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { loginUser as loginApi, logoutUser as logoutApi, refreshToken as refreshApi } from '../../api/authApi';
-import { setCredentials, clearCredentials, setAccessToken, setRefreshToken } from './authSlice';
+import { setCredentials, clearCredentials, setAccessToken } from './authSlice';
 import { clearProfileState } from '../profile/profileSlice';
 import { clearApplications } from '../applications/applicationSlice';
 import { clearDrives } from '../drives/driveSlice';
@@ -19,7 +19,7 @@ export const loginUser = createAsyncThunk(
         setCredentials({
           user: data.data.user,
           accessToken: data.data.accessToken,
-          refreshToken: data.data.refreshToken,
+          // refreshToken is stored in httpOnly cookie by backend
         })
       );
       return data;
@@ -59,9 +59,8 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 // Helper: attempt refresh with retries (handles Render.com cold starts)
 const attemptRefresh = async (retries = 2, delayMs = 4000) => {
   try {
-    // Read refresh token from localStorage and send in request body
-    const storedRefreshToken = localStorage.getItem('refreshToken');
-    return await refreshApi(storedRefreshToken);
+    // No need to send refreshToken in body - httpOnly cookie sent automatically via withCredentials: true
+    return await refreshApi();
   } catch (error) {
     const status = error.response?.status;
 
@@ -85,16 +84,11 @@ export const refreshAccessToken = createAsyncThunk(
       // Retry up to 2 times (total 3 attempts) with 4s gap — covers Render cold start (~30s)
       const { data } = await attemptRefresh(2, 4000);
 
-      // Store the rotated refresh token
-      if (data.data.refreshToken) {
-        dispatch(setRefreshToken(data.data.refreshToken));
-      }
-
       dispatch(
         setCredentials({
           user: data.data.user,
           accessToken: data.data.accessToken,
-          refreshToken: data.data.refreshToken,
+          // refreshToken is stored in httpOnly cookie by backend
         })
       );
       return data;
@@ -110,4 +104,3 @@ export const refreshAccessToken = createAsyncThunk(
     }
   }
 );
-

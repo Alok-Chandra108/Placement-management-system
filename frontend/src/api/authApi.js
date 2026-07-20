@@ -12,39 +12,34 @@ export const verifyEmail = (data) =>
 export const resendOTP = (data) =>
   axiosInstance.post('/auth/resend-otp', data);
 
-// Update Verify Email
-export const updateVerifyEmail = (data) =>
-  axiosInstance.put('/auth/update-verify-email', data);
-
 // Login
 export const loginUser = (data) =>
   axiosInstance.post('/auth/login', data);
 
-// Admin Login (Step 1 — password check, sends OTP)
-export const loginAdmin = (data) =>
-  axiosInstance.post('/auth/admin-login', data);
+// Admin Login
+export const adminLogin = (data) =>
+  axiosInstance.post('/auth/admin/login', data);
 
+// Refresh Token - no need to send refreshToken in body, httpOnly cookie sent automatically
+export const refreshToken = () =>
+  axiosInstance.post('/auth/refresh-token');
 
 // Logout
 export const logoutUser = () =>
   axiosInstance.post('/auth/logout');
 
-// Refresh Token
-export const refreshToken = (storedRefreshToken) =>
-  axiosInstance.post('/auth/refresh-token', { refreshToken: storedRefreshToken });
-
 // Forgot Password
 export const forgotPassword = (data) =>
   axiosInstance.post('/auth/forgot-password', data);
-
-// Validate Reset Token
-export const validateResetToken = (data) =>
-  axiosInstance.post('/auth/validate-reset-token', data);
 
 // Reset Password
 export const resetPassword = (data) =>
   axiosInstance.post('/auth/reset-password', data);
 
-// Admin Change Password (for forced password reset)
-export const adminChangePassword = (data) =>
-  axiosInstance.post('/auth/admin-change-password', data);
+// Get current user
+export const getMe = () =>
+  axiosInstance.get('/auth/me');
+
+// Verify Reset Token
+export const verifyResetToken = (token) =>
+  axiosInstance.get(`/auth/verify-reset-token/${token}`);

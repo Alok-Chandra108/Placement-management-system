@@ -15,7 +15,7 @@ const authSlice = createSlice({
   initialState,
   reducers: {
     setCredentials: (state, action) => {
-      const { user, accessToken, refreshToken } = action.payload;
+      const { user, accessToken } = action.payload;
       state.user = user;
       state.accessToken = accessToken;
       state.role = user?.role || null;
@@ -23,19 +23,10 @@ const authSlice = createSlice({
       state.isInitialized = true;
       state.loading = false;
       state.error = null;
-      // Persist refresh token in localStorage for cross-domain support
-      if (refreshToken) {
-        localStorage.setItem('refreshToken', refreshToken);
-      }
+      // Refresh token is now stored in httpOnly cookie (backend handles this)
     },
     setAccessToken: (state, action) => {
       state.accessToken = action.payload;
-    },
-    setRefreshToken: (_state, action) => {
-      // Only updates localStorage — refresh token is NOT kept in Redux state
-      if (action.payload) {
-        localStorage.setItem('refreshToken', action.payload);
-      }
     },
     clearCredentials: (state) => {
       state.user = null;
@@ -45,7 +36,7 @@ const authSlice = createSlice({
       state.isInitialized = true;
       state.loading = false;
       state.error = null;
-      localStorage.removeItem('refreshToken');
+      // Refresh token cleared via httpOnly cookie by backend on logout
     },
     setInitialized: (state) => {
       state.isInitialized = true;
@@ -60,8 +51,7 @@ const authSlice = createSlice({
   },
 });
 
-export const { setCredentials, setAccessToken, setRefreshToken, clearCredentials, setInitialized, setLoading, setError } =
+export const { setCredentials, setAccessToken, clearCredentials, setInitialized, setLoading, setError } =
   authSlice.actions;
 
 export default authSlice.reducer;
-
