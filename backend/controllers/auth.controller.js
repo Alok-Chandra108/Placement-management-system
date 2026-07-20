@@ -9,6 +9,7 @@ const ApiResponse = require('../utils/ApiResponse');
 const { sendOTPEmail, sendResetEmail, sendAdminOTPEmail } = require('../services/email.service');
 const { addToBlacklist, isBlacklisted } = require('../services/tokenBlacklist.service');
 const { ROLES } = require('../constants/roles');
+const { getValidatedFrontendUrl } = require('../utils/urlValidator');
 
 // Generate a dummy hash at module load time for timing-safe comparisons
 // This prevents timing attacks that could reveal if an admin exists
@@ -551,7 +552,8 @@ const forgotPassword = async (req, res, next) => {
     await user.save({ validateBeforeSave: false });
 
     // Build reset URL
-    const resetURL = `${process.env.FRONTEND_URL}/reset-password/${rawToken}`;
+    const frontendUrl = getValidatedFrontendUrl();
+    const resetURL = `${frontendUrl}/reset-password/${rawToken}`;
 
 
 

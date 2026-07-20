@@ -1,6 +1,7 @@
 const BREVO_API_KEY = process.env.BREVO_API_KEY;
 const SENDER_EMAIL = process.env.BREVO_SENDER_EMAIL || process.env.GMAIL_USER;
 const SENDER_NAME = 'MITE Placement Cell';
+const { getValidatedFrontendUrl } = require('../utils/urlValidator');
 
 /**
  * Escape HTML special characters to prevent XSS in email templates.
@@ -334,12 +335,15 @@ const sendStatusUpdateEmail = async (fullName, email, companyName, jobRole, newS
             <p style="color:#495057;font-size:14px;line-height:1.6;margin:0 0 8px;">
               Log in to the Placement Portal to view your full application status and next steps.
             </p>
-            <div style="text-align:center;margin:24px 0 0;">
-              <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/dashboard/student/applications"
-                 style="display:inline-block;background-color:#F48120;color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;padding:14px 40px;border-radius:8px;">
-                View My Applications
-              </a>
-            </div>
+            ${(() => {
+              const frontendUrl = getValidatedFrontendUrl();
+              return `<div style="text-align:center;margin:24px 0 0;">
+                <a href="${frontendUrl}/dashboard/student/applications"
+                   style="display:inline-block;background-color:#F48120;color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;padding:14px 40px;border-radius:8px;">
+                  View My Applications
+                </a>
+              </div>`;
+            })()}
           </td>
         </tr>
         <!-- Footer -->
