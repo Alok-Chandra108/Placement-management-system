@@ -14,6 +14,8 @@ const { ROLES } = require('../constants/roles');
 // This prevents timing attacks that could reveal if an admin exists
 const DUMMY_HASH = bcrypt.hashSync('dummy_password_for_timing_safety', 10);
 
+const { EMAIL_REGEX } = require('../constants/validation');
+
 /**
  * POST /api/auth/register
  * Register a new student account
@@ -22,6 +24,11 @@ const register = async (req, res, next) => {
   try {
 
     const { fullName, email, usnNumber, department, yearOfStudy, password } = req.body;
+
+    // Validate email format
+    if (!email || !EMAIL_REGEX.test(email)) {
+      return ApiResponse.error(res, 'Please provide a valid email address', 400);
+    }
 
     // Check if email already exists
     const existingUser = await User.findOne({ email });
@@ -93,6 +100,11 @@ const verifyEmail = async (req, res, next) => {
   try {
     const { email, otp } = req.body;
 
+    // Validate email format
+    if (!email || !EMAIL_REGEX.test(email)) {
+      return ApiResponse.error(res, 'Please provide a valid email address', 400);
+    }
+
     // Find OTP record
     const otpRecord = await OTP.findOne({ email });
 
@@ -142,6 +154,11 @@ const resendOTP = async (req, res, next) => {
   try {
     const { email } = req.body;
 
+    // Validate email format
+    if (!email || !EMAIL_REGEX.test(email)) {
+      return ApiResponse.error(res, 'Please provide a valid email address', 400);
+    }
+
     // Check if user exists and is not verified
     const user = await User.findOne({ email });
 
@@ -190,6 +207,12 @@ const resendOTP = async (req, res, next) => {
 const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
+
+    // Validate email format
+    if (!email || !EMAIL_REGEX.test(email)) {
+      return ApiResponse.error(res, 'Please provide a valid email address', 400);
+    }
+
     const sanitizedEmail = email.trim().toLowerCase();
 
     // Find ONLY in user collection (Students/HR)
@@ -265,6 +288,12 @@ const login = async (req, res, next) => {
 const adminLogin = async (req, res, next) => {
   try {
     const { email, password } = req.body;
+
+    // Validate email format
+    if (!email || !EMAIL_REGEX.test(email)) {
+      return ApiResponse.error(res, 'Please provide a valid email address', 400);
+    }
+
     const sanitizedEmail = email.trim().toLowerCase();
 
     // Find ONLY in Admin collection
@@ -473,6 +502,8 @@ const refreshTokenHandler = async (req, res, next) => {
   }
 };
 
+const { EMAIL_REGEX } = require('../constants/validation');
+
 /**
  * POST /api/auth/forgot-password
  * Send password reset link
@@ -480,6 +511,12 @@ const refreshTokenHandler = async (req, res, next) => {
 const forgotPassword = async (req, res, next) => {
   try {
     const { email } = req.body;
+
+    // Email format validation using shared regex
+    if (!email || !EMAIL_REGEX.test(email)) {
+      return ApiResponse.error(res, 'Please provide a valid email address', 400);
+    }
+
     const sanitizedEmail = email.trim().toLowerCase();
 
     // ALWAYS return 200 — never confirm if email exists (security)

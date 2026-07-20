@@ -3,6 +3,8 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { ROLES } = require('../constants/roles');
 
+const { EMAIL_REGEX } = require('../constants/validation');
+
 const userSchema = new mongoose.Schema(
   {
     fullName: {
@@ -17,6 +19,7 @@ const userSchema = new mongoose.Schema(
       unique: true,
       lowercase: true,
       trim: true,
+      match: [EMAIL_REGEX, 'Please provide a valid email address'],
     },
     usnNumber: {
       type: String,
