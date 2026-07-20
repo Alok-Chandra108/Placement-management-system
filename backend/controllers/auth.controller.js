@@ -57,15 +57,17 @@ const register = async (req, res, next) => {
     // Generate OTP
     const otp = generateOTP();
 
-    // Delete any existing OTP for this email
-    await OTP.deleteMany({ email });
-
-    // Save OTP (will be hashed by pre-save hook)
-    await OTP.create({
-      email,
-      otp,
-      expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes
-    });
+    // Atomic upsert: replace any existing OTP for this email with new one (prevents race condition)
+    const otpRecord = await OTP.findOneAndUpdate(
+      { email },
+      {
+        email,
+        otp,
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes
+        attempts: 0,
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
 
     // Send OTP email
     try {
@@ -171,17 +173,19 @@ const resendOTP = async (req, res, next) => {
     }
 
     // Delete old OTP
-    await OTP.deleteMany({ email });
-
-    // Generate new OTP
+    // Atomic upsert: replace any existing OTP for this email with new one (prevents race condition)
     const otp = generateOTP();
 
-    // Save new OTP
-    await OTP.create({
-      email,
-      otp,
-      expiresAt: new Date(Date.now() + 10 * 60 * 1000),
-    });
+    const otpRecord = await OTP.findOneAndUpdate(
+      { email },
+      {
+        email,
+        otp,
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+        attempts: 0,
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
 
     // Send OTP email
     try {
@@ -258,6 +262,7 @@ const login = async (req, res, next) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      partitioned: process.env.NODE_ENV === 'production',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
@@ -331,6 +336,7 @@ const adminLogin = async (req, res, next) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      partitioned: process.env.NODE_ENV === 'production',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
@@ -473,6 +479,7 @@ const refreshTokenHandler = async (req, res, next) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      partitioned: process.env.NODE_ENV === 'production',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
@@ -501,8 +508,6 @@ const refreshTokenHandler = async (req, res, next) => {
     next(error);
   }
 };
-
-const { EMAIL_REGEX } = require('../constants/validation');
 
 /**
  * POST /api/auth/forgot-password

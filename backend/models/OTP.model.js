@@ -8,6 +8,7 @@ const otpSchema = new mongoose.Schema({
     lowercase: true,
     trim: true,
     index: true,
+    unique: true, // Prevent duplicate OTPs for same email - fixes race condition
   },
   otp: {
     type: String,
