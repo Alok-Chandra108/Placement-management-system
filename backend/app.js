@@ -3,6 +3,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const cookieParser = require('cookie-parser');
+const { csrfProtection } = require('./middleware/csrf.middleware');
 const authRoutes = require('./routes/auth.routes');
 const profileRoutes = require('./routes/profile.routes');
 const driveRoutes = require('./routes/drive.routes');
@@ -135,6 +136,9 @@ app.use(express.urlencoded({ extended: true }));
 
 // Cookie parser
 app.use(cookieParser());
+
+// CSRF protection (after cookie-parser, before routes)
+app.use(csrfProtection);
 
 // Health check
 app.get('/', (req, res) => {

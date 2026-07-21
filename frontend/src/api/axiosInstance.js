@@ -1,5 +1,6 @@
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import { getCsrfHeaders } from '../utils/csrf';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
@@ -97,9 +98,10 @@ axiosInstance.interceptors.response.use(
   }
 );
 
-// Request interceptor - add access token from Redux store
+// Request interceptor - add access token from Redux store and CSRF token
 axiosInstance.interceptors.request.use(
   (config) => {
+    // Add Authorization header from Redux store
     if (storeRef) {
       const state = storeRef.getState();
       const token = state.auth?.accessToken;
@@ -107,6 +109,15 @@ axiosInstance.interceptors.request.use(
         config.headers.Authorization = `Bearer ${token}`;
       }
     }
+    
+    // Add CSRF token for state-changing requests
+    const method = (config.method || 'get').toLowerCase();
+    const url = config.url || '';
+    const csrfHeaders = getCsrfHeaders(method, url);
+    if (csrfHeaders) {
+      Object.assign(config.headers, csrfHeaders);
+    }
+    
     return config;
   },
   (error) => Promise.reject(error)
