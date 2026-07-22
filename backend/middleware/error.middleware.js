@@ -1,4 +1,5 @@
 const ApiResponse = require('../utils/ApiResponse');
+const multer = require('multer');
 
 /**
  * Global Error Handler Middleware
@@ -10,6 +11,23 @@ const errorHandler = (err, req, res, next) => {
   } else {
     // In production, log the basic error info without stack trace for observability
     console.error(`[${new Date().toISOString()}] Error in ${req.method} ${req.originalUrl}:`, err.message);
+  }
+
+  // Handle Multer errors (file upload validation)
+  if (err instanceof multer.MulterError) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return ApiResponse.error(res, 'File too large. Maximum size is 2MB.', 413);
+    }
+    if (err.code === 'LIMIT_FILE_COUNT') {
+      return ApiResponse.error(res, 'Too many files uploaded.', 400);
+    }
+    if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+      return ApiResponse.error(res, `Unexpected file field: ${err.field}`, 400);
+    }
+    if (err.code === 'LIMIT_PART_COUNT' || err.code === 'LIMIT_FIELD_COUNT' || err.code === 'LIMIT_FIELD_KEY' || err.code === 'LIMIT_FIELD_VALUE') {
+      return ApiResponse.error(res, 'Request payload malformed.', 400);
+    }
+    return ApiResponse.error(res, `Upload error: ${err.message}`, 400);
   }
 
   // Handle specific Mongoose errors
@@ -37,10 +55,15 @@ const errorHandler = (err, req, res, next) => {
     return ApiResponse.error(res, 'Token expired. Please log in again.', 401);
   }
 
+  // Handle file filter errors (from multer fileFilter callback)
+  if (err.message && (err.message.includes('Only PDF') || err.message.includes('Only image'))) {
+    return ApiResponse.error(res, err.message, 400);
+  }
+
   // Default to 500 Internal Server Error
   const statusCode = err.statusCode || 500;
-  const message = process.env.NODE_ENV === 'production' 
-    ? 'Internal Server Error' 
+  const message = process.env.NODE_ENV === 'production'
+    ? 'Internal Server Error'
     : err.message || 'Internal Server Error';
 
   return ApiResponse.error(res, message, statusCode);

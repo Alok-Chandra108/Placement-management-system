@@ -26,21 +26,7 @@ router.get('/me', getMyProfile);
 router.put('/me', updateProfileValidation, validateRequest, updateMyProfile);
 
 // POST /api/profile/resume — Upload resume
-router.post(
-  '/resume',
-  (req, res, next) => {
-    upload.single('resume')(req, res, (err) => {
-      if (err) {
-        if (err.code === 'LIMIT_FILE_SIZE') {
-          return res.status(400).json({ success: false, message: 'File size too large. Maximum size is 2MB', errors: null });
-        }
-        return res.status(400).json({ success: false, message: err.message, errors: null });
-      }
-      next();
-    });
-  },
-  uploadResume
-);
+router.post('/resume', upload.single('resume'), uploadResume);
 
 // DELETE /api/profile/resume — Delete resume
 router.delete('/resume', deleteResume);

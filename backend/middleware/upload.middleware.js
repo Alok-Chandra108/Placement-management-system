@@ -2,6 +2,10 @@ const multer = require('multer');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const cloudinary = require('../config/cloudinary');
 
+// Max file size constant (2MB) - used in limits and error messages
+const MAX_FILE_SIZE = 2 * 1024 * 1024;
+
+// PDF upload configuration
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: async (req, file) => {
@@ -15,24 +19,34 @@ const storage = new CloudinaryStorage({
   },
 });
 
+// PDF file filter - checks both mimetype AND extension for defense-in-depth
 const fileFilter = (req, file, cb) => {
-  // Accept only pdf files
-  if (file.mimetype === 'application/pdf') {
+  const allowedMimeTypes = ['application/pdf'];
+  const allowedExtensions = ['.pdf'];
+
+  const mimeOk = allowedMimeTypes.includes(file.mimetype);
+  const extOk = allowedExtensions.some(ext => file.originalname.toLowerCase().endsWith(ext));
+
+  if (mimeOk && extOk) {
     cb(null, true);
   } else {
     cb(new Error('Only PDF files are allowed!'), false);
   }
 };
 
-// 2MB size limit for PDFs
+// 2MB size limit for PDFs + defensive multipart limits
 const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
   limits: {
-    fileSize: 2 * 1024 * 1024,
+    fileSize: MAX_FILE_SIZE,
+    files: 1,         // Only 1 file per request
+    parts: 10,        // Max total parts (fields + files)
+    headerPairs: 20,  // Max header key-value pairs per part
   },
 });
 
+// Image upload configuration
 const imageStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: async (req, file) => {
@@ -45,11 +59,18 @@ const imageStorage = new CloudinaryStorage({
   },
 });
 
+// Image file filter - checks both mimetype AND extension
 const imageFileFilter = (req, file, cb) => {
-  if (file.mimetype.startsWith('image/')) {
+  const allowedMimeTypes = ['image/jpeg', 'image/png'];
+  const allowedExtensions = ['.jpg', '.jpeg', '.png'];
+
+  const mimeOk = allowedMimeTypes.includes(file.mimetype);
+  const extOk = allowedExtensions.some(ext => file.originalname.toLowerCase().endsWith(ext));
+
+  if (mimeOk && extOk) {
     cb(null, true);
   } else {
-    cb(new Error('Only image files are allowed!'), false);
+    cb(new Error('Only image files (JPG, PNG) are allowed!'), false);
   }
 };
 
@@ -57,11 +78,15 @@ const uploadImage = multer({
   storage: imageStorage,
   fileFilter: imageFileFilter,
   limits: {
-    fileSize: 2 * 1024 * 1024, // 2MB limit
+    fileSize: MAX_FILE_SIZE, // 2MB limit
+    files: 1,
+    parts: 10,
+    headerPairs: 20,
   },
 });
 
 module.exports = {
   upload,
-  uploadImage
+  uploadImage,
+  MAX_FILE_SIZE,
 };
