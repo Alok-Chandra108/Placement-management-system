@@ -122,6 +122,59 @@ process.on('uncaughtException', (error) => {
 // Validate environment BEFORE connecting to database
 validateEnv();
 
+// Track server instance for graceful shutdown
+let server = null;
+
+// Graceful shutdown handler
+const gracefulShutdown = async (signal) => {
+  console.log(`\n📴  Received ${signal}. Starting graceful shutdown...`);
+  
+  // Stop accepting new connections
+  if (server) {
+    console.log('   Stopping HTTP server...');
+    server.close(() => {
+      console.log('   HTTP server closed');
+    });
+    
+    // Force close after 10 seconds if graceful shutdown takes too long
+    setTimeout(() => {
+      console.error('   ⚠️  Forced shutdown after timeout');
+      process.exit(1);
+    }, 10000).unref();
+  }
+
+  try {
+    // Stop accepting new cron jobs
+    console.log('   Stopping cron jobs...');
+    // Note: cron jobs don't have a built-in stop method, they'll finish current run
+    
+    // Close MongoDB connection gracefully
+    // This waits for in-flight operations (up to maxIdleTimeMS = 30s)
+    console.log('   Closing MongoDB connection...');
+    const mongoose = require('mongoose');
+    if (mongoose.connection.readyState === 1) {
+      await mongoose.connection.close(false); // false = don't force close, wait for in-flight ops
+      console.log('   ✅ MongoDB connection closed gracefully');
+    }
+    
+    // Close Redis connection gracefully
+    console.log('   Closing Redis connection...');
+    const { disconnectRedis } = require('./config/redis');
+    await disconnectRedis();
+    console.log('   ✅ Redis connection closed gracefully');
+    
+    console.log('✅ Graceful shutdown complete');
+    process.exit(0);
+  } catch (error) {
+    console.error('❌ Error during graceful shutdown:', error.message);
+    process.exit(1);
+  }
+};
+
+// Handle termination signals
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
 // Connect to MongoDB and start server
 const startServer = async () => {
   try {
@@ -131,7 +184,7 @@ const startServer = async () => {
     // Start scheduled background jobs
     startNoticeArchiveCron();
 
-    app.listen(PORT, () => {
+    server = app.listen(PORT, () => {
       console.log(`\n Server running on port ${PORT}`);
       console.log(`API: http://localhost:${PORT}/api`);
       console.log(`Environment: ${process.env.NODE_ENV || 'development'}\n`);
