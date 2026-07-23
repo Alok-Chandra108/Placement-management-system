@@ -1,0 +1,93 @@
+# Trivy Configuration for Container Security Scanning
+# This file configures Trivy vulnerability scanner for Docker images
+
+# Global configuration
+# exit-code: Exit code when vulnerabilities are found (0: ignore, 1: exit with error)
+exit-code: 1
+
+# severity: Comma-separated list of severities to detect (UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL)
+severity: HIGH,CRITICAL
+
+# ignore-unfixed: Ignore unfixed vulnerabilities
+ignore-unfixed: true
+
+# ignore-policy: Path to the ignore policy file
+# ignore-policy: .trivyignore
+
+# Format of the output (table, json, sarif, template)
+format: sarif
+
+# Output file path
+output: trivy-results.sarif
+
+# Scan configuration
+scan:
+  # Scan targets
+  # image: Scan container image
+  # filesystem: Scan filesystem
+  # rootfs: Scan root filesystem
+  # repository: Scan remote repository
+  targets:
+    - image
+
+  # Vulnerability scanning
+  vuln:
+    # Type of vulnerability detection (os, library)
+    type: os,library
+
+  # Misconfiguration scanning
+  misconfig:
+    # Enable misconfiguration scanning
+    enabled: true
+
+  # Secret scanning
+  secret:
+    # Enable secret scanning
+    enabled: true
+
+  # License scanning
+  license:
+    # Enable license scanning
+    enabled: true
+
+# Cache configuration
+cache:
+  # Cache directory
+  dir: ~/.cache/trivy
+
+# Database configuration
+db:
+  # Skip database update
+  skip-update: false
+
+# Report configuration
+report:
+  # Summary output
+  summary: true
+
+# Ignore configuration
+# ignore:
+#   # Ignore specific vulnerabilities by ID
+#   - CVE-2021-44228
+#   # Ignore by package name
+#   - package: lodash
+#     version: 4.17.20
+
+# Policy configuration
+# policy:
+#   # Path to policy file (Rego)
+#   file: .trivy-policy.rego
+#   # Namespace for policy
+#   namespace: trivy.policy
+#   # Data for policy
+#   data: policy-data.json
+
+# Custom headers for registry authentication
+# custom-headers:
+#   - "Authorization: Bearer ${TOKEN}"
+
+# Insecure registry configuration
+# insecure: false
+
+# Non-SSL registry configuration
+# non-ssl: false

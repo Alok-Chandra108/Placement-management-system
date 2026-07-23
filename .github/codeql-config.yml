@@ -1,0 +1,63 @@
+/**
+ * CodeQL Configuration for CPMS
+ * Configures advanced security queries and custom rules
+ */
+
+name: "CPMS Security Analysis"
+
+# Disable default queries and use only security-focused ones
+disable-default-queries: false
+
+# Use extended security queries
+queries:
+  - uses: security-extended
+  - uses: security-and-quality
+
+# Language-specific configurations
+languages:
+  - javascript
+  - typescript
+
+# Paths to analyze
+paths:
+  - "backend"
+  - "frontend"
+
+# Paths to ignore
+paths-ignore:
+  - "backend/node_modules"
+  - "frontend/node_modules"
+  - "backend/dist"
+  - "frontend/dist"
+  - "backend/build"
+  - "frontend/build"
+  - "backend/coverage"
+  - "frontend/coverage"
+  - "**/*.test.ts"
+  - "**/*.spec.ts"
+  - "**/*.test.tsx"
+  - "**/*.spec.tsx"
+  - "**/__tests__/**"
+  - "**/__mocks__/**"
+  - "**/*.config.js"
+  - "**/*.config.ts"
+  - "**/vite.config.ts"
+  - "**/jest.config.ts"
+
+# Custom query packs for additional security checks
+packs:
+  - codeql/javascript-queries@latest
+  - codeql/typescript-queries@latest
+
+# Additional queries for specific vulnerability types
+additional-queries:
+  - "javascript:security"
+  - "javascript:security-extended"
+
+# Severity thresholds for failing the build
+fail-on-severity: "high"
+
+# SARIF upload configuration
+sarif:
+  category: "codeql"
+  upload: true

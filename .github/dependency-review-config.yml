@@ -1,0 +1,58 @@
+# Dependency Review Configuration for CPMS
+# Configuration for GitHub's Dependency Review Action
+
+# Fail the build on high severity vulnerabilities
+fail-on-severity: high
+
+# Allow specific licenses (adjust as needed for your project)
+# allow-licenses:
+#   - MIT
+#   - Apache-2.0
+#   - BSD-3-Clause
+#   - ISC
+#   - BSD-2-Clause
+
+# Deny specific licenses
+# deny-licenses:
+#   - GPL-3.0
+#   - AGPL-3.0
+
+# Allow specific scopes (e.g., devDependencies can have more lenient rules)
+# allow-scopes:
+#   - devDependencies
+
+# Configuration for vulnerability severity levels
+# critical: Fail on critical vulnerabilities
+# high: Fail on high and critical
+# medium: Fail on medium, high, and critical
+# low: Fail on all vulnerabilities
+severity-threshold: high
+
+# Allow list for specific vulnerabilities that have been reviewed and accepted
+# Format: {package-name}@{version}:{CVE-ID}:{reason}
+# allow-vulnerabilities:
+#   - "lodash@4.17.20:CVE-2021-23337:Accepted risk, mitigated by input validation"
+
+# Configuration for dependency review comments on PRs
+comment-summary-in-pr: true
+
+# Show only vulnerabilities introduced in the PR
+show-only-new-vulnerabilities: true
+
+# Configuration for license checking
+license-check:
+  enabled: true
+  fail-on-violation: false  # Set to true to fail on license violations
+  allowed-licenses:
+    - MIT
+    - Apache-2.0
+    - BSD-3-Clause
+    - ISC
+    - BSD-2-Clause
+    - CC0-1.0
+    - Unlicense
+    - Python-2.0
+  denied-licenses:
+    - GPL-3.0
+    - AGPL-3.0
+    - LGPL-3.0

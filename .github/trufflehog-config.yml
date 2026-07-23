@@ -1,0 +1,142 @@
+# TruffleHog Configuration for Secret Scanning
+# Configuration for detecting secrets in codebase
+
+# Version of the configuration format
+version: "1.0"
+
+# Paths to scan
+paths:
+  - "."
+  - "backend"
+  - "frontend"
+
+# Paths to exclude from scanning
+exclude-paths:
+  - "node_modules/**"
+  - "dist/**"
+  - "build/**"
+  - "coverage/**"
+  - ".git/**"
+  - "*.log"
+  - "*.lock"
+  - "package-lock.json"
+  - "yarn.lock"
+  - "pnpm-lock.yaml"
+  - ".env*"
+  - "*.env"
+  - "*.pem"
+  - "*.key"
+  - "*.crt"
+  - "*.cer"
+  - "*.p12"
+  - "*.pfx"
+  - "*.jks"
+  - "*.keystore"
+  - "*.truststore"
+
+# Detectors to use (all built-in detectors by default)
+detectors:
+  # Enable all built-in detectors
+  - "ALL"
+  
+  # Custom detectors can be added here
+  # - name: "custom-detector"
+  #   regex: "your-regex-pattern"
+  #   keywords: ["keyword1", "keyword2"]
+
+# Verification settings
+verification:
+  # Verify found secrets against their respective APIs
+  enabled: true
+  # Only verify secrets that pass initial regex matching
+  only-verified: false
+  # Timeout for verification requests (in seconds)
+  timeout: 30
+
+# Output settings
+output:
+  # Output format (json, text, csv)
+  format: json
+  # Output file path (stdout if not specified)
+  file: trufflehog-results.json
+  # Include only verified secrets in output
+  only-verified: false
+  # Include detector name in output
+  include-detector: true
+  # Include file path in output
+  include-file-path: true
+  # Include line number in output
+  include-line-number: true
+  # Include commit hash in output
+  include-commit-hash: true
+  # Include author in output
+  include-author: true
+  # Include timestamp in output
+  include-timestamp: true
+
+# Git settings
+git:
+  # Scan entire git history
+  since-commit: "HEAD~100"
+  # Scan up to this commit
+  until-commit: "HEAD"
+  # Branch to scan
+  branch: "main"
+  # Scan all branches
+  all-branches: false
+  # Scan tags
+  tags: false
+
+# Filtering
+filters:
+  # Minimum entropy for generic detectors
+  min-entropy: 3.0
+  # Maximum entropy for generic detectors
+  max-entropy: 5.0
+  # Ignore secrets shorter than this length
+  min-length: 16
+  # Ignore secrets longer than this length
+  max-length: 200
+
+# Concurrency settings
+concurrency:
+  # Number of concurrent workers
+  workers: 4
+  # Batch size for processing
+  batch-size: 100
+
+# Performance settings
+performance:
+  # Enable compression for large repositories
+  compression: true
+  # Memory limit in MB
+  memory-limit: 512
+
+# Post-processing
+post-processing:
+  # Deduplicate findings
+  deduplicate: true
+  # Group by detector
+  group-by-detector: true
+  # Sort by severity
+  sort-by-severity: true
+
+# Severity mapping for output
+severity:
+  # Critical: Verified secrets, high-entropy strings with verification
+  critical: "verified,high-entropy-verified"
+  # High: Unverified high-entropy strings, known patterns
+  high: "high-entropy,known-pattern"
+  # Medium: Medium entropy strings
+  medium: "medium-entropy"
+  # Low: Low entropy strings
+  low: "low-entropy"
+
+# Notification settings (optional)
+notifications:
+  # Slack webhook URL
+  # slack-webhook: "https://hooks.slack.com/services/..."
+  # Email recipients
+  # email-recipients: ["security@company.com"]
+  # Webhook URL for custom integrations
+  # webhook-url: "https://webhook.example.com/trufflehog"
