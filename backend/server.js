@@ -127,15 +127,15 @@ let server = null;
 
 // Graceful shutdown handler
 const gracefulShutdown = async (signal) => {
-  console.log(`\n📴  Received ${signal}. Starting graceful shutdown...`);
-  
+  console.log(`\n Received ${signal}. Starting graceful shutdown...`);
+
   // Stop accepting new connections
   if (server) {
     console.log('   Stopping HTTP server...');
     server.close(() => {
       console.log('   HTTP server closed');
     });
-    
+
     // Force close after 10 seconds if graceful shutdown takes too long
     setTimeout(() => {
       console.error('   ⚠️  Forced shutdown after timeout');
@@ -147,7 +147,7 @@ const gracefulShutdown = async (signal) => {
     // Stop accepting new cron jobs
     console.log('   Stopping cron jobs...');
     // Note: cron jobs don't have a built-in stop method, they'll finish current run
-    
+
     // Close MongoDB connection gracefully
     // This waits for in-flight operations (up to maxIdleTimeMS = 30s)
     console.log('   Closing MongoDB connection...');
@@ -156,13 +156,13 @@ const gracefulShutdown = async (signal) => {
       await mongoose.connection.close(false); // false = don't force close, wait for in-flight ops
       console.log('   ✅ MongoDB connection closed gracefully');
     }
-    
+
     // Close Redis connection gracefully
     console.log('   Closing Redis connection...');
     const { disconnectRedis } = require('./config/redis');
     await disconnectRedis();
     console.log('   ✅ Redis connection closed gracefully');
-    
+
     console.log('✅ Graceful shutdown complete');
     process.exit(0);
   } catch (error) {
