@@ -60,69 +60,141 @@ app.use(
   })
 );
 
-// CORS - Strict production whitelist
+// CORS - Strict origin validation with credentials protection
+const validateOrigin = (origin, isProduction) => {
+  try {
+    const urlObj = new URL(origin);
+
+    // Reject wildcard origins - CRITICAL when credentials: true
+    if (origin.includes('*')) {
+      console.warn(`SECURITY: Origin ${origin} rejected - wildcards not allowed with credentials`);
+      return false;
+    }
+
+    // Validate protocol
+    if (isProduction) {
+      if (urlObj.protocol !== 'https:') {
+        console.warn(`SECURITY: Origin ${origin} rejected - only HTTPS allowed in production`);
+        return false;
+      }
+    } else {
+      // Development: allow http and https
+      if (urlObj.protocol !== 'http:' && urlObj.protocol !== 'https:') {
+        console.warn(`SECURITY: Origin ${origin} rejected - only HTTP/HTTPS allowed`);
+        return false;
+      }
+    }
+
+    // Validate hostname format (no IP addresses in production, basic format check)
+    const hostname = urlObj.hostname;
+    if (!hostname || hostname.length > 253) {
+      console.warn(`SECURITY: Origin ${origin} rejected - invalid hostname`);
+      return false;
+    }
+
+    // Reject localhost in production
+    if (isProduction && (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1')) {
+      console.warn(`SECURITY: Origin ${origin} rejected - localhost not allowed in production`);
+      return false;
+    }
+
+    // Validate hostname contains valid characters (RFC 1123)
+    const hostnameRegex = /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+    if (!hostnameRegex.test(hostname)) {
+      console.warn(`SECURITY: Origin ${origin} rejected - invalid hostname format`);
+      return false;
+    }
+
+    // No port in production (standard HTTPS port 443)
+    if (isProduction && urlObj.port && urlObj.port !== '443') {
+      console.warn(`SECURITY: Origin ${origin} rejected - non-standard port in production`);
+      return false;
+    }
+
+    return true;
+  } catch (e) {
+    console.warn(`SECURITY: Invalid origin ${origin} - ${e.message}`);
+    return false;
+  }
+};
+
+// Validate FRONTEND_URL format at the env-var level before processing
+const validateFrontendUrlFormat = (url) => {
+  if (!url || url.trim() === '') return false;
+  const trimmed = url.trim();
+  // No wildcards in FRONTEND_URL
+  if (trimmed.includes('*')) {
+    console.warn(`SECURITY: FRONTEND_URL contains wildcard - rejecting: ${trimmed}`);
+    return false;
+  }
+  try {
+    const parsed = new URL(trimmed);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    console.warn(`SECURITY: FRONTEND_URL not a valid URL - rejecting: ${trimmed}`);
+    return false;
+  }
+};
+
 const getAllowedOrigins = () => {
   const envOrigins = process.env.FRONTEND_URL;
-  
+  const isProduction = process.env.NODE_ENV === 'production';
+
   // In production, require explicit FRONTEND_URL configuration
-  if (process.env.NODE_ENV === 'production') {
+  if (isProduction) {
     if (!envOrigins || envOrigins.trim() === '') {
       console.error('ERROR: FRONTEND_URL must be set in production');
       return []; // Empty array denies all origins in production
     }
-    
+
     return envOrigins
       .split(',')
       .map((url) => url.trim())
-      .filter((origin) => {
-        // Validate origin format
-        try {
-          const urlObj = new URL(origin);
-          // Only allow HTTPS in production
-          if (urlObj.protocol !== 'https:') {
-            console.warn(`WARNING: Origin ${origin} rejected - only HTTPS allowed in production`);
-            return false;
-          }
-          // Reject wildcards in production
-          if (origin.includes('*')) {
-            console.warn(`WARNING: Origin ${origin} rejected - wildcards not allowed`);
-            return false;
-          }
-          return true;
-        } catch (e) {
-          console.warn(`WARNING: Invalid origin ${origin} - ${e.message}`);
-          return false;
-        }
-      });
+      .filter((origin) => validateFrontendUrlFormat(origin) && validateOrigin(origin, true));
   }
-  
-  // In development, allow localhost
+
+  // In development, allow localhost with explicit FRONTEND_URL or defaults
   const devOrigins = envOrigins
-    ? envOrigins.split(',').map((url) => url.trim())
-    : ['http://localhost:5173'];
-  
-  return devOrigins.filter((origin) => {
-    try {
-      const urlObj = new URL(origin);
-      return urlObj.protocol === 'http:' || urlObj.protocol === 'https:';
-    } catch (e) {
-      console.warn(`Invalid origin ${origin} - ${e.message}`);
-      return false;
-    }
-  });
+    ? envOrigins.split(',').map((url) => url.trim()).filter(validateFrontendUrlFormat)
+    : ['http://localhost:5173', 'http://127.0.0.1:5173'];
+
+  return devOrigins.filter((origin) => validateOrigin(origin, false));
 };
 
 const allowedOrigins = getAllowedOrigins();
 
-console.log(`CORS: Allowing ${allowedOrigins.length} origin(s):`, allowedOrigins);
+// Fail fast in production if no valid origins
+if (process.env.NODE_ENV === 'production' && allowedOrigins.length === 0) {
+  console.error('FATAL: No valid CORS origins configured. Set FRONTEND_URL with valid HTTPS origins.');
+  process.exit(1);
+}
 
-app.use(
-  cors({
-    origin: allowedOrigins,
-    credentials: true, // Allow cookies
-    maxAge: 86400, // Cache preflight for 24 hours
-  })
-);
+console.log(`CORS: Allowing ${allowedOrigins.length} validated origin(s):`, allowedOrigins);
+
+// Use function-based origin callback for per-request validation and audit logging
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Allow requests with no origin (server-to-server, curl, Postman) in development
+    if (!origin) {
+      if (process.env.NODE_ENV === 'production') {
+        console.warn('SECURITY: Request with null origin rejected in production');
+        return callback(null, false);
+      }
+      return callback(null, true);
+    }
+
+    // Validate against the allowed origins list
+    const isAllowed = allowedOrigins.includes(origin);
+    if (!isAllowed) {
+      console.warn(`SECURITY: CORS blocked request from origin: ${origin}`);
+    }
+    callback(null, isAllowed);
+  },
+  credentials: true, // Allow cookies - only safe because origins are strictly validated
+  maxAge: 86400, // Cache preflight for 24 hours
+};
+
+app.use(cors(corsOptions));
 
 // Request logging
 if (process.env.NODE_ENV !== 'production') {
