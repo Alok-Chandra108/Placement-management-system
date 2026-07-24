@@ -120,12 +120,12 @@ cpms-mini-project/
 │   │   ├── Notice.model.js        # Notice schema (category, PDF attachment, isArchived, archivedAt)
 │   │   └── OTP.model.js           # OTP storage with TTL expiry index
 │   ├── routes/
-│   │   ├── auth.routes.js         # /api/auth/*
-│   │   ├── profile.routes.js      # /api/profile/* (student only)
-│   │   ├── drive.routes.js        # /api/drives/* (admin-only for write ops)
-│   │   ├── application.routes.js  # /api/applications/*
-│   │   ├── notice.routes.js       # /api/notices/* (with archive & read-tracking sub-routes)
-│   │   └── admin.routes.js        # /api/admin/* (admin-only)
+│   │   ├── auth.routes.js         # /api/v1/auth/*
+│   │   ├── profile.routes.js      # /api/v1/profile/* (student only)
+│   │   ├── drive.routes.js        # /api/v1/drives/* (admin-only for write ops)
+│   │   ├── application.routes.js  # /api/v1/applications/*
+│   │   ├── notice.routes.js       # /api/v1/notices/* (with archive & read-tracking sub-routes)
+│   │   └── admin.routes.js        # /api/v1/admin/* (admin-only)
 │   ├── scripts/
 │   │   └── seedAdmin.js           # Seeds the initial admin user
 │   ├── services/
@@ -340,82 +340,82 @@ ADMIN_EMAIL=admin@mite.ac.in
 
 ### Frontend (`frontend/.env`)
 ```env
-VITE_API_BASE_URL=http://localhost:5000/api
+VITE_API_BASE_URL=http://localhost:5000/api/v1
 ```
 
 ---
 
 ## 🌐 API Routes
 
-### Auth (`/api/auth`)
+### Auth (`/api/v1/auth`)
 
 | Method | Endpoint | Access | Description |
 |--------|----------|--------|-------------|
-| POST | `/api/auth/register` | Public | Student registration |
-| POST | `/api/auth/verify-email` | Public | OTP email verification (10-min TTL) |
-| POST | `/api/auth/resend-otp` | Public | Resend OTP |
-| PUT | `/api/auth/update-verify-email` | Public | Update email & re-verify |
-| POST | `/api/auth/login` | Public | Student login |
-| POST | `/api/auth/admin-login` | Public | Admin login — step 1: password; step 2: OTP via Brevo |
-| POST | `/api/auth/refresh-token` | Public | Refresh access token |
-| POST | `/api/auth/forgot-password` | Public | Send password reset email (15-min TTL) |
-| POST | `/api/auth/validate-reset-token` | Public | Validate reset token |
-| POST | `/api/auth/reset-password` | Public | Reset password |
-| POST | `/api/auth/logout` | Auth | Logout & clear tokens |
-| POST | `/api/auth/admin-change-password` | Admin | Change admin password |
+| POST | `/api/v1/auth/register` | Public | Student registration |
+| POST | `/api/v1/auth/verify-email` | Public | OTP email verification (10-min TTL) |
+| POST | `/api/v1/auth/resend-otp` | Public | Resend OTP |
+| PUT | `/api/v1/auth/update-verify-email` | Public | Update email & re-verify |
+| POST | `/api/v1/auth/login` | Public | Student login |
+| POST | `/api/v1/auth/admin-login` | Public | Admin login — step 1: password; step 2: OTP via Brevo |
+| POST | `/api/v1/auth/refresh-token` | Public | Refresh access token |
+| POST | `/api/v1/auth/forgot-password` | Public | Send password reset email (15-min TTL) |
+| POST | `/api/v1/auth/validate-reset-token` | Public | Validate reset token |
+| POST | `/api/v1/auth/reset-password` | Public | Reset password |
+| POST | `/api/v1/auth/logout` | Auth | Logout & clear tokens |
+| POST | `/api/v1/auth/admin-change-password` | Admin | Change admin password |
 
-### Profile (`/api/profile`)
-
-| Method | Endpoint | Access | Description |
-|--------|----------|--------|-------------|
-| GET | `/api/profile/me` | Student | Get own profile |
-| PUT | `/api/profile/me` | Student | Update own profile |
-| POST | `/api/profile/resume` | Student | Upload resume (PDF ≤ 2MB) |
-| DELETE | `/api/profile/resume` | Student | Delete resume |
-
-### Drives (`/api/drives`)
+### Profile (`/api/v1/profile`)
 
 | Method | Endpoint | Access | Description |
 |--------|----------|--------|-------------|
-| GET | `/api/drives` | Auth | List all active drives |
-| POST | `/api/drives` | Admin | Create drive (with optional logo upload) |
-| GET | `/api/drives/:id` | Auth | Get drive details |
-| PATCH | `/api/drives/:id` | Admin | Update drive |
-| DELETE | `/api/drives/:id` | Admin | Soft-delete drive |
+| GET | `/api/v1/profile/me` | Student | Get own profile |
+| PUT | `/api/v1/profile/me` | Student | Update own profile |
+| POST | `/api/v1/profile/resume` | Student | Upload resume (PDF ≤ 2MB) |
+| DELETE | `/api/v1/profile/resume` | Student | Delete resume |
 
-### Applications (`/api/applications`)
-
-| Method | Endpoint | Access | Description |
-|--------|----------|--------|-------------|
-| POST | `/api/applications/apply/:driveId` | Student | Apply to a drive |
-| GET | `/api/applications/my-applications` | Student | My applications list |
-| GET | `/api/applications/drive/:driveId` | Admin | All applicants for a drive |
-| PATCH | `/api/applications/:applicationId/status` | Admin | Update individual status (triggers Brevo email to student) |
-| PATCH | `/api/applications/bulk-status` | Admin | Bulk update multiple application statuses |
-
-### Notices (`/api/notices`)
+### Drives (`/api/v1/drives`)
 
 | Method | Endpoint | Access | Description |
 |--------|----------|--------|-------------|
-| GET | `/api/notices` | Auth | List active, non-archived notices |
-| POST | `/api/notices` | Admin | Create notice (optional PDF attachment via Cloudinary) |
-| GET | `/api/notices/:id` | Auth | Get notice details |
-| PUT | `/api/notices/:id` | Admin | Update notice |
-| DELETE | `/api/notices/:id` | Admin | Delete notice |
-| GET | `/api/notices/archived` | Admin | List archived notices |
-| PATCH | `/api/notices/:id/archive` | Admin | Manually archive a notice |
-| PATCH | `/api/notices/:id/restore` | Admin | Restore an archived notice |
-| GET | `/api/notices/read` | Auth | Get IDs of notices read by current user |
-| PATCH | `/api/notices/:id/read` | Auth | Mark a notice as read |
+| GET | `/api/v1/drives` | Auth | List all active drives |
+| POST | `/api/v1/drives` | Admin | Create drive (with optional logo upload) |
+| GET | `/api/v1/drives/:id` | Auth | Get drive details |
+| PATCH | `/api/v1/drives/:id` | Admin | Update drive |
+| DELETE | `/api/v1/drives/:id` | Admin | Soft-delete drive |
 
-### Admin (`/api/admin`)
+### Applications (`/api/v1/applications`)
 
 | Method | Endpoint | Access | Description |
 |--------|----------|--------|-------------|
-| GET | `/api/admin/stats` | Admin | Dashboard placement statistics |
-| GET | `/api/admin/students` | Admin | All registered students |
-| GET | `/api/admin/students/:id` | Admin | Get student profile by ID |
-| GET | `/api/admin/reports/drive/:driveId` | Admin | Drive-specific applicant report |
+| POST | `/api/v1/applications/apply/:driveId` | Student | Apply to a drive |
+| GET | `/api/v1/applications/my-applications` | Student | My applications list |
+| GET | `/api/v1/applications/drive/:driveId` | Admin | All applicants for a drive |
+| PATCH | `/api/v1/applications/:applicationId/status` | Admin | Update individual status (triggers Brevo email to student) |
+| PATCH | `/api/v1/applications/bulk-status` | Admin | Bulk update multiple application statuses |
+
+### Notices (`/api/v1/notices`)
+
+| Method | Endpoint | Access | Description |
+|--------|----------|--------|-------------|
+| GET | `/api/v1/notices` | Auth | List active, non-archived notices |
+| POST | `/api/v1/notices` | Admin | Create notice (optional PDF attachment via Cloudinary) |
+| GET | `/api/v1/notices/:id` | Auth | Get notice details |
+| PUT | `/api/v1/notices/:id` | Admin | Update notice |
+| DELETE | `/api/v1/notices/:id` | Admin | Delete notice |
+| GET | `/api/v1/notices/archived` | Admin | List archived notices |
+| PATCH | `/api/v1/notices/:id/archive` | Admin | Manually archive a notice |
+| PATCH | `/api/v1/notices/:id/restore` | Admin | Restore an archived notice |
+| GET | `/api/v1/notices/read` | Auth | Get IDs of notices read by current user |
+| PATCH | `/api/v1/notices/:id/read` | Auth | Mark a notice as read |
+
+### Admin (`/api/v1/admin`)
+
+| Method | Endpoint | Access | Description |
+|--------|----------|--------|-------------|
+| GET | `/api/v1/admin/stats` | Admin | Dashboard placement statistics |
+| GET | `/api/v1/admin/students` | Admin | All registered students |
+| GET | `/api/v1/admin/students/:id` | Admin | Get student profile by ID |
+| GET | `/api/v1/admin/reports/drive/:driveId` | Admin | Drive-specific applicant report |
 
 ---
 

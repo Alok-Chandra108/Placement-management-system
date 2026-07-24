@@ -153,20 +153,20 @@ app.get('/', (req, res) => {
   res.json({
     success: true,
     message: 'CPMS API is running',
-    version: '1.0.0',
+    version: 'v1',
   });
 });
 
 const { apiLimiter } = require('./middleware/rateLimiter');
 
 // API Routes
-app.use('/api', apiLimiter);
-app.use('/api/auth', authRoutes);
-app.use('/api/profile', profileRoutes);
-app.use('/api/drives', driveRoutes);
-app.use('/api/applications', applicationRoutes);
-app.use('/api/notices', noticeRoutes);
-app.use('/api/admin', adminRoutes);
+app.use('/api/v1', apiLimiter);
+app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/profile', profileRoutes);
+app.use('/api/v1/drives', driveRoutes);
+app.use('/api/v1/applications', applicationRoutes);
+app.use('/api/v1/notices', noticeRoutes);
+app.use('/api/v1/admin', adminRoutes);
 
 // 404 handler
 app.use((req, res) => {

@@ -48,3 +48,4 @@ services:
         value: "20"
       - key: VITE_API_BASE_URL
         sync: false
+        # Set this to https://<your-api-domain>/api/v1 in Render dashboard
