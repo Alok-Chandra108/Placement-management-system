@@ -7,6 +7,8 @@ services:
       - /app/node_modules
     environment:
       - FRONTEND_URL=http://localhost:5173
+      - CHOKIDAR_USEPOLLING=true
+      - CHOKIDAR_INTERVAL=300
 
   frontend:
     build:
@@ -17,3 +19,6 @@ services:
       - ./frontend:/app
       - /app/node_modules
     command: npm run dev -- --host
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - CHOKIDAR_INTERVAL=300
