@@ -6,6 +6,7 @@ const cookieParser = require('cookie-parser');
 const mongoSanitize = require('express-mongo-sanitize');
 const xss = require('xss-clean');
 const { csrfProtection } = require('./middleware/csrf.middleware');
+const { requestIdMiddleware } = require('./middleware/requestId.middleware');
 const authRoutes = require('./routes/auth.routes');
 const profileRoutes = require('./routes/profile.routes');
 const driveRoutes = require('./routes/drive.routes');
@@ -18,6 +19,9 @@ const app = express();
 
 // Trust proxy for rate limiting on hosting platforms (like Render)
 app.set('trust proxy', 1);
+
+// Request ID middleware - MUST be first for full request tracing
+app.use(requestIdMiddleware);
 
 // Security headers - Production-configured
 app.use(
