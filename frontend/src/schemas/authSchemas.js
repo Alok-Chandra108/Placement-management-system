@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { DEPARTMENTS, YEARS_OF_STUDY } from '../constants/roles';
 
 const collegeDomain = import.meta.env.VITE_COLLEGE_DOMAIN || 'mite.ac.in';
+const emailDomainRegex = new RegExp(`@${collegeDomain.replace('.', '\\.')}$`);
 
 export const registerSchema = z
   .object({
@@ -13,7 +14,8 @@ export const registerSchema = z
     email: z
       .string()
       .min(1, 'Email is required')
-      .email('Please enter a valid email'),
+      .email('Please enter a valid email')
+      .regex(emailDomainRegex, `Must use your @${collegeDomain} college email`),
     usnNumber: z
       .string()
       .min(6, 'USN Number must be at least 6 characters')
@@ -46,7 +48,8 @@ export const loginSchema = z.object({
   email: z
     .string()
     .min(1, 'Email is required')
-    .email('Please enter a valid email'),
+    .email('Please enter a valid email')
+    .regex(emailDomainRegex, `Must use your @${collegeDomain} college email`),
   password: z.string().min(1, 'Password is required'),
   rememberMe: z.boolean().optional(),
 });
@@ -55,7 +58,8 @@ export const forgotPasswordSchema = z.object({
   email: z
     .string()
     .min(1, 'Email is required')
-    .email('Please enter a valid email'),
+    .email('Please enter a valid email')
+    .regex(emailDomainRegex, `Must use your @${collegeDomain} college email`),
 });
 
 export const resetPasswordSchema = z
