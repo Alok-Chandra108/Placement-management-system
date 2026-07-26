@@ -1,16 +1,33 @@
 const ApiResponse = require('../utils/ApiResponse');
 const multer = require('multer');
+const { logger } = require('../config/logger');
 
 /**
  * Global Error Handler Middleware
  */
 const errorHandler = (err, req, res, next) => {
-  // Log error in development
+  // Log error with structured fields
+  const logContext = {
+    err: err,
+    requestId: req.id || req.requestId,
+    method: req.method,
+    url: req.originalUrl,
+    ip: req.ip,
+    userAgent: req.headers['user-agent'],
+    statusCode: err.statusCode || 500,
+  };
+
   if (process.env.NODE_ENV !== 'production') {
-    console.error('Unhandled Error:', err);
+    logger.error(logContext, 'Unhandled Error');
   } else {
-    // In production, log the basic error info without stack trace for observability
-    console.error(`[${new Date().toISOString()}] Error in ${req.method} ${req.originalUrl}:`, err.message);
+    // In production, log error without stack trace for observability
+    logger.error({
+      requestId: req.id || req.requestId,
+      method: req.method,
+      url: req.originalUrl,
+      message: err.message,
+      statusCode: err.statusCode || 500,
+    }, 'Request error');
   }
 
   // Handle Multer errors (file upload validation)

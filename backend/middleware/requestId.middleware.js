@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const { logger } = require('../config/logger');
 
 /**
  * Request ID Middleware
@@ -116,9 +117,16 @@ function requestIdMiddleware(req, res, next) {
   // Add request ID to response finish event for logging
   res.on('finish', () => {
     const duration = Date.now() - startTime;
-    // In production, this would integrate with your logging system
-    // For now, we just ensure the header is set correctly
-    // Logging is handled by morgan middleware which runs after this
+    // Log slow requests (> 2s) with structured context
+    if (duration > 2000) {
+      logger.warn({
+        requestId,
+        method,
+        url: originalUrl,
+        duration,
+        statusCode: res.statusCode,
+      }, 'Slow request detected');
+    }
   });
 
   next();

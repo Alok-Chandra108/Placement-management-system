@@ -3,6 +3,7 @@ const app = require('./app');
 const connectDB = require('./config/db');
 const { connectRedis } = require('./config/redis');
 const { startNoticeArchiveCron } = require('./services/noticeArchiveCron');
+const { logger } = require('./config/logger');
 
 /**
  * Validate required environment variables before starting the server
@@ -74,35 +75,34 @@ const validateEnv = () => {
 
   // Report missing required variables
   if (missing.length > 0) {
-    console.error('\n❌  Missing required environment variables:\n');
+    logger.fatal({ missing: missing.map(m => m.key) }, 'Missing required environment variables');
     for (const { key, description } of missing) {
-      console.error(`  - ${key}: ${description}`);
+      logger.fatal({ key, description }, 'Missing required env');
     }
-    console.error('\nPlease set these in your .env file or environment.\n');
+    logger.fatal('Please set these in your .env file or environment.');
     process.exit(1);
   }
 
   // Report optional variables using defaults
   if (warnings.length > 0) {
-    console.warn('\n⚠️  Environment variables using defaults:\n');
+    logger.warn({ warnings: warnings.map(w => w.key) }, 'Environment variables using defaults');
     for (const { key, description, default: defaultValue, note } of warnings) {
       const defaultMsg = defaultValue !== undefined ? ` (default: "${defaultValue}")` : '';
       const noteMsg = note ? ` - ${note}` : '';
-      console.warn(`  - ${key}: ${description}${defaultMsg}${noteMsg}`);
+      logger.warn({ key, description, default: defaultValue, note }, `Env var using default: ${key}`);
     }
-    console.warn('');
   }
 
   // Log configuration summary
-  console.log('✅ Environment validation passed');
-  console.log(`   Environment: ${process.env.NODE_ENV}`);
-  console.log(`   Port: ${process.env.PORT}`);
-  console.log(`   MongoDB: ${process.env.MONGO_URI ? 'Configured' : 'Not configured'}`);
-  console.log(`   Redis: ${process.env.REDIS_URL}`);
-  console.log(`   Frontend URL: ${process.env.FRONTEND_URL || '(not set - will use dev defaults)'}`);
-  if (process.env.CLOUDINARY_CLOUD_NAME) console.log(`   Cloudinary: Configured`);
-  if (process.env.BREVO_API_KEY) console.log(`   Email (Brevo): Configured`);
-  console.log('');
+  logger.info({
+    env: process.env.NODE_ENV,
+    port: process.env.PORT,
+    mongoConfigured: !!process.env.MONGO_URI,
+    redisUrl: process.env.REDIS_URL,
+    frontendUrl: process.env.FRONTEND_URL || 'not set (dev defaults)',
+    cloudinaryConfigured: !!process.env.CLOUDINARY_CLOUD_NAME,
+    emailConfigured: !!process.env.BREVO_API_KEY,
+  }, 'Environment validation passed');
 };
 
 const PORT = process.env.PORT || 5000;
@@ -110,11 +110,11 @@ const PORT = process.env.PORT || 5000;
 // Global process error handlers to prevent silent crashes from background jobs
 // (cron tasks, email sends, etc.) that may produce unhandled rejections or exceptions.
 process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Promise Rejection at:', promise, '\nReason:', reason);
+  logger.fatal({ reason, promise }, 'Unhandled Promise Rejection');
 });
 
 process.on('uncaughtException', (error) => {
-  console.error('Uncaught Exception:', error);
+  logger.fatal({ err: error }, 'Uncaught Exception');
   // Exit so the process supervisor (nodemon/pm2/docker) can restart in a clean state
   process.exit(1);
 });
@@ -127,46 +127,46 @@ let server = null;
 
 // Graceful shutdown handler
 const gracefulShutdown = async (signal) => {
-  console.log(`\n Received ${signal}. Starting graceful shutdown...`);
+  logger.info({ signal }, 'Received signal, starting graceful shutdown');
 
   // Stop accepting new connections
   if (server) {
-    console.log('   Stopping HTTP server...');
+    logger.info('Stopping HTTP server...');
     server.close(() => {
-      console.log('   HTTP server closed');
+      logger.info('HTTP server closed');
     });
 
     // Force close after 10 seconds if graceful shutdown takes too long
     setTimeout(() => {
-      console.error('   ⚠️  Forced shutdown after timeout');
+      logger.fatal('Forced shutdown after timeout');
       process.exit(1);
     }, 10000).unref();
   }
 
   try {
     // Stop accepting new cron jobs
-    console.log('   Stopping cron jobs...');
+    logger.info('Stopping cron jobs...');
     // Note: cron jobs don't have a built-in stop method, they'll finish current run
 
     // Close MongoDB connection gracefully
     // This waits for in-flight operations (up to maxIdleTimeMS = 30s)
-    console.log('   Closing MongoDB connection...');
+    logger.info('Closing MongoDB connection...');
     const mongoose = require('mongoose');
     if (mongoose.connection.readyState === 1) {
       await mongoose.connection.close(false); // false = don't force close, wait for in-flight ops
-      console.log('   ✅ MongoDB connection closed gracefully');
+      logger.info('MongoDB connection closed gracefully');
     }
 
     // Close Redis connection gracefully
-    console.log('   Closing Redis connection...');
+    logger.info('Closing Redis connection...');
     const { disconnectRedis } = require('./config/redis');
     await disconnectRedis();
-    console.log('   ✅ Redis connection closed gracefully');
+    logger.info('Redis connection closed gracefully');
 
-    console.log('✅ Graceful shutdown complete');
+    logger.info('Graceful shutdown complete');
     process.exit(0);
   } catch (error) {
-    console.error('❌ Error during graceful shutdown:', error.message);
+    logger.fatal({ err: error }, 'Error during graceful shutdown');
     process.exit(1);
   }
 };
@@ -185,12 +185,10 @@ const startServer = async () => {
     startNoticeArchiveCron();
 
     server = app.listen(PORT, () => {
-      console.log(`\n Server running on port ${PORT}`);
-      console.log(`API: http://localhost:${PORT}/api`);
-      console.log(`Environment: ${process.env.NODE_ENV || 'development'}\n`);
+      logger.info({ port: PORT, env: process.env.NODE_ENV || 'development' }, 'Server running');
     });
   } catch (error) {
-    console.error('Failed to start server:', error.message);
+    logger.fatal({ err: error }, 'Failed to start server');
     process.exit(1);
   }
 };
