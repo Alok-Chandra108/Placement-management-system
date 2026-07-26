@@ -1,7 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
-const morgan = require('morgan');
+const httpLogger = require('./middleware/httpLogger');
+const { logger } = require('./config/logger');
 const cookieParser = require('cookie-parser');
 const mongoSanitize = require('express-mongo-sanitize');
 const xss = require('xss-clean');
@@ -71,20 +72,20 @@ const validateOrigin = (origin, isProduction) => {
 
     // Reject wildcard origins - CRITICAL when credentials: true
     if (origin.includes('*')) {
-      console.warn(`SECURITY: Origin ${origin} rejected - wildcards not allowed with credentials`);
+      logger.warn({ origin, reason: 'wildcard_not_allowed' }, 'SECURITY: Origin rejected - wildcards not allowed with credentials');
       return false;
     }
 
     // Validate protocol
     if (isProduction) {
       if (urlObj.protocol !== 'https:') {
-        console.warn(`SECURITY: Origin ${origin} rejected - only HTTPS allowed in production`);
+        logger.warn({ origin, reason: 'http_not_allowed_in_production' }, 'SECURITY: Origin rejected - only HTTPS allowed in production');
         return false;
       }
     } else {
       // Development: allow http and https
       if (urlObj.protocol !== 'http:' && urlObj.protocol !== 'https:') {
-        console.warn(`SECURITY: Origin ${origin} rejected - only HTTP/HTTPS allowed`);
+        logger.warn({ origin, reason: 'invalid_protocol' }, 'SECURITY: Origin rejected - only HTTP/HTTPS allowed');
         return false;
       }
     }
@@ -92,32 +93,32 @@ const validateOrigin = (origin, isProduction) => {
     // Validate hostname format (no IP addresses in production, basic format check)
     const hostname = urlObj.hostname;
     if (!hostname || hostname.length > 253) {
-      console.warn(`SECURITY: Origin ${origin} rejected - invalid hostname`);
+      logger.warn({ origin, reason: 'invalid_hostname' }, 'SECURITY: Origin rejected - invalid hostname');
       return false;
     }
 
     // Reject localhost in production
     if (isProduction && (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1')) {
-      console.warn(`SECURITY: Origin ${origin} rejected - localhost not allowed in production`);
+      logger.warn({ origin, reason: 'localhost_not_allowed_in_production' }, 'SECURITY: Origin rejected - localhost not allowed in production');
       return false;
     }
 
     // Validate hostname contains valid characters (RFC 1123)
     const hostnameRegex = /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
     if (!hostnameRegex.test(hostname)) {
-      console.warn(`SECURITY: Origin ${origin} rejected - invalid hostname format`);
+      logger.warn({ origin, reason: 'invalid_hostname_format' }, 'SECURITY: Origin rejected - invalid hostname format');
       return false;
     }
 
     // No port in production (standard HTTPS port 443)
     if (isProduction && urlObj.port && urlObj.port !== '443') {
-      console.warn(`SECURITY: Origin ${origin} rejected - non-standard port in production`);
+      logger.warn({ origin, reason: 'non_standard_port_in_production' }, 'SECURITY: Origin rejected - non-standard port in production');
       return false;
     }
 
     return true;
   } catch (e) {
-    console.warn(`SECURITY: Invalid origin ${origin} - ${e.message}`);
+    logger.warn({ origin, error: e.message }, 'SECURITY: Invalid origin');
     return false;
   }
 };
@@ -128,14 +129,14 @@ const validateFrontendUrlFormat = (url) => {
   const trimmed = url.trim();
   // No wildcards in FRONTEND_URL
   if (trimmed.includes('*')) {
-    console.warn(`SECURITY: FRONTEND_URL contains wildcard - rejecting: ${trimmed}`);
+    logger.warn({ frontendUrl: trimmed, reason: 'wildcard_in_frontend_url' }, 'SECURITY: FRONTEND_URL contains wildcard - rejecting');
     return false;
   }
   try {
     const parsed = new URL(trimmed);
     return parsed.protocol === 'http:' || parsed.protocol === 'https:';
   } catch {
-    console.warn(`SECURITY: FRONTEND_URL not a valid URL - rejecting: ${trimmed}`);
+    logger.warn({ frontendUrl: trimmed, reason: 'invalid_url' }, 'SECURITY: FRONTEND_URL not a valid URL - rejecting');
     return false;
   }
 };
@@ -147,7 +148,7 @@ const getAllowedOrigins = () => {
   // In production, require explicit FRONTEND_URL configuration
   if (isProduction) {
     if (!envOrigins || envOrigins.trim() === '') {
-      console.error('ERROR: FRONTEND_URL must be set in production');
+      logger.error('ERROR: FRONTEND_URL must be set in production');
       return []; // Empty array denies all origins in production
     }
 
@@ -169,11 +170,11 @@ const allowedOrigins = getAllowedOrigins();
 
 // Fail fast in production if no valid origins
 if (process.env.NODE_ENV === 'production' && allowedOrigins.length === 0) {
-  console.error('FATAL: No valid CORS origins configured. Set FRONTEND_URL with valid HTTPS origins.');
+  logger.fatal('FATAL: No valid CORS origins configured. Set FRONTEND_URL with valid HTTPS origins.');
   process.exit(1);
 }
 
-console.log(`CORS: Allowing ${allowedOrigins.length} validated origin(s):`, allowedOrigins);
+logger.info({ count: allowedOrigins.length, origins: allowedOrigins }, 'CORS: Allowing validated origins');
 
 // Use function-based origin callback for per-request validation and audit logging
 const corsOptions = {
@@ -181,7 +182,7 @@ const corsOptions = {
     // Allow requests with no origin (server-to-server, curl, Postman) in development
     if (!origin) {
       if (process.env.NODE_ENV === 'production') {
-        console.warn('SECURITY: Request with null origin rejected in production');
+        logger.warn('SECURITY: Request with null origin rejected in production');
         return callback(null, false);
       }
       return callback(null, true);
@@ -190,7 +191,7 @@ const corsOptions = {
     // Validate against the allowed origins list
     const isAllowed = allowedOrigins.includes(origin);
     if (!isAllowed) {
-      console.warn(`SECURITY: CORS blocked request from origin: ${origin}`);
+      logger.warn({ origin }, 'SECURITY: CORS blocked request from origin');
     }
     callback(null, isAllowed);
   },
@@ -200,13 +201,8 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-// Request logging
-if (process.env.NODE_ENV !== 'production') {
-  app.use(morgan('dev'));
-} else {
-  // In production, log admin API requests
-  app.use('/api/admin', morgan('combined'));
-}
+// HTTP Request/Response logging (structured JSON via Pino)
+app.use(httpLogger);
 
 // Body parsers
 app.use(express.json({ limit: '10kb' }));
