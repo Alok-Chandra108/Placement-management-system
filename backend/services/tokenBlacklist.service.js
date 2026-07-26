@@ -1,4 +1,5 @@
 const { getRedisClient } = require('../config/redis');
+const { logger } = require('../config/logger');
 
 /**
  * Add a token hash to the blacklist
@@ -10,7 +11,7 @@ const addToBlacklist = async (tokenHash, expiryTimestamp) => {
   try {
     const redisClient = getRedisClient();
     if (!redisClient) {
-      console.error('Token Blacklist: Redis client not available');
+      logger.error('Token Blacklist: Redis client not available');
       return false;
     }
 
@@ -19,7 +20,7 @@ const addToBlacklist = async (tokenHash, expiryTimestamp) => {
 
     // Only add to blacklist if token hasn't already expired
     if (ttl <= 0) {
-      console.log('Token Blacklist: Token already expired, skipping blacklist');
+      logger.warn({ tokenHash: tokenHash.substring(0, 8) }, 'Token already expired, skipping blacklist');
       return true;
     }
 
@@ -28,10 +29,10 @@ const addToBlacklist = async (tokenHash, expiryTimestamp) => {
     const key = `blacklist:token:${tokenHash}`;
     await redisClient.setEx(key, ttl, '1');
 
-    console.log(`Token Blacklist: Added token (TTL: ${ttl}s)`);
+    logger.info({ tokenHash: tokenHash.substring(0, 8), ttl }, 'Added token to blacklist');
     return true;
   } catch (error) {
-    console.error('Token Blacklist: Failed to add token:', error.message);
+    logger.error({ err: error, message: error.message, tokenHash: tokenHash.substring(0, 8) }, 'Failed to add token to blacklist');
     return false;
   }
 };
@@ -45,17 +46,17 @@ const isBlacklisted = async (tokenHash) => {
   try {
     const redisClient = getRedisClient();
     if (!redisClient) {
-      console.error('Token Blacklist: Redis client not available');
+      logger.error('Token Blacklist: Redis client not available');
       // Fail closed: if Redis is down, reject tokens to be safe
       return true;
     }
 
     const key = `blacklist:token:${tokenHash}`;
     const result = await redisClient.exists(key);
-    
+
     return result === 1;
   } catch (error) {
-    console.error('Token Blacklist: Failed to check token:', error.message);
+    logger.error({ err: error, message: error.message, tokenHash: tokenHash.substring(0, 8) }, 'Failed to check token blacklist');
     // Fail closed: if check fails, reject the token
     return true;
   }
@@ -70,17 +71,17 @@ const removeFromBlacklist = async (tokenHash) => {
   try {
     const redisClient = getRedisClient();
     if (!redisClient) {
-      console.error('Token Blacklist: Redis client not available');
+      logger.error('Token Blacklist: Redis client not available');
       return false;
     }
 
     const key = `blacklist:token:${tokenHash}`;
     await redisClient.del(key);
-    
-    console.log('Token Blacklist: Removed token');
+
+    logger.info({ tokenHash: tokenHash.substring(0, 8) }, 'Removed token from blacklist');
     return true;
   } catch (error) {
-    console.error('Token Blacklist: Failed to remove token:', error.message);
+    logger.error({ err: error, message: error.message, tokenHash: tokenHash.substring(0, 8) }, 'Failed to remove token from blacklist');
     return false;
   }
 };

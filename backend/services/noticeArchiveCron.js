@@ -1,5 +1,6 @@
 const cron = require('node-cron');
 const { runAutoArchive, runPurgeArchived } = require('../controllers/notice.controller');
+const { logger } = require('../config/logger');
 
 /**
  * Notice Archive Cron Service
@@ -22,30 +23,30 @@ const startNoticeArchiveCron = () => {
   // ── Job: Daily auto-archive + purge at midnight ────────────────────────────
   cron.schedule('0 0 * * *', async () => {
     const timestamp = new Date().toISOString();
-    console.log(`\n[Notice Cron] ${timestamp} — Running scheduled notice jobs...`);
+    logger.info({ timestamp }, 'Running scheduled notice jobs');
 
     try {
       // Step 1: Auto-archive notices older than 30 days
       const archivedCount = await runAutoArchive();
-      console.log(`[Notice Cron] ✓ Auto-archived ${archivedCount} notice(s) (>30 days old)`);
+      logger.info({ archivedCount }, 'Auto-archived notices (>30 days old)');
     } catch (err) {
-      console.error('[Notice Cron] ✗ Auto-archive job failed:', err.message);
+      logger.error({ err, message: err.message }, 'Auto-archive job failed');
     }
 
     try {
       // Step 2: Purge archived notices older than 60 days from archivedAt
       const purgedCount = await runPurgeArchived();
-      console.log(`[Notice Cron] ✓ Permanently deleted ${purgedCount} archived notice(s) (>60 days in archive)`);
+      logger.info({ purgedCount }, 'Permanently deleted archived notices (>60 days in archive)');
     } catch (err) {
-      console.error('[Notice Cron] ✗ Purge job failed:', err.message);
+      logger.error({ err, message: err.message }, 'Purge job failed');
     }
 
-    console.log(`[Notice Cron] Jobs complete.\n`);
+    logger.info('Notice cron jobs complete');
   }, {
     timezone: 'Asia/Kolkata', // IST — adjust if needed
   });
 
-  console.log('[Notice Cron] Scheduled: auto-archive (30 days) + purge (60 days) @ midnight IST');
+  logger.info('Scheduled: auto-archive (30 days) + purge (60 days) @ midnight IST');
 };
 
 module.exports = { startNoticeArchiveCron };

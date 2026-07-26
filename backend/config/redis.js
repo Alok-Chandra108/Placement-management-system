@@ -1,4 +1,5 @@
 const { createClient } = require('redis');
+const { logger } = require('./logger');
 
 let redisClient = null;
 
@@ -13,13 +14,13 @@ const connectRedis = async () => {
 
   try {
     const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
-    
+
     redisClient = createClient({
       url: redisUrl,
       socket: {
         reconnectStrategy: (retries) => {
           if (retries > 10) {
-            console.error('Redis: Maximum reconnection attempts reached');
+            logger.error('Redis: Maximum reconnection attempts reached');
             return new Error('Redis reconnection failed');
           }
           // Exponential backoff: 100ms, 200ms, 400ms, etc.
@@ -29,25 +30,25 @@ const connectRedis = async () => {
     });
 
     redisClient.on('error', (err) => {
-      console.error('Redis Client Error:', err);
+      logger.error({ err }, 'Redis Client Error');
     });
 
     redisClient.on('connect', () => {
-      console.log('Redis: Connected successfully');
+      logger.info('Redis: Connected successfully');
     });
 
     redisClient.on('ready', () => {
-      console.log('Redis: Ready to accept commands');
+      logger.info('Redis: Ready to accept commands');
     });
 
     redisClient.on('reconnecting', () => {
-      console.log('Redis: Reconnecting...');
+      logger.warn('Redis: Reconnecting...');
     });
 
     await redisClient.connect();
     return redisClient;
   } catch (error) {
-    console.error('Redis: Failed to connect:', error.message);
+    logger.error({ err: error, message: error.message }, 'Redis: Failed to connect');
     throw error;
   }
 };
@@ -58,7 +59,7 @@ const connectRedis = async () => {
  */
 const getRedisClient = () => {
   if (!redisClient || !redisClient.isOpen) {
-    console.warn('Redis: Client not initialized or not connected');
+    logger.warn('Redis: Client not initialized or not connected');
     return null;
   }
   return redisClient;
@@ -71,7 +72,7 @@ const disconnectRedis = async () => {
   if (redisClient) {
     await redisClient.quit();
     redisClient = null;
-    console.log('Redis: Disconnected');
+    logger.info('Redis: Disconnected');
   }
 };
 

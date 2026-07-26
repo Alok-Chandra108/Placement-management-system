@@ -2,6 +2,7 @@ const BREVO_API_KEY = process.env.BREVO_API_KEY;
 const SENDER_EMAIL = process.env.BREVO_SENDER_EMAIL || process.env.GMAIL_USER;
 const SENDER_NAME = 'MITE Placement Cell';
 const { getValidatedFrontendUrl } = require('../utils/urlValidator');
+const { logger } = require('../config/logger');
 
 /**
  * Escape HTML special characters to prevent XSS in email templates.
@@ -12,11 +13,11 @@ const { getValidatedFrontendUrl } = require('../utils/urlValidator');
 const escapeHtml = (value) => {
   if (value === null || value === undefined) return '';
   return String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#x27;');
+    .replace(/&/g, '&')
+    .replace(/</g, '<')
+    .replace(/>/g, '>')
+    .replace(/"/g, '"')
+    .replace(/'/g, String.fromCharCode(39) + 'quot;'); // Use numeric entity for single quote
 };
 
 /**
@@ -112,9 +113,9 @@ const sendOTPEmail = async (fullName, email, otp) => {
       subject: `Your Verification Code: ${otp}`,
       html,
     });
-    console.log(`📧 OTP email sent to ${email} | messageId: ${data?.messageId}`);
+    logger.info({ email, messageId: data?.messageId }, 'OTP email sent');
   } catch (error) {
-    console.error('Failed to send OTP email:', error.message);
+    logger.error({ err: error, email, message: error.message }, 'Failed to send OTP email');
     throw new Error(`Email delivery failed: ${error.message}`);
   }
 };
@@ -183,9 +184,9 @@ const sendResetEmail = async (fullName, email, resetURL) => {
       subject: 'Reset your portal password',
       html,
     });
-    console.log(`📧 Reset email sent to ${email} | messageId: ${data?.messageId}`);
+    logger.info({ email, messageId: data?.messageId }, 'Reset email sent');
   } catch (error) {
-    console.error('Failed to send reset email:', error.message);
+    logger.error({ err: error, email, message: error.message }, 'Failed to send reset email');
     throw new Error(`Email delivery failed: ${error.message}`);
   }
 };
@@ -232,7 +233,7 @@ const sendAdminOTPEmail = async (fullName, email, otp) => {
             </div>
             <div style="background:#2d1b0e;border:1px solid #92400e;border-radius:10px;padding:16px 20px;margin-bottom:24px;">
               <p style="color:#fbbf24;font-size:13px;margin:0;line-height:1.6;">
-                ⚠️ <strong>Security Notice:</strong> If you did not attempt to log in, your credentials may be compromised. 
+                ⚠️ <strong>Security Notice:</strong> If you did not attempt to log in, your credentials may be compromised.
                 Please contact the system administrator immediately and change your password.
               </p>
             </div>
@@ -262,9 +263,9 @@ const sendAdminOTPEmail = async (fullName, email, otp) => {
       html,
       senderName: 'MITE Placement Cell — Security',
     });
-    console.log(`📧 Admin OTP email sent to ${email} | messageId: ${data?.messageId}`);
+    logger.info({ email, messageId: data?.messageId }, 'Admin OTP email sent');
   } catch (error) {
-    console.error('Failed to send admin OTP email:', error.message);
+    logger.error({ err: error, email, message: error.message }, 'Failed to send admin OTP email');
     throw new Error(`Email delivery failed: ${error.message}`);
   }
 };
@@ -320,7 +321,7 @@ const sendStatusUpdateEmail = async (fullName, email, companyName, jobRole, newS
           <td style="background-color:#ffffff;padding:40px 32px;">
             <p style="color:#1A1D21;font-size:16px;font-weight:600;margin:0 0 8px;">Hi ${escapeHtml(fullName)},</p>
             <p style="color:#495057;font-size:14px;line-height:1.6;margin:0 0 24px;">
-              There has been an update on your application for 
+              There has been an update on your application for
               <strong>${escapeHtml(jobRole)}</strong> at <strong>${escapeHtml(companyName)}</strong>.
             </p>
             <!-- Status Badge -->
@@ -366,10 +367,10 @@ const sendStatusUpdateEmail = async (fullName, email, companyName, jobRole, newS
       subject: `Application Update: ${escapeHtml(companyName)} — ${statusInfo.label}`,
       html,
     });
-    console.log(`📧 Status update email sent to ${email} (${newStatus}) | messageId: ${data?.messageId}`);
+    logger.info({ email, status: newStatus, messageId: data?.messageId }, 'Status update email sent');
   } catch (error) {
     // Log but do NOT throw — email failure should never fail the status update API call
-    console.error('Failed to send status update email:', error.message);
+    logger.error({ err: error, email, status: newStatus, message: error.message }, 'Failed to send status update email');
   }
 };
 
