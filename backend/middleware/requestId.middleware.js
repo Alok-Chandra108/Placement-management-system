@@ -19,11 +19,11 @@ const crypto = require('crypto');
 function generateRequestId() {
   // Generate 16 random bytes (128 bits)
   const bytes = crypto.randomBytes(16);
-  
+
   // Set version (4) and variant bits per RFC 4122
   bytes[6] = (bytes[6] & 0x0f) | 0x40; // Version 4
   bytes[8] = (bytes[8] & 0x3f) | 0x80; // Variant 10
-  
+
   // Convert to UUID string format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
   const hex = bytes.toString('hex');
   return [
@@ -44,11 +44,11 @@ function generateRequestId() {
 function isValidRequestId(id) {
   if (!id || typeof id !== 'string') return false;
   if (id.length > 64) return false;
-  
+
   // Accept UUID v4 format or alphanumeric with hyphens/underscores
   const uuidV4Regex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   const alphanumericRegex = /^[a-zA-Z0-9_-]+$/;
-  
+
   return uuidV4Regex.test(id) || alphanumericRegex.test(id);
 }
 
@@ -61,13 +61,13 @@ function isValidRequestId(id) {
 function extractRequestIdFromHeaders(req) {
   // Check standard header first (W3C Trace Context compatible)
   if (req.headers['x-request-id']) return req.headers['x-request-id'];
-  
+
   // Check alternative headers (for compatibility with various tracing systems)
   if (req.headers['x-correlation-id']) return req.headers['x-correlation-id'];
   if (req.headers['x-trace-id']) return req.headers['x-trace-id'];
   if (req.headers['request-id']) return req.headers['request-id'];
   if (req.headers['correlation-id']) return req.headers['correlation-id'];
-  
+
   // Check W3C traceparent header (trace-id part)
   if (req.headers['traceparent']) {
     const traceparent = req.headers['traceparent'];
@@ -77,7 +77,7 @@ function extractRequestIdFromHeaders(req) {
       return parts[1]; // Return trace-id
     }
   }
-  
+
   return null;
 }
 
@@ -91,28 +91,28 @@ function extractRequestIdFromHeaders(req) {
 function requestIdMiddleware(req, res, next) {
   // Extract or generate request ID
   const clientRequestId = extractRequestIdFromHeaders(req);
-  const requestId = (clientRequestId && isValidRequestId(clientRequestId)) 
-    ? clientRequestId 
+  const requestId = (clientRequestId && isValidRequestId(clientRequestId))
+    ? clientRequestId
     : generateRequestId();
-  
+
   // Attach to request for downstream middleware/routes
   req.id = requestId;
   req.requestId = requestId; // Alias for clarity
-  
+
   // Add to response headers for client-side tracing
   res.setHeader('X-Request-ID', requestId);
-  
+
   // Also set correlation ID header (common alternative name)
   res.setHeader('X-Correlation-ID', requestId);
-  
+
   // Add to response locals for template access
   res.locals.requestId = requestId;
-  
+
   // Store original URL for logging
   const startTime = Date.now();
   const originalUrl = req.originalUrl;
   const method = req.method;
-  
+
   // Add request ID to response finish event for logging
   res.on('finish', () => {
     const duration = Date.now() - startTime;
@@ -120,7 +120,7 @@ function requestIdMiddleware(req, res, next) {
     // For now, we just ensure the header is set correctly
     // Logging is handled by morgan middleware which runs after this
   });
-  
+
   next();
 }
 
