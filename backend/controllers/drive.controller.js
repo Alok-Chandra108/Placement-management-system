@@ -1,6 +1,7 @@
 const Drive = require('../models/Drive.model');
 const ApiResponse = require('../utils/ApiResponse');
 const cloudinary = require('../config/cloudinary');
+const { logger } = require('../config/logger');
 
 /**
  * @desc    Create a new drive
@@ -141,7 +142,7 @@ exports.updateDrive = async (req, res, next) => {
             }
           }
         } catch (err) {
-          console.error('Error deleting old logo from Cloudinary:', err);
+          logger.error({ err, driveId: req.params.id }, 'Error deleting old logo from Cloudinary');
         }
       }
     }

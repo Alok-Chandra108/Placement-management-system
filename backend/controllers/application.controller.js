@@ -4,6 +4,7 @@ const StudentProfile = require('../models/StudentProfile.model');
 const User = require('../models/User.model');
 const ApiResponse = require('../utils/ApiResponse');
 const { sendStatusUpdateEmail } = require('../services/email.service');
+const { logger } = require('../config/logger');
 
 /**
  * Apply to a placement drive
@@ -214,7 +215,7 @@ exports.updateApplicationStatus = async (req, res, next) => {
         }
       } catch (emailErr) {
         // Never let email errors bubble up to the client
-        console.error('Status email notification failed (non-critical):', emailErr.message);
+        logger.error({ err: emailErr, applicationId, status }, 'Status email notification failed (non-critical)');
       }
     }
     // ─────────────────────────────────────────────────────────────────────
@@ -289,11 +290,11 @@ exports.updateBulkApplicationStatus = async (req, res, next) => {
               drive.jobRole,
               status,
               remarks || ''
-            ).catch(err => console.error('Bulk status email notification failed:', err.message));
+            ).catch(err => logger.error({ err, applicationId: application._id, status }, 'Bulk status email notification failed'));
           }
         }
       } catch (emailErr) {
-        console.error('Bulk status email notification lookup failed:', emailErr.message);
+        logger.error({ err: emailErr, status }, 'Bulk status email notification lookup failed');
       }
     }
 

@@ -2,6 +2,7 @@
 const StudentProfile = require('../models/StudentProfile.model');
 const ApiResponse = require('../utils/ApiResponse');
 const cloudinary = require('../config/cloudinary');
+const { logger } = require('../config/logger');
 
 // ── Whitelist of updatable fields ───────────────────────────────
 // Prevents clients from injecting fields like userId, resumeUrl, etc.

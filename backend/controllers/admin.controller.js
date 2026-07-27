@@ -3,6 +3,7 @@ const Drive = require('../models/Drive.model');
 const Notice = require('../models/Notice.model');
 const StudentProfile = require('../models/StudentProfile.model');
 const Application = require('../models/Application.model');
+const { logger } = require('../config/logger');
 
 /**
  * @desc    Get dashboard statistics for admin overview

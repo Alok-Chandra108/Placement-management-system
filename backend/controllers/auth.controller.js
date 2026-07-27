@@ -10,6 +10,7 @@ const { sendOTPEmail, sendResetEmail, sendAdminOTPEmail } = require('../services
 const { addToBlacklist, isBlacklisted } = require('../services/tokenBlacklist.service');
 const { ROLES } = require('../constants/roles');
 const { getValidatedFrontendUrl } = require('../utils/urlValidator');
+const { logger } = require('../config/logger');
 
 // Generate a dummy hash at module load time for timing-safe comparisons
 // This prevents timing attacks that could reveal if an admin exists
@@ -224,6 +225,7 @@ const login = async (req, res, next) => {
     const user = await User.findOne({ email: sanitizedEmail });
 
     if (!user) {
+      logger.warn({ event: 'login_failed', email: sanitizedEmail, reason: 'user_not_found' }, 'Login failed: user not found');
       return ApiResponse.error(res, 'Incorrect email or password', 401);
     }
 
@@ -241,6 +243,7 @@ const login = async (req, res, next) => {
     const isMatch = await user.comparePassword(password);
 
     if (!isMatch) {
+      logger.warn({ event: 'login_failed', email: sanitizedEmail, reason: 'invalid_password', userId: user._id }, 'Login failed: invalid password');
       return ApiResponse.error(res, 'Incorrect email or password', 401);
     }
 
@@ -276,6 +279,8 @@ const login = async (req, res, next) => {
       usnNumber: user.usnNumber,
       yearOfStudy: user.yearOfStudy,
     };
+
+    logger.info({ event: 'login_success', userId: user._id, email: user.email, role: user.role }, 'User login successful');
 
     return ApiResponse.success(res, 'Login successful', {
       accessToken,
@@ -316,6 +321,7 @@ const adminLogin = async (req, res, next) => {
     }
 
     if (!admin || !isMatch) {
+      logger.warn({ event: 'login_failed', email: sanitizedEmail, reason: admin ? 'invalid_password' : 'user_not_found', role: 'admin' }, 'Admin login failed');
       return ApiResponse.error(res, 'Incorrect email or password', 401);
     }
 
@@ -348,6 +354,8 @@ const adminLogin = async (req, res, next) => {
       role: admin.role,
       mustChangePassword: admin.mustChangePassword,
     };
+
+    logger.info({ event: 'login_success', userId: admin._id, email: admin.email, role: admin.role }, 'Admin login successful');
 
     return ApiResponse.success(res, 'Admin login successful', {
       accessToken,
@@ -383,7 +391,7 @@ const logout = async (req, res, next) => {
         await addToBlacklist(tokenHash, decoded.exp);
       } catch (err) {
         // Token invalid/expired - ignore and continue with logout
-        console.log('Logout: Token verification failed, continuing with logout');
+        logger.warn({ err, message: 'Token verification failed during logout' }, 'Logout: token verification failed');
       }
     }
 
