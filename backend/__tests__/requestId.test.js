@@ -7,6 +7,22 @@ const {
   extractRequestIdFromHeaders,
 } = require('../middleware/requestId.middleware');
 
+// Spy on the logger from the requestId middleware to verify res.on('finish') emits logs
+jest.mock('../config/logger', () => {
+  const actual = jest.requireActual('../config/logger');
+  return {
+    logger: {
+      debug: jest.fn(),
+      warn: jest.fn(),
+      info: jest.fn(),
+      error: jest.fn(),
+    },
+    createRequestLogger: actual.createRequestLogger,
+  };
+});
+
+const { logger } = require('../config/logger');
+
 describe('Request ID Middleware', () => {
   // Create a test app for each test
   let app;
@@ -20,6 +36,9 @@ describe('Request ID Middleware', () => {
         fromHeader: req.requestId,
       });
     });
+
+    // Reset logger spies before each test
+    jest.clearAllMocks();
   });
 
   describe('generateRequestId()', () => {
@@ -104,7 +123,7 @@ describe('Request ID Middleware', () => {
       const res = await request(app)
         .get('/test')
         .set('X-Request-ID', clientId);
-      
+
       expect(res.headers['x-request-id']).toBe(clientId);
       expect(res.body.requestId).toBe(clientId);
     });
@@ -118,7 +137,7 @@ describe('Request ID Middleware', () => {
     it('should generate different IDs for different requests', async () => {
       const res1 = await request(app).get('/test');
       const res2 = await request(app).get('/test');
-      
+
       expect(res1.headers['x-request-id']).not.toBe(res2.headers['x-request-id']);
     });
 
@@ -126,10 +145,78 @@ describe('Request ID Middleware', () => {
       const res = await request(app)
         .get('/test')
         .set('X-Request-ID', 'invalid id with spaces!@#');
-      
+
       // Should generate new ID since the provided one is invalid
       expect(res.headers['x-request-id']).not.toBe('invalid id with spaces!@#');
       expect(res.headers['x-request-id']).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+    });
+  });
+
+  // ── New: res.on('finish') request-completion logging ──────────────────────────
+  describe('res.on("finish") - request completion logging', () => {
+    it('should log request completion with requestId after response finishes', async () => {
+      const clientId = 'finish-trace-789';
+      await request(app)
+        .get('/test')
+        .set('X-Request-ID', clientId);
+
+      // The finish event fires asynchronously; wait for it
+      await new Promise((resolve) => setImmediate(resolve));
+
+      expect(logger.debug).toHaveBeenCalled();
+      const debugCall = logger.debug.mock.calls.find(
+        (call) => call[0] && call[0].event === 'request_complete'
+      );
+      expect(debugCall).toBeDefined();
+      const [ctx, msg] = debugCall;
+      expect(ctx.requestId).toBe(clientId);
+      expect(ctx.method).toBe('GET');
+      expect(ctx.url).toBe('/test');
+      expect(typeof ctx.statusCode).toBe('number');
+      expect(typeof ctx.duration).toBe('number');
+      expect(msg).toBe('Request completed');
+    });
+
+    it('should use the response X-Request-ID header in the completion log', async () => {
+      await request(app).get('/test');
+      await new Promise((resolve) => setImmediate(resolve));
+
+      expect(logger.debug).toHaveBeenCalled();
+      const debugCall = logger.debug.mock.calls.find(
+        (call) => call[0] && call[0].event === 'request_complete'
+      );
+      expect(debugCall).toBeDefined();
+      expect(debugCall[0].requestId).toBeDefined();
+      // requestId should match the UUID v4 format we generated
+      expect(debugCall[0].requestId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+    });
+
+    it('should NOT emit slow-request warning for fast requests', async () => {
+      await request(app).get('/test');
+      await new Promise((resolve) => setImmediate(resolve));
+
+      // No slow-request event for a fast (< 2s) request
+      const slowCall = logger.warn.mock.calls.find(
+        (call) => call[0] && call[0].event === 'slow_request'
+      );
+      expect(slowCall).toBeUndefined();
+    });
+
+    it('should include statusCode from the response in completion log', async () => {
+      const customApp = express();
+      customApp.use(requestIdMiddleware);
+      customApp.get('/created', (req, res) => {
+        res.status(201).json({ ok: true });
+      });
+
+      await request(customApp).get('/created');
+      await new Promise((resolve) => setImmediate(resolve));
+
+      const debugCall = logger.debug.mock.calls.find(
+        (call) => call[0] && call[0].event === 'request_complete'
+      );
+      expect(debugCall).toBeDefined();
+      expect(debugCall[0].statusCode).toBe(201);
     });
   });
 });

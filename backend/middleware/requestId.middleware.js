@@ -117,9 +117,20 @@ function requestIdMiddleware(req, res, next) {
   // Add request ID to response finish event for logging
   res.on('finish', () => {
     const duration = Date.now() - startTime;
+    // Log every request completion at debug level for full traceability
+    logger.debug({
+      event: 'request_complete',
+      requestId,
+      method,
+      url: originalUrl,
+      duration,
+      statusCode: res.statusCode,
+    }, 'Request completed');
+
     // Log slow requests (> 2s) with structured context
     if (duration > 2000) {
       logger.warn({
+        event: 'slow_request',
         requestId,
         method,
         url: originalUrl,
