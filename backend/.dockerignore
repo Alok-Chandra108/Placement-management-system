@@ -5,3 +5,7 @@ npm-debug.log
 .gitignore
 README.md
 *.md
+__tests__
+coverage
+*.test.js
+*.spec.js

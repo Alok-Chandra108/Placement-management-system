@@ -9,6 +9,10 @@ services:
       - FRONTEND_URL=http://localhost:5173
       - CHOKIDAR_USEPOLLING=true
       - CHOKIDAR_INTERVAL=300
+    depends_on:
+      - redis
+    networks:
+      - cpms-network
 
   frontend:
     build:
@@ -22,3 +26,22 @@ services:
     environment:
       - CHOKIDAR_USEPOLLING=true
       - CHOKIDAR_INTERVAL=300
+    networks:
+      - cpms-network
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - cpms-network
+    command: redis-server --appendonly yes
+
+networks:
+  cpms-network:
+    driver: bridge
+
+volumes:
+  redis-data:

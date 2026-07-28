@@ -73,6 +73,69 @@ const validateEnv = () => {
     warnings.push({ key: 'JWT_REFRESH_SECRET', description: 'JWT refresh secret should be at least 32 characters', note: 'Weak secret - consider generating a stronger one' });
   }
 
+  // Validate FRONTEND_URL format (if set)
+  if (process.env.FRONTEND_URL) {
+    const urls = process.env.FRONTEND_URL.split(',').map(u => u.trim());
+    for (const url of urls) {
+      try {
+        const parsed = new URL(url);
+        if (isProduction && parsed.protocol !== 'https:') {
+          warnings.push({ key: 'FRONTEND_URL', description: `Frontend URL "${url}" should use HTTPS in production`, note: 'Security warning - CORS will reject non-HTTPS in production' });
+        }
+        if (!['http:', 'https:'].includes(parsed.protocol)) {
+          warnings.push({ key: 'FRONTEND_URL', description: `Frontend URL "${url}" has invalid protocol`, note: 'Must be http:// or https://' });
+        }
+      } catch {
+        warnings.push({ key: 'FRONTEND_URL', description: `Frontend URL "${url}" is not a valid URL`, note: 'Format: https://example.com or https://example.com,https://other.com' });
+      }
+    }
+  }
+
+  // Validate MONGO_URI scheme
+  if (process.env.MONGO_URI) {
+    try {
+      const parsed = new URL(process.env.MONGO_URI);
+      if (!['mongodb:', 'mongodb+srv:'].includes(parsed.protocol)) {
+        warnings.push({ key: 'MONGO_URI', description: 'MongoDB URI should use mongodb:// or mongodb+srv:// protocol', note: 'Current protocol: ' + parsed.protocol });
+      }
+    } catch {
+      warnings.push({ key: 'MONGO_URI', description: 'MongoDB URI is not a valid URL format' });
+    }
+  }
+
+  // Validate REDIS_URL scheme
+  if (process.env.REDIS_URL) {
+    try {
+      const parsed = new URL(process.env.REDIS_URL);
+      if (parsed.protocol !== 'redis:' && parsed.protocol !== 'rediss:') {
+        warnings.push({ key: 'REDIS_URL', description: 'Redis URL should use redis:// or rediss:// protocol', note: 'Current protocol: ' + parsed.protocol });
+      }
+    } catch {
+      warnings.push({ key: 'REDIS_URL', description: 'Redis URL is not a valid URL format' });
+    }
+  }
+
+  // Validate Cloudinary credentials format (if set)
+  if (process.env.CLOUDINARY_API_KEY && !/^\d+$/.test(process.env.CLOUDINARY_API_KEY)) {
+    warnings.push({ key: 'CLOUDINARY_API_KEY', description: 'Cloudinary API key should be numeric', note: 'Format check failed' });
+  }
+  if (process.env.CLOUDINARY_API_SECRET && process.env.CLOUDINARY_API_SECRET.length < 20) {
+    warnings.push({ key: 'CLOUDINARY_API_SECRET', description: 'Cloudinary API secret appears too short', note: 'Should be at least 20 characters' });
+  }
+
+  // Validate Brevo API key format (if set)
+  if (process.env.BREVO_API_KEY && !process.env.BREVO_API_KEY.startsWith('xkeysib-')) {
+    warnings.push({ key: 'BREVO_API_KEY', description: 'Brevo API key should start with "xkeysib-"', note: 'Format check failed' });
+  }
+
+  // Validate BREVO_SENDER_EMAIL format (if set)
+  if (process.env.BREVO_SENDER_EMAIL) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(process.env.BREVO_SENDER_EMAIL)) {
+      warnings.push({ key: 'BREVO_SENDER_EMAIL', description: 'Brevo sender email is not a valid email format', note: 'Current value: ' + process.env.BREVO_SENDER_EMAIL });
+    }
+  }
+
   // Report missing required variables
   if (missing.length > 0) {
     logger.fatal({ missing: missing.map(m => m.key) }, 'Missing required environment variables');
@@ -85,11 +148,11 @@ const validateEnv = () => {
 
   // Report optional variables using defaults
   if (warnings.length > 0) {
-    logger.warn({ warnings: warnings.map(w => w.key) }, 'Environment variables using defaults');
+    logger.warn({ warnings: warnings.map(w => w.key) }, 'Environment variables using defaults or validation warnings');
     for (const { key, description, default: defaultValue, note } of warnings) {
       const defaultMsg = defaultValue !== undefined ? ` (default: "${defaultValue}")` : '';
       const noteMsg = note ? ` - ${note}` : '';
-      logger.warn({ key, description, default: defaultValue, note }, `Env var using default: ${key}`);
+      logger.warn({ key, description, default: defaultValue, note }, `Env var: ${key}`);
     }
   }
 
