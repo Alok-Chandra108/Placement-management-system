@@ -1,288 +1,78 @@
-name: CPMS CI/CD Pipeline
+# .github/workflows/ci.yml
+name: CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [main]
   pull_request:
-    branches: [ "main" ]
-  schedule:
-    - cron: '0 2 * * 1'  # Weekly scan on Mondays at 2 AM UTC
+    branches: [main]
 
 jobs:
-  security-scan:
-    name: Security Scanning
+  test:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      security-events: write
-      actions: read
-      packages: read
+    timeout-minutes: 15
+    services:
+      mongo:
+        image: mongo:7
+        ports: [27017:27017]
+        options: >-
+          --health-cmd="mongosh --eval 'db.adminCommand(\"ping\")'"
+          --health-interval=10s --health-timeout=5s --health-retries=5
+        tmpfs: [/data/db]
+      redis:
+        image: redis:alpine
+        ports: [6379:6379]
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s --health-timeout=5s --health-retries=5
+        tmpfs: [/data]
 
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      - uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: |
-            backend/package-lock.json
-            frontend/package-lock.json
+      - name: Build test image
+        run: docker compose -f docker-compose.ci.yml build backend
 
-      - name: Install Backend Dependencies
+      - name: Run tests
         run: |
-          cd backend
-          npm ci
+          docker compose -f docker-compose.ci.yml up \
+            --abort-on-container-exit --exit-code-from backend
 
-      - name: Install Frontend Dependencies
-        run: |
-          cd frontend
-          npm ci
-
-      # Dependency Scanning with npm audit and GitHub Dependency Review
-      - name: Run npm audit (Backend)
-        run: |
-          cd backend
-          npm audit --audit-level=high --json > npm-audit-report.json || true
-        continue-on-error: true
-
-      - name: Run npm audit (Frontend)
-        run: |
-          cd frontend
-          npm audit --audit-level=high --json > npm-audit-report.json || true
-        continue-on-error: true
-
-      - name: Upload npm audit reports
-        uses: actions/upload-artifact@v4
-        with:
-          name: npm-audit-reports
-          path: |
-            backend/npm-audit-report.json
-            frontend/npm-audit-report.json
-          retention-days: 7
-
-      - name: Dependency Review
-        uses: actions/dependency-review-action@v4
-        with:
-          config-file: '.github/dependency-review-config.yml'
-          fail-on-severity: high
-
-      # Secret Scanning with GitHub Secret Scanning
-      - name: Run Secret Scanning (TruffleHog)
-        uses: trufflesecurity/trufflehog@main
-        with:
-          path: ./
-          base: main
-          head: HEAD
-          extra_args: --json --fail
-
-      # SAST Scanning with CodeQL
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
-        with:
-          languages: javascript, typescript
-          config-file: .github/codeql-config.yml
-          queries: security-extended,security-and-quality
-
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
-        with:
-          category: "/language:javascript"
-          upload: true
-
-      # Additional SAST with ESLint Security Plugin
-      - name: Run ESLint Security Scan (Backend)
-        run: |
-          cd backend
-          npx eslint . --ext .js,.ts --config .eslintrc.security.js --format json -o eslint-security-report.json || true
-        continue-on-error: true
-
-      - name: Run ESLint Security Scan (Frontend)
-        run: |
-          cd frontend
-          npx eslint . --ext .js,.jsx,.ts,.tsx --config .eslintrc.security.js --format json -o eslint-security-report.json || true
-        continue-on-error: true
-
-      - name: Upload ESLint Security Reports
-        uses: actions/upload-artifact@v4
-        with:
-          name: eslint-security-reports
-          path: |
-            backend/eslint-security-report.json
-            frontend/eslint-security-report.json
-          retention-days: 7
-
-  container-scan:
-    name: Container Security Scanning
+  build-frontend:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      security-events: write
-      packages: read
-
+    timeout-minutes: 10
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - run: docker compose -f docker-compose.ci.yml build frontend
+      - run: docker compose -f docker-compose.ci.yml run --rm frontend
 
-      - name: Build Backend Docker Image
-        run: docker build -t cpms-backend ./backend
-
-      - name: Build Frontend Docker Image
-        run: docker build -t cpms-frontend ./frontend
-
-      # Container Scanning with Trivy
-      - name: Run Trivy Vulnerability Scanner (Backend)
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: 'cpms-backend'
-          format: 'sarif'
-          output: 'trivy-backend-results.sarif'
-          severity: 'HIGH,CRITICAL'
-          exit-code: '1'
-          ignore-unfixed: true
-
-      - name: Run Trivy Vulnerability Scanner (Frontend)
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: 'cpms-frontend'
-          format: 'sarif'
-          output: 'trivy-frontend-results.sarif'
-          severity: 'HIGH,CRITICAL'
-          exit-code: '1'
-          ignore-unfixed: true
-
-      - name: Upload Trivy Results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: 'trivy-backend-results.sarif'
-          category: 'trivy-backend'
-
-      - name: Upload Trivy Frontend Results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: 'trivy-frontend-results.sarif'
-          category: 'trivy-frontend'
-
-      # Docker Scout for additional container insights
-      - name: Docker Scout Scan (Backend)
-        run: |
-          docker scout cves cpms-backend --format sarif --output docker-scout-backend.sarif || true
-        continue-on-error: true
-
-      - name: Docker Scout Scan (Frontend)
-        run: |
-          docker scout cves cpms-frontend --format sarif --output docker-scout-frontend.sarif || true
-        continue-on-error: true
-
-      - name: Upload Docker Scout Results
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: 'docker-scout-backend.sarif'
-          category: 'docker-scout-backend'
-
-      - name: Upload Docker Scout Frontend Results
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: 'docker-scout-frontend.sarif'
-          category: 'docker-scout-frontend'
-
-  build-and-test:
-    name: Build and Test
-    runs-on: ubuntu-latest
-    needs: [security-scan, container-scan]
-    if: always()  # Run even if security scans fail (for visibility)
-
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: |
-            backend/package-lock.json
-            frontend/package-lock.json
-
-      - name: Install & Test Backend
-        run: |
-          cd backend
-          npm ci
-          npm test
-
-      - name: Install & Test Frontend
-        run: |
-          cd frontend
-          npm ci
-          npm test
-
-      - name: Build Backend Docker Image
-        run: docker build -t cpms-backend ./backend
-
-      - name: Build Frontend Docker Image
-        run: docker build -t cpms-frontend ./frontend
-
-  push-to-registry:
-    name: Push Docker Images to Docker Hub
-    needs: [build-and-test, security-scan, container-scan]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && success()
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Build and Push Backend Image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./backend
-          push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/cpms-backend:latest,${{ secrets.DOCKER_USERNAME }}/cpms-backend:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Build and Push Frontend Image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./frontend
-          push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/cpms-frontend:latest,${{ secrets.DOCKER_USERNAME }}/cpms-frontend:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  security-summary:
-    name: Security Scan Summary
-    needs: [security-scan, container-scan]
-    if: always()
-    runs-on: ubuntu-latest
-    steps:
-      - name: Security Scan Summary
-        run: |
-          echo "## Security Scan Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Scan Type | Status | Details |" >> $GITHUB_STEP_SUMMARY
-          echo "|-----------|--------|---------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Dependency Review | ${{ needs.security-scan.result }} | [View Details](https://github.com/${{ github.repository }}/security/dependabot) |" >> $GITHUB_STEP_SUMMARY
-          echo "| CodeQL SAST | ${{ needs.security-scan.result }} | [View Alerts](https://github.com/${{ github.repository }}/security/code-scanning) |" >> $GITHUB_STEP_SUMMARY
-          echo "| Secret Scanning | ${{ needs.security-scan.result }} | [View Alerts](https://github.com/${{ github.repository }}/security/secret-scanning) |" >> $GITHUB_STEP_SUMMARY
-          echo "| Container Scan (Backend) | ${{ needs.container-scan.result }} | [View Results](https://github.com/${{ github.repository }}/security/code-scanning?query=category%3Atrivy-backend) |" >> $GITHUB_STEP_SUMMARY
-          echo "| Container Scan (Frontend) | ${{ needs.container-scan.result }} | [View Results](https://github.com/${{ github.repository }}/security/code-scanning?query=category%3Atrivy-frontend) |" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Note:** Check the Security tab in this repository for detailed findings and remediation guidance." >> $GITHUB_STEP_SUMMARY
+  # Optional: only if you publish images
+  # docker-publish:
+  #   needs: [test, build-frontend]
+  #   if: github.ref == 'refs/heads/main' && github.repository_owner == 'Alok-Chandra108'
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     contents: read
+  #     packages: write
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: docker/setup-buildx-action@v3
+  #     - uses: docker/login-action@v3
+  #       with:
+  #         registry: ghcr.io
+  #         username: ${{ github.actor }}
+  #         password: ${{ secrets.GITHUB_TOKEN }}
+  #     - uses: docker/build-push-action@v5
+  #       with:
+  #         context: ./backend
+  #         push: true
+  #         tags: ghcr.io/${{ github.repository }}/backend:${{ github.sha }}
+  #         cache-from: type=gha
+  #         cache-to: type=gha,mode=max
+  #     - uses: docker/build-push-action@v5
+  #       with:
+  #         context: ./frontend
+  #         push: true
+  #         tags: ghcr.io/${{ github.repository }}/frontend:${{ github.sha }}
+  #         cache-from: type=gha
+  #         cache-to: type=gha,mode=max

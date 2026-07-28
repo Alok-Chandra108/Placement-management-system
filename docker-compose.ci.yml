@@ -1,0 +1,56 @@
+# docker-compose.ci.yml
+# Used by GitHub Actions to run tests in isolated containers
+# Run with: docker compose -f docker-compose.ci.yml up --abort-on-container-exit --exit-code-from backend
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: production
+    environment:
+      - NODE_ENV=test
+      - MONGO_URI=mongodb://mongo:27017/cpms_test
+      - REDIS_URL=redis://redis:6379
+      - JWT_ACCESS_SECRET=test-access-secret-at-least-32-chars-long
+      - JWT_REFRESH_SECRET=test-refresh-secret-at-least-32-chars-long
+      - JWT_ACCESS_EXPIRY=15m
+      - JWT_REFRESH_EXPIRY=7d
+      - FRONTEND_URL=http://localhost:5173
+      - CLOUDINARY_CLOUD_NAME=test
+      - CLOUDINARY_API_KEY=123456789
+      - CLOUDINARY_API_SECRET=test-secret-key-for-testing-only
+      - BREVO_API_KEY=xkeysib-test-key
+      - BREVO_SENDER_EMAIL=test@example.com
+    depends_on:
+      - mongo
+      - redis
+    command: npm test
+
+  # Frontend build verification (optional - runs build to catch compile errors)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: build
+    command: npm run build
+
+  mongo:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    tmpfs:
+      - /data/db  # Use in-memory storage for faster tests
+    command: mongod --quiet --bind_ip_all
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    tmpfs:
+      - /data  # In-memory for tests
+    command: redis-server --save "" --appendonly no
+
+networks:
+  default:
+    driver: bridge
