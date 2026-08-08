@@ -5,11 +5,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import App from './App.jsx';
 import ErrorBoundary from './components/ErrorBoundary';
 import store from './app/store';
-import { setStore } from './api/axiosInstance';
+import { setStoreRef } from './api/axiosInstance';
 import './index.css';
 
 // Provide the Redux store to the Axios interceptors
-setStore(store);
+setStoreRef(store);
 
 // Setup React Query client
 const queryClient = new QueryClient({
