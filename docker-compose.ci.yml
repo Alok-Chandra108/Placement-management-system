@@ -7,7 +7,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-      target: production
+      target: test   # Uses the test stage: npm install (all deps including jest)
     environment:
       - NODE_ENV=test
       - MONGO_URI=mongodb://mongo:27017/cpms_test
@@ -25,7 +25,7 @@ services:
     depends_on:
       - mongo
       - redis
-    command: npm test
+    # CMD from the test stage already runs npm test
 
   # Frontend build verification (optional - runs build to catch compile errors)
   frontend:

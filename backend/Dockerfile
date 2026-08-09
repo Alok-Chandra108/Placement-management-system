@@ -11,7 +11,16 @@ ENV PORT=5000
 EXPOSE 5000
 CMD ["npm", "run", "dev"]
 
-# Stage 3: Production Environment
+# Stage 3: Test Environment
+# Installs ALL deps (including devDependencies like jest) so tests can run
+FROM base AS test
+RUN npm install
+COPY . .
+ENV PORT=5000
+ENV NODE_ENV=test
+CMD ["npm", "test"]
+
+# Stage 4: Production Environment
 FROM base AS production
 RUN npm install --omit=dev
 COPY . .
