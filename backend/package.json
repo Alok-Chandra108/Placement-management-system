@@ -11,7 +11,8 @@
     "migrate:up": "migrate-mongo up",
     "migrate:down": "migrate-mongo down",
     "migrate:create": "migrate-mongo create",
-    "migrate:status": "migrate-mongo status"
+    "migrate:status": "migrate-mongo status",
+    "atlas:backup": "node scripts/configure-atlas-backup.js"
   },
   "keywords": [],
   "author": "",
