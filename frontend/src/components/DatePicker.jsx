@@ -240,7 +240,7 @@ const DatePicker = ({ value, onChange, name, error, placeholder = 'Select date',
                       className={`w-full h-full flex items-center justify-center text-xs font-semibold rounded-lg transition-all duration-200 ${isSelected(day)
                           ? 'bg-brand-blue text-white shadow-md ring-2 ring-brand-blue/30'
                           : isToday(day)
-                            ? 'bg-brand-orange text-white shadow-md'
+                            ? 'text-brand-orange bg-brand-orange/10 ring-1 ring-brand-orange/50'
                             : 'text-neutral-700 hover:bg-brand-blue/10 hover:text-brand-blue'
                         }`}
                     >
