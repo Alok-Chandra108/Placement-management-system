@@ -37,16 +37,12 @@ services:
 
   mongo:
     image: mongo:7
-    ports:
-      - "27017:27017"
     tmpfs:
       - /data/db  # Use in-memory storage for faster tests
     command: mongod --quiet --bind_ip_all
 
   redis:
     image: redis:alpine
-    ports:
-      - "6379:6379"
     tmpfs:
       - /data  # In-memory for tests
     command: redis-server --save "" --appendonly no

@@ -11,21 +11,9 @@ jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    services:
-      mongo:
-        image: mongo:7
-        ports: [27017:27017]
-        options: >-
-          --health-cmd="mongosh --eval 'db.adminCommand(\"ping\")'"
-          --health-interval=10s --health-timeout=5s --health-retries=5
-          --tmpfs /data/db
-      redis:
-        image: redis:alpine
-        ports: [6379:6379]
-        options: >-
-          --health-cmd="redis-cli ping"
-          --health-interval=10s --health-timeout=5s --health-retries=5
-          --tmpfs /data
+    # No host-level services: docker-compose.ci.yml manages its own
+    # mongo + redis containers on an internal bridge network.
+    # Defining them here AND in compose caused "port already in use" conflicts.
 
     steps:
       - uses: actions/checkout@v4
