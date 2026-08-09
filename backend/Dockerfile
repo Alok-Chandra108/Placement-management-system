@@ -1,6 +1,5 @@
 # Stage 1: Base Setup
-# Pin to specific digest for supply-chain security (node:20-alpine as of 2024-07)
-FROM node:20-alpine@sha256:b3da6e6f2c7c8c7a3b5f7c3b4e9e5c4b3b0f3e1b1b8c6d1e9f2a0b3c4d5e6f7a8 AS base
+FROM node:20-alpine AS base
 WORKDIR /app
 COPY package*.json ./
 
