@@ -158,26 +158,23 @@ const AdminDrivesPage = () => {
 
       // Clean up: remove empty companyLogo so it defaults to null in DB
       const payload = { ...formData };
-      if (!payload.companyLogo || payload.companyLogo.trim() === '') {
+      if (!payload.companyLogo || (typeof payload.companyLogo === 'string' && payload.companyLogo.trim() === '')) {
         delete payload.companyLogo;
       }
 
-
-
       if (modalMode === 'create') {
         const result = await createDrive(payload);
-
         toast.success('Drive created successfully');
       } else {
         const result = await updateDrive(currentDrive._id, payload);
-
         toast.success('Drive updated successfully');
       }
       handleCloseModal();
       loadDrives(); // Refresh the list
     } catch (error) {
       console.error('Error saving drive:', error);
-      toast.error(error.response?.data?.message || 'Failed to save drive.');
+      const errorMsg = error.response?.data?.message || error.message || 'Failed to save drive.';
+      toast.error(errorMsg);
     } finally {
       setIsSubmitting(false);
     }
