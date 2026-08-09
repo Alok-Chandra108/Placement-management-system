@@ -121,8 +121,6 @@ const DriveCard = ({ drive, index, hasApplied }) => {
         className={`flex items-center justify-center w-full py-3.5 rounded-2xl font-bold transition-all duration-300 group-hover:shadow-lg ${
           hasApplied 
             ? 'bg-brand-blue text-white hover:bg-brand-blue-dark'
-            : !isEligible || isProfileIncomplete
-            ? 'bg-neutral-100 text-neutral-400 hover:bg-neutral-200'
             : 'bg-neutral-900 text-white hover:bg-brand-orange group-hover:shadow-brand-orange/30'
         }`}
       >
