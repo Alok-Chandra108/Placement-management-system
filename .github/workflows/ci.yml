@@ -18,14 +18,14 @@ jobs:
         options: >-
           --health-cmd="mongosh --eval 'db.adminCommand(\"ping\")'"
           --health-interval=10s --health-timeout=5s --health-retries=5
-        tmpfs: [/data/db]
+          --tmpfs /data/db
       redis:
         image: redis:alpine
         ports: [6379:6379]
         options: >-
           --health-cmd="redis-cli ping"
           --health-interval=10s --health-timeout=5s --health-retries=5
-        tmpfs: [/data]
+          --tmpfs /data
 
     steps:
       - uses: actions/checkout@v4
