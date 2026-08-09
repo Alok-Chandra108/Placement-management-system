@@ -65,9 +65,19 @@ const CustomSelect = ({ value, options, onChange, placeholder }) => {
 
 const DatePicker = ({ value, onChange, name, error, placeholder = 'Select date', className = '' }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(value ? new Date(value) : null);
-  const [tempMonth, setTempMonth] = useState(value ? new Date(value).getMonth() : new Date().getMonth());
-  const [tempYear, setTempYear] = useState(value ? new Date(value).getFullYear() : new Date().getFullYear());
+
+  // Helper to parse a date string (YYYY-MM-DD or full ISO) into a local Date object safely
+  const parseDateLocal = (val) => {
+    if (!val) return null;
+    if (typeof val === 'string' && val.length === 10 && val.includes('-')) {
+      return new Date(val + 'T00:00:00'); // Force local midnight
+    }
+    return new Date(val);
+  };
+
+  const [selectedDate, setSelectedDate] = useState(parseDateLocal(value));
+  const [tempMonth, setTempMonth] = useState(value ? parseDateLocal(value).getMonth() : new Date().getMonth());
+  const [tempYear, setTempYear] = useState(value ? parseDateLocal(value).getFullYear() : new Date().getFullYear());
   const datePickerRef = useRef(null);
 
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -100,7 +110,7 @@ const DatePicker = ({ value, onChange, name, error, placeholder = 'Select date',
   // Update state when value prop changes
   useEffect(() => {
     if (value) {
-      const newDate = new Date(value);
+      const newDate = parseDateLocal(value);
       setSelectedDate(newDate);
       setTempMonth(newDate.getMonth());
       setTempYear(newDate.getFullYear());
@@ -110,7 +120,7 @@ const DatePicker = ({ value, onChange, name, error, placeholder = 'Select date',
   const handleDateClick = (day) => {
     const newDate = new Date(tempYear, tempMonth, day);
     setSelectedDate(newDate);
-    const formattedDate = newDate.toISOString().split('T')[0];
+    const formattedDate = `${tempYear}-${String(tempMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     onChange({ target: { name, value: formattedDate } });
     setIsOpen(false);
   };
