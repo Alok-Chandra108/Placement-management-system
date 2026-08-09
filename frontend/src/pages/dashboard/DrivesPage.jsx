@@ -84,9 +84,16 @@ const DriveCard = ({ drive, index, hasApplied }) => {
             </div>
           </div>
         </div>
-        <div className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider border flex items-center ${getStatusColor(drive.status)}`}>
-          {getStatusIcon(drive.status)}
-          {getStatusText(drive.status)}
+        <div className="flex flex-col items-end gap-1">
+          <div className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider border flex items-center ${getStatusColor(drive.status)}`}>
+            {getStatusIcon(drive.status)}
+            {getStatusText(drive.status)}
+          </div>
+          {(!isEligible && !hasApplied) && (
+            <span className="text-[10px] font-bold text-rose-500 max-w-[150px] text-right leading-tight">
+              {reason}
+            </span>
+          )}
         </div>
       </div>
 
