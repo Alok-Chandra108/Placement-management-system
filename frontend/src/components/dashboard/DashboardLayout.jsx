@@ -61,15 +61,7 @@ const DashboardLayout = ({ children }) => {
             {/* Right: Search + Notifications + Avatar */}
             <div className="flex items-center gap-2">
 
-
-              {/* Notification Bell */}
-              <button className="relative p-2 rounded-xl hover:bg-neutral-100 text-neutral-500 hover:text-neutral-700 transition-colors">
-                <Bell className="h-5 w-5" />
-                {hasUnread && (
-                  <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-brand-orange rounded-full ring-2 ring-white" />
-                )}
-              </button>
-
+              {/* Notification Bell temporarily removed as per request */}
               {/* Mini Avatar */}
               <motion.div
                 whileHover={{ scale: 1.05 }}
