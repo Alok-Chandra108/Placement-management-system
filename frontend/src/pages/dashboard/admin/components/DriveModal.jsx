@@ -4,23 +4,7 @@ import { X, Building2, Briefcase, GraduationCap, Calendar, AlertCircle } from 'l
 import toast from 'react-hot-toast';
 import DatePicker from '../../../../components/DatePicker';
 
-const BRANCHES = [
-  'Aeronautical Engineering',
-  'Artificial Intelligence & Machine Learning',
-  'Civil Engineering',
-  'Computer Science & Engineering',
-  'Computer Science & Engineering (Artificial Intelligence & Machine Learning)',
-  'Computer Science & Engineering (IoT & Cyber Security with Blockchain Technology)',
-  'Electronics & Communication Engineering',
-  'Information Science & Engineering',
-  'Mechanical Engineering',
-  'Mechatronics Engineering',
-  'Robotics & Artificial Intelligence',
-  'MCA (Master of Computer Applications)',
-  'MBA (Master of Business Administration)',
-  'M.Tech in Computer Science & Engineering',
-  'M.Tech in Mechatronics',
-];
+import { DEPARTMENTS as BRANCHES } from '../../../../constants/roles';
 
 const JOB_TYPES = ['Full-time', 'Internship', 'Internship + Full-time'];
 const STATUSES = ['upcoming', 'open', 'closed'];

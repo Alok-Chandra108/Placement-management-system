@@ -3,24 +3,9 @@ import { adminApi } from '../../../api/adminApi';
 import { Search, Filter, ChevronLeft, ChevronRight, User, Mail, BookOpen, Eye } from 'lucide-react';
 import StudentProfileModal from './StudentProfileModal';
 
-const DEPARTMENTS = [
-  '',
-  'Aeronautical Engineering',
-  'Artificial Intelligence & Machine Learning',
-  'Civil Engineering',
-  'Computer Science & Engineering',
-  'Computer Science & Engineering (Artificial Intelligence & Machine Learning)',
-  'Computer Science & Engineering (IoT & Cyber Security with Blockchain Technology)',
-  'Electronics & Communication Engineering',
-  'Information Science & Engineering',
-  'Mechanical Engineering',
-  'Mechatronics Engineering',
-  'Robotics & Artificial Intelligence',
-  'MCA (Master of Computer Applications)',
-  'MBA (Master of Business Administration)',
-  'M.Tech in Computer Science & Engineering',
-  'M.Tech in Mechatronics',
-];
+import { DEPARTMENTS as BASE_DEPARTMENTS } from '../../../constants/roles';
+
+const DEPARTMENTS = ['', ...BASE_DEPARTMENTS];
 
 const StudentDirectory = () => {
   const [students, setStudents] = useState([]);
