@@ -22,7 +22,7 @@ import useEligibility from '../../hooks/useEligibility';
 import CompanyLogo from '../../components/CompanyLogo';
 
 const DriveCard = ({ drive, index, hasApplied }) => {
-  const { isEligible, isProfileIncomplete } = useEligibility(drive);
+  const { isEligible, isProfileIncomplete, reason } = useEligibility(drive);
 
   const getStatusColor = (status) => {
     if (hasApplied) return 'bg-brand-blue-light text-brand-blue border-brand-blue/20';
