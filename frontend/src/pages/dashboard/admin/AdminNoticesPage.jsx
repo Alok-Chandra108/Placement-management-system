@@ -258,11 +258,11 @@ const AdminNoticesPage = () => {
     setModalMode(mode);
     if (mode === 'edit' && notice) {
       setEditingId(notice._id);
-      setFormData({ title: notice.title, category: notice.category, body: notice.body || '', noticePdf: null });
+      setFormData({ title: notice.title, category: notice.category, body: notice.body || '', noticePdf: null, removePdf: false });
       setExistingPdf(notice.attachmentUrl || null);
     } else {
       setEditingId(null);
-      setFormData({ title: '', category: 'General', body: '', noticePdf: null });
+      setFormData({ title: '', category: 'General', body: '', noticePdf: null, removePdf: false });
       setExistingPdf(null);
     }
     setIsModalOpen(true);
@@ -270,7 +270,7 @@ const AdminNoticesPage = () => {
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
-    setFormData({ title: '', category: 'General', body: '', noticePdf: null });
+    setFormData({ title: '', category: 'General', body: '', noticePdf: null, removePdf: false });
     setExistingPdf(null);
     setEditingId(null);
   };
@@ -955,12 +955,26 @@ const AdminNoticesPage = () => {
                         </div>
                       </div>
                       {existingPdf && !formData.noticePdf && (
-                        <div className="flex items-center gap-2 text-sm text-neutral-600 bg-neutral-50 p-3 rounded-xl border border-neutral-200">
-                          <FileText className="w-4 h-4 text-brand-blue" />
-                          <span className="flex-1 truncate">Existing Attachment</span>
-                          <a href={existingPdf} target="_blank" rel="noopener noreferrer" className="text-brand-blue font-bold hover:underline flex items-center gap-1">
-                            View <ExternalLink className="w-3 h-3" />
-                          </a>
+                        <div className="flex items-center justify-between gap-2 text-sm text-neutral-600 bg-neutral-50 p-3 rounded-xl border border-neutral-200">
+                          <div className="flex items-center gap-2 overflow-hidden">
+                            <FileText className="w-4 h-4 text-brand-blue shrink-0" />
+                            <span className="truncate font-medium">Existing Attachment</span>
+                          </div>
+                          <div className="flex items-center gap-3 shrink-0">
+                            <a href={existingPdf} target="_blank" rel="noopener noreferrer" className="text-brand-blue font-bold hover:underline flex items-center gap-1">
+                              View <ExternalLink className="w-3 h-3" />
+                            </a>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setExistingPdf(null);
+                                setFormData(prev => ({ ...prev, removePdf: true, noticePdf: null }));
+                              }}
+                              className="text-red-500 hover:text-red-700 font-bold flex items-center gap-1 hover:underline"
+                            >
+                              Remove <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </div>
                       )}
                     </div>

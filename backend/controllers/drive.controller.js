@@ -178,6 +178,30 @@ exports.updateDrive = async (req, res, next) => {
       }
     }
 
+    // Handle explicit removal of drive PDF brochure
+    if (String(req.body.removeDrivePdf) === 'true' && (!req.files || !req.files['drivePdf'])) {
+      if (existingDrive.drivePdf && existingDrive.drivePdf.includes('res.cloudinary.com')) {
+        try {
+          const parts = existingDrive.drivePdf.split('/');
+          const uploadIndex = parts.indexOf('upload');
+          if (uploadIndex !== -1) {
+            let pathParts = parts.slice(uploadIndex + 1);
+            if (pathParts[0].startsWith('v') && !isNaN(pathParts[0].substring(1))) {
+               pathParts = pathParts.slice(1);
+            }
+            const publicIdWithExt = pathParts.join('/');
+            const publicId = publicIdWithExt.substring(0, publicIdWithExt.lastIndexOf('.'));
+            if (publicId) {
+               await cloudinary.uploader.destroy(publicId);
+            }
+          }
+        } catch (err) {
+          logger.error({ err, driveId: req.params.id }, 'Error deleting PDF on removal request from Cloudinary');
+        }
+      }
+      updateData.drivePdf = null;
+    }
+
     const drive = await Drive.findByIdAndUpdate(
       req.params.id,
       updateData,

@@ -136,7 +136,7 @@ exports.getNoticeById = async (req, res, next) => {
  */
 exports.updateNotice = async (req, res, next) => {
   try {
-    const { title, body, category, status } = req.body;
+    const { title, body, category, status, removePdf } = req.body;
     let { attachmentUrl, attachmentName } = req.body;
 
     const notice = await Notice.findById(req.params.id);
@@ -150,8 +150,26 @@ exports.updateNotice = async (req, res, next) => {
       return ApiResponse.error(res, 'Not authorized to update this notice', 403);
     }
 
+    // Explicit removal of attachment requested
+    if (String(removePdf) === 'true' && !req.file) {
+      if (notice.attachmentUrl) {
+        try {
+          const publicIdMatch = notice.attachmentUrl.match(/\/v\d+\/(.+?)\.\w+$/);
+          const oldPublicId = publicIdMatch ? publicIdMatch[1] : null;
+          if (oldPublicId) {
+            await cloudinary.uploader.destroy(oldPublicId, { resource_type: 'image' });
+          }
+        } catch (err) {
+          logger.error('Failed to delete notice PDF from Cloudinary on removal:', err);
+        }
+      }
+      attachmentUrl = null;
+      attachmentName = null;
+      notice.attachmentUrl = null;
+      notice.attachmentName = null;
+    }
     // Handle new file upload
-    if (req.file) {
+    else if (req.file) {
       attachmentUrl = req.file.path;
       attachmentName = req.file.originalname;
 
@@ -161,7 +179,7 @@ exports.updateNotice = async (req, res, next) => {
           const publicIdMatch = notice.attachmentUrl.match(/\/v\d+\/(.+?)\.\w+$/);
           const oldPublicId = publicIdMatch ? publicIdMatch[1] : null;
           if (oldPublicId) {
-            await cloudinary.uploader.destroy(oldPublicId, { resource_type: 'image' }); // Cloudinary treats pdf as image by default for deletion
+            await cloudinary.uploader.destroy(oldPublicId, { resource_type: 'image' });
           }
         } catch (err) {
           logger.error('Failed to delete old notice PDF from Cloudinary:', err);
@@ -172,8 +190,8 @@ exports.updateNotice = async (req, res, next) => {
     if (title) notice.title = title;
     if (body) notice.body = body;
     if (category) notice.category = category;
-    if (attachmentUrl !== undefined) notice.attachmentUrl = attachmentUrl || null;
-    if (attachmentName !== undefined) notice.attachmentName = attachmentName || null;
+    if (attachmentUrl !== undefined) notice.attachmentUrl = attachmentUrl;
+    if (attachmentName !== undefined) notice.attachmentName = attachmentName;
     if (status) notice.status = status;
 
     await notice.save();

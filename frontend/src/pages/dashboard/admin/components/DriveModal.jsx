@@ -54,6 +54,7 @@ const DriveModal = ({ isOpen, onClose, mode = 'create', initialData = null, onSu
           companyName: '',
           companyLogo: '',
           drivePdf: '',
+          removeDrivePdf: false,
           companyDescription: '',
           jobRole: '',
           ctc: '',
@@ -314,9 +315,16 @@ const DriveModal = ({ isOpen, onClose, mode = 'create', initialData = null, onSu
                       className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue transition-all outline-none text-sm file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-brand-blue/10 file:text-brand-blue hover:file:bg-brand-blue/20"
                     />
                     {typeof formData.drivePdf === 'string' && formData.drivePdf && (
-                      <p className="text-xs text-brand-blue mt-2 flex items-center gap-1 font-medium">
-                        <a href={formData.drivePdf} target="_blank" rel="noopener noreferrer" className="hover:underline">View Current PDF</a>
-                      </p>
+                      <div className="flex items-center gap-3 mt-2 text-xs font-medium">
+                        <a href={formData.drivePdf} target="_blank" rel="noopener noreferrer" className="text-brand-blue hover:underline">View Current PDF</a>
+                        <button
+                          type="button"
+                          onClick={() => setFormData(prev => ({ ...prev, drivePdf: '', removeDrivePdf: true }))}
+                          className="text-red-500 hover:text-red-700 font-bold hover:underline"
+                        >
+                          Remove PDF
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
