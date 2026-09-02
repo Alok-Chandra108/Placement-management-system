@@ -12,7 +12,7 @@ const {
   createDriveValidation,
   updateDriveValidation,
 } = require('../validators/drive.validators');
-const { uploadImage } = require('../middleware/upload.middleware');
+const { uploadDriveFiles } = require('../middleware/upload.middleware');
 const { ROLES } = require('../constants/roles');
 
 const router = express.Router();
@@ -33,13 +33,13 @@ router.use(verifyAccessToken);
 router
   .route('/')
   .get(getAllDrives) // Public/Students
-  .post(restrictToRoles(ROLES.ADMIN), uploadImage.single('companyLogo'), parseEligibility, ...createDriveValidation, validateRequest, createDrive); // Admin only
+  .post(restrictToRoles(ROLES.ADMIN), uploadDriveFiles.fields([{ name: 'companyLogo', maxCount: 1 }, { name: 'drivePdf', maxCount: 1 }]), parseEligibility, ...createDriveValidation, validateRequest, createDrive); // Admin only
 
 // Route: /api/drives/:id
 router
   .route('/:id')
   .get(getDriveById) // Public/Students
-  .patch(restrictToRoles(ROLES.ADMIN), uploadImage.single('companyLogo'), parseEligibility, ...updateDriveValidation, validateRequest, updateDrive) // Admin only
+  .patch(restrictToRoles(ROLES.ADMIN), uploadDriveFiles.fields([{ name: 'companyLogo', maxCount: 1 }, { name: 'drivePdf', maxCount: 1 }]), parseEligibility, ...updateDriveValidation, validateRequest, updateDrive) // Admin only
   .delete(restrictToRoles(ROLES.ADMIN), deleteDrive); // Admin only
 
 module.exports = router;

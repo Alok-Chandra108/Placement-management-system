@@ -10,7 +10,18 @@
  * Examples:
  * teststudent1@mite.ac.in to teststudent10@mite.ac.in -> Aeronautical Engineering
  * teststudent11@mite.ac.in to teststudent20@mite.ac.in -> Artificial Intelligence & Machine Learning
- * ...and so on.
+ * teststudent21@mite.ac.in to teststudent30@mite.ac.in -> Civil Engineering
+ * teststudent31@mite.ac.in to teststudent40@mite.ac.in -> Computer Science & Engineering
+ * teststudent41@mite.ac.in to teststudent50@mite.ac.in -> Computer Science & Engineering (Artificial Intelligence & Machine Learning)
+ * teststudent51@mite.ac.in to teststudent60@mite.ac.in -> Computer Science & Engineering (IoT & Cyber Security with Blockchain Technology)
+ * teststudent61@mite.ac.in to teststudent70@mite.ac.in -> Electronics & Communication Engineering
+ * teststudent71@mite.ac.in to teststudent80@mite.ac.in -> Information Science & Engineering
+ * teststudent81@mite.ac.in to teststudent90@mite.ac.in -> Mechanical Engineering
+ * teststudent91@mite.ac.in to teststudent100@mite.ac.in -> Mechatronics Engineering
+ * teststudent101@mite.ac.in to teststudent110@mite.ac.in -> Robotics & Artificial Intelligence
+ * teststudent111@mite.ac.in to teststudent120@mite.ac.in -> MBA (Master of Business Administration)
+ * teststudent121@mite.ac.in to teststudent130@mite.ac.in -> M.Tech in Computer Science & Engineering
+ * teststudent131@mite.ac.in to teststudent140@mite.ac.in -> M.Tech in Mechatronics
  */
 
 const mongoose = require('mongoose');

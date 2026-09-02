@@ -85,8 +85,51 @@ const uploadImage = multer({
   },
 });
 
+// Drive files (Logo + PDF) configuration
+const driveStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: async (req, file) => {
+    if (file.fieldname === 'drivePdf') {
+      const sanitizedName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_').replace(/\.pdf$/i, '');
+      return {
+        folder: 'cpms/drives/pdfs',
+        format: 'pdf',
+        public_id: `${Date.now()}-${sanitizedName}`
+      };
+    }
+    // Default to logo
+    const sanitizedName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_').replace(/\.(png|jpg|jpeg)$/i, '');
+    return {
+      folder: 'cpms/logos',
+      allowedFormats: ['jpg', 'png', 'jpeg'],
+      public_id: `${Date.now()}-${sanitizedName}`
+    };
+  },
+});
+
+const driveFileFilter = (req, file, cb) => {
+  if (file.fieldname === 'companyLogo') {
+    return imageFileFilter(req, file, cb);
+  } else if (file.fieldname === 'drivePdf') {
+    return fileFilter(req, file, cb);
+  }
+  cb(new Error('Unexpected field!'), false);
+};
+
+const uploadDriveFiles = multer({
+  storage: driveStorage,
+  fileFilter: driveFileFilter,
+  limits: {
+    fileSize: MAX_FILE_SIZE, // 2MB limit per file
+    files: 2, // Up to 2 files (1 logo, 1 pdf)
+    parts: 20,
+    headerPairs: 20,
+  },
+});
+
 module.exports = {
   upload,
   uploadImage,
+  uploadDriveFiles,
   MAX_FILE_SIZE,
 };

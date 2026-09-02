@@ -220,6 +220,20 @@ const DriveDetail = () => {
             <div className="prose prose-neutral max-w-none text-neutral-600 font-medium leading-relaxed">
               <p className="whitespace-pre-wrap">{currentDrive.companyDescription}</p>
             </div>
+            
+            {currentDrive.drivePdf && (
+              <div className="mt-6 pt-6 border-t border-neutral-100">
+                <a
+                  href={currentDrive.drivePdf}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-neutral-100 hover:bg-neutral-200 text-neutral-900 rounded-xl font-bold transition-all"
+                >
+                  <ExternalLink className="w-5 h-5" />
+                  View Job Brochure (PDF)
+                </a>
+              </div>
+            )}
           </motion.div>
 
           {/* Recruitment Timeline */}

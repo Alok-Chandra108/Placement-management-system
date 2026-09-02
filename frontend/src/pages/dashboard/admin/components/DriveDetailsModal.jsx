@@ -114,6 +114,19 @@ const DriveDetailsModal = ({ isOpen, onClose, drive }) => {
                         <p className="font-semibold text-neutral-900">{drive.location}</p>
                       </div>
                     </div>
+                    {drive.drivePdf && (
+                      <div className="mt-4 pt-4 border-t border-neutral-100 flex items-center">
+                        <a 
+                          href={drive.drivePdf} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-brand-blue/10 text-brand-blue rounded-lg text-sm font-bold hover:bg-brand-blue/20 transition-colors"
+                        >
+                          <BookOpen className="w-4 h-4" />
+                          View Job Brochure / PDF
+                        </a>
+                      </div>
+                    )}
                   </section>
 
                   {/* Eligibility */}

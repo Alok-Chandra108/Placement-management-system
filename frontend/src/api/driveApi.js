@@ -26,12 +26,12 @@ export const createDrive = async (driveData) => {
   let payload = driveData;
   let headers = {};
 
-  if (driveData.companyLogo instanceof File) {
+  if (driveData.companyLogo instanceof File || driveData.drivePdf instanceof File) {
     const formData = new FormData();
     Object.keys(driveData).forEach(key => {
       if (key === 'eligibility') {
         formData.append(key, JSON.stringify(driveData[key]));
-      } else {
+      } else if (driveData[key] !== null && driveData[key] !== undefined) {
         formData.append(key, driveData[key]);
       }
     });
@@ -52,12 +52,12 @@ export const updateDrive = async (id, driveData) => {
   let payload = driveData;
   let headers = {};
 
-  if (driveData.companyLogo instanceof File) {
+  if (driveData.companyLogo instanceof File || driveData.drivePdf instanceof File) {
     const formData = new FormData();
     Object.keys(driveData).forEach(key => {
       if (key === 'eligibility') {
         formData.append(key, JSON.stringify(driveData[key]));
-      } else {
+      } else if (driveData[key] !== null && driveData[key] !== undefined) {
         formData.append(key, driveData[key]);
       }
     });

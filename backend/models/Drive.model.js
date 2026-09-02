@@ -11,6 +11,10 @@ const driveSchema = new mongoose.Schema(
       type: String,
       default: null, // Can store Cloudinary URL
     },
+    drivePdf: {
+      type: String,
+      default: null, // Stores Cloudinary URL for the drive PDF brochure
+    },
     companyDescription: {
       type: String,
       required: [true, 'Company description is required'],

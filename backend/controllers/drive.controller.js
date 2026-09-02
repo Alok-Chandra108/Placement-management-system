@@ -16,8 +16,13 @@ exports.createDrive = async (req, res, next) => {
       createdByModel: req.user.role === 'admin' ? 'Admin' : 'User',
     };
 
-    if (req.file && req.file.path) {
-      driveData.companyLogo = req.file.path;
+    if (req.files) {
+      if (req.files['companyLogo'] && req.files['companyLogo'][0]) {
+        driveData.companyLogo = req.files['companyLogo'][0].path;
+      }
+      if (req.files['drivePdf'] && req.files['drivePdf'][0]) {
+        driveData.drivePdf = req.files['drivePdf'][0].path;
+      }
     }
 
     const drive = await Drive.create(driveData);
@@ -121,28 +126,54 @@ exports.updateDrive = async (req, res, next) => {
       }
     });
 
-    if (req.file && req.file.path) {
-      updateData.companyLogo = req.file.path;
+    if (req.files) {
+      if (req.files['companyLogo'] && req.files['companyLogo'][0]) {
+        updateData.companyLogo = req.files['companyLogo'][0].path;
 
-      // Delete old logo if it exists
-      if (existingDrive.companyLogo && existingDrive.companyLogo.includes('res.cloudinary.com')) {
-        try {
-          const parts = existingDrive.companyLogo.split('/');
-          const uploadIndex = parts.indexOf('upload');
-          if (uploadIndex !== -1) {
-            // Check if there's a version number like v12345678
-            let pathParts = parts.slice(uploadIndex + 1);
-            if (pathParts[0].startsWith('v') && !isNaN(pathParts[0].substring(1))) {
-               pathParts = pathParts.slice(1);
+        // Delete old logo if it exists
+        if (existingDrive.companyLogo && existingDrive.companyLogo.includes('res.cloudinary.com')) {
+          try {
+            const parts = existingDrive.companyLogo.split('/');
+            const uploadIndex = parts.indexOf('upload');
+            if (uploadIndex !== -1) {
+              let pathParts = parts.slice(uploadIndex + 1);
+              if (pathParts[0].startsWith('v') && !isNaN(pathParts[0].substring(1))) {
+                 pathParts = pathParts.slice(1);
+              }
+              const publicIdWithExt = pathParts.join('/');
+              const publicId = publicIdWithExt.substring(0, publicIdWithExt.lastIndexOf('.'));
+              if (publicId) {
+                 await cloudinary.uploader.destroy(publicId);
+              }
             }
-            const publicIdWithExt = pathParts.join('/');
-            const publicId = publicIdWithExt.substring(0, publicIdWithExt.lastIndexOf('.'));
-            if (publicId) {
-               await cloudinary.uploader.destroy(publicId);
-            }
+          } catch (err) {
+            logger.error({ err, driveId: req.params.id }, 'Error deleting old logo from Cloudinary');
           }
-        } catch (err) {
-          logger.error({ err, driveId: req.params.id }, 'Error deleting old logo from Cloudinary');
+        }
+      }
+
+      if (req.files['drivePdf'] && req.files['drivePdf'][0]) {
+        updateData.drivePdf = req.files['drivePdf'][0].path;
+
+        // Delete old PDF if it exists
+        if (existingDrive.drivePdf && existingDrive.drivePdf.includes('res.cloudinary.com')) {
+          try {
+            const parts = existingDrive.drivePdf.split('/');
+            const uploadIndex = parts.indexOf('upload');
+            if (uploadIndex !== -1) {
+              let pathParts = parts.slice(uploadIndex + 1);
+              if (pathParts[0].startsWith('v') && !isNaN(pathParts[0].substring(1))) {
+                 pathParts = pathParts.slice(1);
+              }
+              const publicIdWithExt = pathParts.join('/');
+              const publicId = publicIdWithExt.substring(0, publicIdWithExt.lastIndexOf('.'));
+              if (publicId) {
+                 await cloudinary.uploader.destroy(publicId);
+              }
+            }
+          } catch (err) {
+            logger.error({ err, driveId: req.params.id }, 'Error deleting old PDF from Cloudinary');
+          }
         }
       }
     }
