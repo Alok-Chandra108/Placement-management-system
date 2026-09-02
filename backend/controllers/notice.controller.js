@@ -203,6 +203,19 @@ exports.deleteNotice = async (req, res, next) => {
       return ApiResponse.error(res, 'Not authorized to delete this notice', 403);
     }
 
+    // Clean up file from Cloudinary if it exists
+    if (notice.attachmentUrl) {
+      try {
+        const publicIdMatch = notice.attachmentUrl.match(/\/v\d+\/(.+?)\.\w+$/);
+        const publicId = publicIdMatch ? publicIdMatch[1] : null;
+        if (publicId) {
+          await cloudinary.uploader.destroy(publicId, { resource_type: 'image' });
+        }
+      } catch (err) {
+        logger.error('Failed to delete notice PDF from Cloudinary on notice deletion:', err);
+      }
+    }
+
     await notice.deleteOne();
 
     return ApiResponse.success(res, 'Notice deleted successfully');
