@@ -18,6 +18,7 @@ const {
   updateNoticeValidation,
 } = require('../validators/notice.validators');
 const { ROLES } = require('../constants/roles');
+const { uploadNoticeFile } = require('../middleware/upload.middleware');
 
 
 const router = express.Router();
@@ -40,13 +41,13 @@ router.patch('/:id/read', markNoticeRead);
 router
   .route('/')
   .get(getAllNotices)                              // All logged-in users (students read)
-  .post(restrictToRoles(ROLES.ADMIN), ...createNoticeValidation, validateRequest, createNotice); // Admin only
+  .post(restrictToRoles(ROLES.ADMIN), uploadNoticeFile.single('noticePdf'), ...createNoticeValidation, validateRequest, createNotice); // Admin only
 
 // Route: /api/notices/:id
 router
   .route('/:id')
   .get(getNoticeById)                              // All logged-in users
-  .put(restrictToRoles(ROLES.ADMIN), ...updateNoticeValidation, validateRequest, updateNotice)     // Admin only
+  .put(restrictToRoles(ROLES.ADMIN), uploadNoticeFile.single('noticePdf'), ...updateNoticeValidation, validateRequest, updateNotice)     // Admin only
   .delete(restrictToRoles(ROLES.ADMIN), deleteNotice); // Admin only
 
 module.exports = router;

@@ -127,9 +127,34 @@ const uploadDriveFiles = multer({
   },
 });
 
+// Notice PDF configuration
+const noticeStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: async (req, file) => {
+    const sanitizedName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_').replace(/\.pdf$/i, '');
+    return {
+      folder: 'cpms/notices/pdfs',
+      format: 'pdf',
+      public_id: `${Date.now()}-${sanitizedName}`
+    };
+  },
+});
+
+const uploadNoticeFile = multer({
+  storage: noticeStorage,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: MAX_FILE_SIZE, // 2MB limit
+    files: 1, // Only 1 file per request
+    parts: 10,
+    headerPairs: 20,
+  },
+});
+
 module.exports = {
   upload,
   uploadImage,
   uploadDriveFiles,
+  uploadNoticeFile,
   MAX_FILE_SIZE,
 };

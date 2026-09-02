@@ -3,6 +3,7 @@ const User = require('../models/User.model');
 const Admin = require('../models/Admin.model');
 const ApiResponse = require('../utils/ApiResponse');
 const { logger } = require('../config/logger');
+const cloudinary = require('../config/cloudinary');
 
 // Helper: return the correct model based on the authenticated user's role
 const getActorModel = (role) => (role === 'admin' ? Admin : User);
@@ -22,7 +23,14 @@ const PURGE_AFTER_DAYS = 180;   // Hard-delete archived notices after 180 days
  */
 exports.createNotice = async (req, res, next) => {
   try {
-    const { title, body, category, attachmentUrl, attachmentName } = req.body;
+    const { title, body, category, status } = req.body;
+    let { attachmentUrl, attachmentName } = req.body;
+
+    // Override with uploaded file if present
+    if (req.file) {
+      attachmentUrl = req.file.path;
+      attachmentName = req.file.originalname;
+    }
 
     const notice = await Notice.create({
       title,
@@ -128,7 +136,8 @@ exports.getNoticeById = async (req, res, next) => {
  */
 exports.updateNotice = async (req, res, next) => {
   try {
-    const { title, body, category, attachmentUrl, attachmentName, status } = req.body;
+    const { title, body, category, status } = req.body;
+    let { attachmentUrl, attachmentName } = req.body;
 
     const notice = await Notice.findById(req.params.id);
 
@@ -139,6 +148,25 @@ exports.updateNotice = async (req, res, next) => {
     // Check authorization - only creator or admin can update
     if (notice.postedBy.toString() !== req.user.id && req.user.role !== 'admin') {
       return ApiResponse.error(res, 'Not authorized to update this notice', 403);
+    }
+
+    // Handle new file upload
+    if (req.file) {
+      attachmentUrl = req.file.path;
+      attachmentName = req.file.originalname;
+
+      // Clean up old file from Cloudinary if it exists
+      if (notice.attachmentUrl) {
+        try {
+          const publicIdMatch = notice.attachmentUrl.match(/\/v\d+\/(.+?)\.\w+$/);
+          const oldPublicId = publicIdMatch ? publicIdMatch[1] : null;
+          if (oldPublicId) {
+            await cloudinary.uploader.destroy(oldPublicId, { resource_type: 'image' }); // Cloudinary treats pdf as image by default for deletion
+          }
+        } catch (err) {
+          logger.error('Failed to delete old notice PDF from Cloudinary:', err);
+        }
+      }
     }
 
     if (title) notice.title = title;

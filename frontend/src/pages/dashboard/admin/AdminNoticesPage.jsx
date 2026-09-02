@@ -28,6 +28,10 @@ import {
   Bell,
   Timer,
   Info,
+  UploadCloud,
+  Paperclip,
+  FileDown,
+  ExternalLink,
 } from 'lucide-react';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -163,7 +167,8 @@ const AdminNoticesPage = () => {
   const [isModalOpen, setIsModalOpen]   = useState(false);
   const [modalMode, setModalMode]       = useState('create');
   const [editingId, setEditingId]       = useState(null);
-  const [formData, setFormData]         = useState({ title: '', category: 'General', body: '' });
+  const [formData, setFormData]         = useState({ title: '', category: 'General', body: '', noticePdf: null });
+  const [existingPdf, setExistingPdf]   = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // ── Confirm Dialogs ───────────────────────────────────────────────────────
@@ -253,17 +258,20 @@ const AdminNoticesPage = () => {
     setModalMode(mode);
     if (mode === 'edit' && notice) {
       setEditingId(notice._id);
-      setFormData({ title: notice.title, category: notice.category, body: notice.body || '' });
+      setFormData({ title: notice.title, category: notice.category, body: notice.body || '', noticePdf: null });
+      setExistingPdf(notice.attachmentUrl || null);
     } else {
       setEditingId(null);
-      setFormData({ title: '', category: 'General', body: '' });
+      setFormData({ title: '', category: 'General', body: '', noticePdf: null });
+      setExistingPdf(null);
     }
     setIsModalOpen(true);
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
-    setFormData({ title: '', category: 'General', body: '' });
+    setFormData({ title: '', category: 'General', body: '', noticePdf: null });
+    setExistingPdf(null);
     setEditingId(null);
   };
 
@@ -503,8 +511,9 @@ const AdminNoticesPage = () => {
                           >
                             <td className="px-8 py-6">
                               <div className="flex flex-col">
-                                <span className="text-sm font-bold text-neutral-900 group-hover:text-brand-blue transition-colors leading-relaxed">
+                                <span className="text-sm font-bold text-neutral-900 group-hover:text-brand-blue transition-colors leading-relaxed flex items-center gap-2">
                                   {notice.title}
+                                  {notice.attachmentUrl && <Paperclip className="w-4 h-4 text-neutral-400" title="Has attachment" />}
                                 </span>
                                 <span className="text-xs text-neutral-500 mt-1.5 flex items-center gap-1.5 font-medium">
                                   <div className="w-1.5 h-1.5 rounded-full bg-neutral-300" />
@@ -925,6 +934,36 @@ const AdminNoticesPage = () => {
                       className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue transition-all outline-none resize-none"
                       required
                     />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-neutral-700 mb-2">
+                      Attachment (PDF)
+                    </label>
+                    <div className="flex flex-col gap-3">
+                      <div className="relative">
+                        <input
+                          type="file"
+                          accept=".pdf"
+                          onChange={(e) => setFormData(prev => ({ ...prev, noticePdf: e.target.files[0] }))}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        />
+                        <div className={`w-full px-4 py-4 border-2 border-dashed rounded-xl flex items-center justify-center gap-2 transition-all ${formData.noticePdf ? 'border-brand-blue bg-brand-blue/5 text-brand-blue' : 'border-neutral-200 bg-neutral-50 text-neutral-500 hover:bg-neutral-100 hover:border-brand-blue/30'}`}>
+                          <UploadCloud className="w-5 h-5" />
+                          <span className="font-semibold text-sm">
+                            {formData.noticePdf ? formData.noticePdf.name : 'Click or drag PDF to upload'}
+                          </span>
+                        </div>
+                      </div>
+                      {existingPdf && !formData.noticePdf && (
+                        <div className="flex items-center gap-2 text-sm text-neutral-600 bg-neutral-50 p-3 rounded-xl border border-neutral-200">
+                          <FileText className="w-4 h-4 text-brand-blue" />
+                          <span className="flex-1 truncate">Existing Attachment</span>
+                          <a href={existingPdf} target="_blank" rel="noopener noreferrer" className="text-brand-blue font-bold hover:underline flex items-center gap-1">
+                            View <ExternalLink className="w-3 h-3" />
+                          </a>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </form>
               </div>

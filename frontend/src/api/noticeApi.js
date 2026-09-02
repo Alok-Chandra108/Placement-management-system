@@ -23,7 +23,20 @@ export const fetchNoticeById = async (id) => {
  * @param {Object} noticeData - Notice data payload
  */
 export const createNotice = async (noticeData) => {
-  const response = await api.post('/notices', noticeData);
+  let payload = noticeData;
+  let headers = {};
+
+  if (noticeData.noticePdf instanceof File) {
+    payload = new FormData();
+    Object.keys(noticeData).forEach(key => {
+      if (noticeData[key] !== null && noticeData[key] !== undefined) {
+        payload.append(key, noticeData[key]);
+      }
+    });
+    headers['Content-Type'] = 'multipart/form-data';
+  }
+
+  const response = await api.post('/notices', payload, { headers });
   return response.data;
 };
 
@@ -33,7 +46,20 @@ export const createNotice = async (noticeData) => {
  * @param {Object} noticeData - Notice data payload
  */
 export const updateNotice = async (id, noticeData) => {
-  const response = await api.put(`/notices/${id}`, noticeData);
+  let payload = noticeData;
+  let headers = {};
+
+  if (noticeData.noticePdf instanceof File) {
+    payload = new FormData();
+    Object.keys(noticeData).forEach(key => {
+      if (noticeData[key] !== null && noticeData[key] !== undefined) {
+        payload.append(key, noticeData[key]);
+      }
+    });
+    headers['Content-Type'] = 'multipart/form-data';
+  }
+
+  const response = await api.put(`/notices/${id}`, payload, { headers });
   return response.data;
 };
 
