@@ -15,6 +15,11 @@ const connectRedis = async () => {
   try {
     const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 
+    if (redisUrl === 'false') {
+      logger.info('Redis: Disabled by configuration');
+      return null;
+    }
+
     redisClient = createClient({
       url: redisUrl,
       socket: {

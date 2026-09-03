@@ -72,8 +72,12 @@ const errorHandler = (err, req, res, next) => {
     return ApiResponse.error(res, 'Token expired. Please log in again.', 401);
   }
 
-  // Handle file filter errors (from multer fileFilter callback)
-  if (err.message && (err.message.includes('Only PDF') || err.message.includes('Only image'))) {
+  // Handle file filter errors (from multer fileFilter callback or Cloudinary validation)
+  if (err.message && (
+    err.message.includes('Only PDF') || 
+    err.message.includes('Only image') ||
+    err.message.includes('Invalid image file')
+  )) {
     return ApiResponse.error(res, err.message, 400);
   }
 
