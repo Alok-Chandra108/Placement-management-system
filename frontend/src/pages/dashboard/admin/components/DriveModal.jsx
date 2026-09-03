@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Building2, Briefcase, GraduationCap, Calendar, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -33,8 +33,14 @@ const DriveModal = ({ isOpen, onClose, mode = 'create', initialData = null, onSu
 
   const [activeTab, setActiveTab] = useState('company'); // company, job, eligibility, dates
 
+  const logoInputRef = useRef(null);
+  const pdfInputRef = useRef(null);
+
   useEffect(() => {
     if (isOpen) {
+      if (logoInputRef.current) logoInputRef.current.value = '';
+      if (pdfInputRef.current) pdfInputRef.current.value = '';
+
       if (mode === 'edit' && initialData) {
         setFormData({
           ...initialData,
@@ -232,6 +238,7 @@ const DriveModal = ({ isOpen, onClose, mode = 'create', initialData = null, onSu
                       type="file"
                       accept="image/*"
                       name="companyLogo"
+                      ref={logoInputRef}
                       onChange={handleChange}
                       className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue transition-all outline-none"
                     />
@@ -311,6 +318,7 @@ const DriveModal = ({ isOpen, onClose, mode = 'create', initialData = null, onSu
                       type="file"
                       accept=".pdf"
                       name="drivePdf"
+                      ref={pdfInputRef}
                       onChange={handleChange}
                       className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue transition-all outline-none text-sm file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-brand-blue/10 file:text-brand-blue hover:file:bg-brand-blue/20"
                     />

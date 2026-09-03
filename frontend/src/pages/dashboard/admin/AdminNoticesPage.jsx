@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   fetchNotices,
@@ -170,6 +170,7 @@ const AdminNoticesPage = () => {
   const [formData, setFormData]         = useState({ title: '', category: 'General', body: '', noticePdf: null });
   const [existingPdf, setExistingPdf]   = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const fileInputRef                    = useRef(null);
 
   // ── Confirm Dialogs ───────────────────────────────────────────────────────
   const [showDeleteConfirm, setShowDeleteConfirm]   = useState(false);
@@ -273,6 +274,9 @@ const AdminNoticesPage = () => {
     setFormData({ title: '', category: 'General', body: '', noticePdf: null, removePdf: false });
     setExistingPdf(null);
     setEditingId(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -944,6 +948,7 @@ const AdminNoticesPage = () => {
                         <input
                           type="file"
                           accept=".pdf"
+                          ref={fileInputRef}
                           onChange={(e) => setFormData(prev => ({ ...prev, noticePdf: e.target.files[0] }))}
                           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                         />
