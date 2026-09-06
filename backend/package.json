@@ -42,7 +42,7 @@
     "xss-clean": "^0.1.4"
   },
   "devDependencies": {
-    "jest": "^29.7.0",
+    "jest": "^30.5.1",
     "migrate-mongo": "^14.0.7",
     "nodemon": "^3.1.14",
     "pino-pretty": "^13.1.3",
