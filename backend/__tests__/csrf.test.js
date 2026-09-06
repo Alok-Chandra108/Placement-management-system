@@ -78,15 +78,15 @@ describe('CSRF Protection', () => {
 
   describe('Exempt Paths (Unauthenticated State-Changing)', () => {
     const exemptPaths = [
-      { method: 'post', path: '/api/auth/register', body: { email: 'test@test.com', password: 'pass123', fullName: 'Test' } },
-      { method: 'post', path: '/api/auth/login', body: { email: 'test@test.com', password: 'pass123' } },
-      { method: 'post', path: '/api/auth/verify-email', body: { email: 'test@test.com', otp: '123456' } },
-      { method: 'post', path: '/api/auth/resend-otp', body: { email: 'test@test.com' } },
-      { method: 'put', path: '/api/auth/update-verify-email', body: { oldEmail: 'a@b.com', newEmail: 'c@d.com' } },
-      { method: 'post', path: '/api/auth/admin-login', body: { email: 'admin@test.com', password: 'pass123' } },
-      { method: 'post', path: '/api/auth/forgot-password', body: { email: 'test@test.com' } },
-      { method: 'post', path: '/api/auth/validate-reset-token', body: { token: 'testtoken' } },
-      { method: 'post', path: '/api/auth/reset-password', body: { token: 'testtoken', newPassword: 'newpass123' } },
+      { method: 'post', path: '/api/v1/auth/register', body: { email: 'test@test.com', password: 'pass123', fullName: 'Test' } },
+      { method: 'post', path: '/api/v1/auth/login', body: { email: 'test@test.com', password: 'pass123' } },
+      { method: 'post', path: '/api/v1/auth/verify-email', body: { email: 'test@test.com', otp: '123456' } },
+      { method: 'post', path: '/api/v1/auth/resend-otp', body: { email: 'test@test.com' } },
+      { method: 'put', path: '/api/v1/auth/update-verify-email', body: { oldEmail: 'a@b.com', newEmail: 'c@d.com' } },
+      { method: 'post', path: '/api/v1/auth/admin-login', body: { email: 'admin@test.com', password: 'pass123' } },
+      { method: 'post', path: '/api/v1/auth/forgot-password', body: { email: 'test@test.com' } },
+      { method: 'post', path: '/api/v1/auth/validate-reset-token', body: { token: 'testtoken' } },
+      { method: 'post', path: '/api/v1/auth/reset-password', body: { token: 'testtoken', newPassword: 'newpass123' } },
     ];
 
     exemptPaths.forEach(({ method, path, body }) => {
@@ -118,7 +118,7 @@ describe('CSRF Protection', () => {
       
       // Make request with cookie but WITHOUT X-CSRF-Token header
       const res = await request(app)
-        .post('/api/applications/apply/test-drive-id')
+        .post('/api/v1/applications/apply/test-drive-id')
         .set('Cookie', `csrfToken=${token}`)
         .set('Authorization', 'Bearer invalid-token') // Will fail auth, but CSRF should be checked first
         .send({});
@@ -138,7 +138,7 @@ describe('CSRF Protection', () => {
       const badToken = 'invalid-token-' + crypto.randomBytes(16).toString('hex');
       
       const res = await request(app)
-        .post('/api/applications/apply/test-drive-id')
+        .post('/api/v1/applications/apply/test-drive-id')
         .set('Cookie', `csrfToken=${token}`)
         .set('X-CSRF-Token', badToken)
         .set('Authorization', 'Bearer invalid-token')
@@ -154,7 +154,7 @@ describe('CSRF Protection', () => {
     it('should reject POST with missing CSRF cookie', async () => {
       // No cookie at all, just header
       const res = await request(app)
-        .post('/api/applications/apply/test-drive-id')
+        .post('/api/v1/applications/apply/test-drive-id')
         .set('X-CSRF-Token', 'some-token')
         .set('Authorization', 'Bearer invalid-token')
         .send({});
@@ -226,7 +226,7 @@ describe('CSRF Protection', () => {
       const csrfCookie = cookies.find(c => c.startsWith('csrfToken='));
       
       expect(csrfCookie).toBeTruthy();
-      expect(csrfCookie).toContain('HttpOnly='); // Should be false (not present or explicit)
+      expect(csrfCookie).not.toContain('HttpOnly'); // Should be false (not present or explicit)
       expect(csrfCookie).toContain('SameSite=Lax');
       // Secure should not be set in development
       expect(csrfCookie).not.toContain('Secure');

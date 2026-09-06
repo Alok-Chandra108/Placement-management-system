@@ -1,8 +1,36 @@
 const request = require('supertest');
 const app = require('../app');
 
+// Mock models to prevent database hangs when valid requests reach controllers
+jest.mock('../models/User.model', () => {
+  const mockUser = {
+    _id: '123',
+    email: 'test@test.com',
+    save: jest.fn().mockResolvedValue(true)
+  };
+  return {
+    findOne: jest.fn().mockResolvedValue(mockUser),
+    create: jest.fn().mockResolvedValue(mockUser),
+    findOneAndUpdate: jest.fn().mockResolvedValue({}),
+    deleteOne: jest.fn().mockResolvedValue({})
+  };
+});
+jest.mock('../models/Admin.model', () => ({
+  findOne: jest.fn().mockResolvedValue(null)
+}));
+jest.mock('../models/OTP.model', () => ({
+  findOne: jest.fn().mockResolvedValue(null),
+  findOneAndUpdate: jest.fn().mockResolvedValue({}),
+  deleteOne: jest.fn().mockResolvedValue({}),
+  deleteMany: jest.fn().mockResolvedValue({}),
+  create: jest.fn().mockResolvedValue({})
+}));
+jest.mock('../services/email.service', () => ({
+  sendOTPEmail: jest.fn().mockResolvedValue(true),
+  sendResetEmail: jest.fn().mockResolvedValue(true)
+}));
 describe('Auth Password Validation', () => {
-  const API_BASE = '/api/auth';
+  const API_BASE = '/api/v1/auth';
 
   // Valid password that meets all criteria
   const validPassword = 'ValidPass123!';
