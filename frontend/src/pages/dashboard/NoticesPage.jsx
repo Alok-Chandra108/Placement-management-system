@@ -11,10 +11,12 @@ import {
   ChevronLeft, 
   ChevronRight,
   ExternalLink,
+  Download,
   Inbox
 } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { getNotices, getNoticeById, clearCurrentNotice, markNoticeAsRead, fetchReadNotices } from '../../features/notices/noticeSlice';
+import { downloadRemoteFile } from '../../utils/exportUtils';
 
 const categoryStyles = {
   Urgent:    { bg: 'bg-rose-50',    text: 'text-rose-600',    dot: 'bg-rose-500',   border: 'border-rose-100' },
@@ -295,26 +297,35 @@ const NoticesPage = () => {
                 </div>
 
                 {currentNotice.attachmentUrl && (
-                  <div className="mt-10 p-6 rounded-2xl bg-neutral-50 border border-neutral-200 flex items-center justify-between group">
+                  <div className="mt-10 p-6 rounded-2xl bg-neutral-50 border border-neutral-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 group">
                     <div className="flex items-center gap-4">
-                      <div className="h-12 w-12 rounded-xl bg-white shadow-sm border border-neutral-200 flex items-center justify-center">
+                      <div className="h-12 w-12 rounded-xl bg-white shadow-sm border border-neutral-200 flex items-center justify-center flex-shrink-0">
                         <FileDown className="h-6 w-6 text-emerald-500" />
                       </div>
-                      <div>
-                        <p className="text-sm font-bold text-neutral-900">
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-neutral-900 truncate">
                           {currentNotice.attachmentName || 'Attachment Document'}
                         </p>
-                        <p className="text-xs text-neutral-400">PDF Document • Ready to download</p>
+                        <p className="text-xs text-neutral-400">PDF Document • Ready to view or download</p>
                       </div>
                     </div>
-                    <a
-                      href={currentNotice.attachmentUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-5 py-2.5 bg-brand-blue text-white text-sm font-bold rounded-xl hover:bg-brand-blue-dark transition-all flex items-center gap-2 shadow-lg shadow-brand-blue/20"
-                    >
-                      Download <ExternalLink className="h-4 w-4" />
-                    </a>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <a
+                        href={currentNotice.attachmentUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-4 py-2 bg-white border border-neutral-200 text-neutral-700 hover:bg-neutral-100 text-sm font-bold rounded-xl transition-all flex items-center gap-2 shadow-sm"
+                      >
+                        <ExternalLink className="h-4 w-4" /> View
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => downloadRemoteFile(currentNotice.attachmentUrl, currentNotice.attachmentName || `${(currentNotice.title || 'Notice').replace(/[^a-zA-Z0-9_-]/g, '_')}.pdf`)}
+                        className="px-4 py-2 bg-brand-blue text-white text-sm font-bold rounded-xl hover:bg-brand-blue-dark transition-all flex items-center gap-2 shadow-md shadow-brand-blue/20"
+                      >
+                        <Download className="h-4 w-4" /> Download
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>

@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   ExternalLink,
+  Download,
   ChevronRight,
   Info
 } from 'lucide-react';
@@ -22,6 +23,7 @@ import { applyToDriveAction, getMyApplicationsAction, resetApplicationState } fr
 import useEligibility from '../../hooks/useEligibility';
 import toast from 'react-hot-toast';
 import CompanyLogo from '../../components/CompanyLogo';
+import { downloadRemoteFile } from '../../utils/exportUtils';
 
 const DriveDetail = () => {
   const { id } = useParams();
@@ -222,16 +224,24 @@ const DriveDetail = () => {
             </div>
             
             {currentDrive.drivePdf && (
-              <div className="mt-6 pt-6 border-t border-neutral-100">
+              <div className="mt-6 pt-6 border-t border-neutral-100 flex flex-wrap items-center gap-3">
                 <a
                   href={currentDrive.drivePdf}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-neutral-100 hover:bg-neutral-200 text-neutral-900 rounded-xl font-bold transition-all"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 rounded-xl font-bold transition-all shadow-sm"
                 >
-                  <ExternalLink className="w-5 h-5" />
+                  <ExternalLink className="w-5 h-5 text-neutral-600" />
                   View Job Brochure (PDF)
                 </a>
+                <button
+                  type="button"
+                  onClick={() => downloadRemoteFile(currentDrive.drivePdf, `${(currentDrive.companyName || 'Job').replace(/[^a-zA-Z0-9_-]/g, '_')}_Brochure.pdf`)}
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-brand-blue hover:bg-brand-blue-dark text-white rounded-xl font-bold transition-all shadow-md shadow-brand-blue/20"
+                >
+                  <Download className="w-5 h-5" />
+                  Download Brochure
+                </button>
               </div>
             )}
           </motion.div>

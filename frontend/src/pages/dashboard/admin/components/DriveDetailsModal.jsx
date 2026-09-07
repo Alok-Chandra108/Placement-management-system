@@ -2,9 +2,10 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, Building2, MapPin, Briefcase, IndianRupee, Calendar, 
-  GraduationCap, BookOpen, AlertCircle, Users, ExternalLink 
+  GraduationCap, BookOpen, AlertCircle, Users, ExternalLink, Download 
 } from 'lucide-react';
 import CompanyLogo from '../../../../components/CompanyLogo';
+import { downloadRemoteFile } from '../../../../utils/exportUtils';
 
 const DriveDetailsModal = ({ isOpen, onClose, drive }) => {
   if (!isOpen || !drive) return null;
@@ -115,16 +116,24 @@ const DriveDetailsModal = ({ isOpen, onClose, drive }) => {
                       </div>
                     </div>
                     {drive.drivePdf && (
-                      <div className="mt-4 pt-4 border-t border-neutral-100 flex items-center">
+                      <div className="mt-4 pt-4 border-t border-neutral-100 flex flex-wrap items-center gap-3">
                         <a 
                           href={drive.drivePdf} 
                           target="_blank" 
                           rel="noopener noreferrer" 
-                          className="inline-flex items-center gap-2 px-4 py-2 bg-brand-blue/10 text-brand-blue rounded-lg text-sm font-bold hover:bg-brand-blue/20 transition-colors"
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-neutral-100 text-neutral-800 rounded-lg text-sm font-bold hover:bg-neutral-200 transition-colors shadow-sm"
                         >
-                          <BookOpen className="w-4 h-4" />
-                          View Job Brochure / PDF
+                          <ExternalLink className="w-4 h-4" />
+                          View Brochure
                         </a>
+                        <button 
+                          type="button"
+                          onClick={() => downloadRemoteFile(drive.drivePdf, `${(drive.companyName || 'Job').replace(/[^a-zA-Z0-9_-]/g, '_')}_Brochure.pdf`)}
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-brand-blue text-white rounded-lg text-sm font-bold hover:bg-brand-blue-dark transition-colors shadow-md shadow-brand-blue/20"
+                        >
+                          <Download className="w-4 h-4" />
+                          Download Brochure
+                        </button>
                       </div>
                     )}
                   </section>

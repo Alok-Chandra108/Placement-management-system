@@ -15,6 +15,8 @@ import {
   TrendingUp,
   Sparkles,
   FileDown,
+  Download,
+  ExternalLink,
   Bell,
 } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
@@ -26,6 +28,7 @@ import { getMyApplicationsAction } from '../../features/applications/application
 import { fetchProfile } from '../../features/profile/profileThunks';
 import { getNotices } from '../../features/notices/noticeSlice';
 import { calculateProfileCompletion } from '../../utils/profileUtils';
+import { downloadRemoteFile } from '../../utils/exportUtils';
 
 // ── Category badge helpers ───────────────────────────────────────────
 const categoryStyles = {
@@ -308,16 +311,25 @@ const StudentDashboardHome = () => {
                         <p className="text-xs text-neutral-500 mt-1 line-clamp-2">{item.body}</p>
                       </div>
                       {item.attachmentUrl && (
-                        <a
-                          href={item.attachmentUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="flex-shrink-0 p-2 rounded-lg bg-neutral-100 text-neutral-400 hover:bg-brand-blue-light hover:text-brand-blue transition-all"
-                          title={item.attachmentName || 'Download attachment'}
-                        >
-                          <FileDown className="h-4 w-4" />
-                        </a>
+                        <div className="flex items-center gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                          <a
+                            href={item.attachmentUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1.5 rounded-lg bg-neutral-100 text-neutral-500 hover:bg-neutral-200 hover:text-neutral-700 transition-all"
+                            title="View attachment (PDF)"
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() => downloadRemoteFile(item.attachmentUrl, item.attachmentName || `${(item.title || 'Notice').replace(/[^a-zA-Z0-9_-]/g, '_')}.pdf`)}
+                            className="p-1.5 rounded-lg bg-brand-blue-light text-brand-blue hover:bg-brand-blue hover:text-white transition-all"
+                            title={item.attachmentName ? `Download ${item.attachmentName}` : 'Download attachment'}
+                          >
+                            <Download className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>

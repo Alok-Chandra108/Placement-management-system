@@ -73,3 +73,38 @@ export const exportToPDF = (data, title = 'Report', filename = 'report.pdf') => 
 
   doc.save(filename);
 };
+
+/**
+ * Downloads a remote file (such as a Cloudinary PDF) directly to the user's computer
+ * @param {string} url - Direct URL to the file
+ * @param {string} defaultFilename - Name to save the file as
+ */
+export const downloadRemoteFile = async (url, defaultFilename = 'document.pdf') => {
+  if (!url) return;
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    const blob = await response.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = defaultFilename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(blobUrl);
+  } catch (error) {
+    console.error('Direct download failed, falling back to direct link:', error);
+    // Cloudinary attachment fallback or open in new tab
+    const downloadUrl = url.includes('/upload/')
+      ? url.replace('/upload/', `/upload/fl_attachment:${encodeURIComponent(defaultFilename.replace(/\.[^/.]+$/, ''))}/`)
+      : url;
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.target = '_blank';
+    link.download = defaultFilename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+};
