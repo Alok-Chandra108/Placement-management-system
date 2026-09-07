@@ -10,7 +10,7 @@ const getActorModel = (role) => (role === 'admin' ? Admin : User);
 
 // ── Timeframe Constants ────────────────────────────────────────────────────────
 const ARCHIVE_AFTER_DAYS = 30;  // Auto-archive active notices after 30 days
-const PURGE_AFTER_DAYS = 180;   // Hard-delete archived notices after 180 days
+const PURGE_AFTER_DAYS   = 60;  // Permanently delete archived notices after 60 days
 
 // ────────────────────────────────────────────────────────────────────────────────
 //  CREATE / READ / UPDATE / DELETE (Standard CRUD)
@@ -23,7 +23,7 @@ const PURGE_AFTER_DAYS = 180;   // Hard-delete archived notices after 180 days
  */
 exports.createNotice = async (req, res, next) => {
   try {
-    const { title, body, category, status } = req.body;
+    const { title, body, category } = req.body;
     let { attachmentUrl, attachmentName } = req.body;
 
     // Override with uploaded file if present
@@ -45,6 +45,8 @@ exports.createNotice = async (req, res, next) => {
     // Populate postedBy for the response
     await notice.populate('postedBy', 'fullName role');
 
+    logger.info({ event: 'notice_created', noticeId: notice._id, userId: req.user.id }, 'Notice created');
+
     return ApiResponse.success(res, 'Notice created successfully', notice, 201);
   } catch (error) {
     next(error);
@@ -52,54 +54,56 @@ exports.createNotice = async (req, res, next) => {
 };
 
 /**
- * @desc    Get all notices (with filters & pagination)
+ * @desc    Get all active (non-archived) notices (with filters & pagination)
  * @route   GET /api/notices
  * @access  Private (All authenticated users)
  */
-exports.getNotices = async (req, res, next) => {
+exports.getAllNotices = async (req, res, next) => {
   try {
-    const {
-      page = 1,
-      limit = 10,
-      category,
-      status = 'active',
-      search,
-      sortBy = 'createdAt',
-      sortOrder = 'desc',
-    } = req.query;
+    const filter = {}; // isActive: true AND isArchived: false applied automatically by pre-find hook
 
-    const query = { status };
-
-    if (category) {
-      query.category = category;
+    if (req.query.category && typeof req.query.category === 'string') {
+      filter.category = req.query.category;
     }
 
-    if (search) {
-      query.$or = [
-        { title: { $regex: search, $options: 'i' } },
-        { body: { $regex: search, $options: 'i' } },
+    if (req.query.search && typeof req.query.search === 'string') {
+      const escapeRegex = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      filter.$or = [
+        { title: { $regex: escapeRegex(req.query.search), $options: 'i' } },
+        { body: { $regex: escapeRegex(req.query.search), $options: 'i' } },
       ];
     }
 
-    const sort = { [sortBy]: sortOrder === 'asc' ? 1 : -1 };
-    const skip = (page - 1) * limit;
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = parseInt(req.query.limit, 10) || 0;
+    const skip = limit > 0 ? (page - 1) * limit : 0;
+    const sortBy = req.query.sortBy || 'createdAt';
+    const sortOrder = req.query.sortOrder === 'asc' ? 1 : -1;
+    const sort = { [sortBy]: sortOrder };
+
+    const query = Notice.find(filter)
+      .populate('postedBy', 'fullName role')
+      .sort(sort);
+
+    if (limit > 0) {
+      query.skip(skip).limit(limit);
+    }
 
     const [notices, total] = await Promise.all([
-      Notice.find(query)
-        .sort(sort)
-        .skip(skip)
-        .limit(parseInt(limit))
-        .populate('postedBy', 'fullName role'),
-      Notice.countDocuments(query),
+      query,
+      Notice.countDocuments(filter),
     ]);
 
     return ApiResponse.success(res, 'Notices fetched successfully', {
       notices,
+      total,
+      page,
+      pages: limit > 0 ? Math.ceil(total / limit) : 1,
       pagination: {
-        currentPage: parseInt(page),
-        totalPages: Math.ceil(total / limit),
+        currentPage: page,
+        totalPages: limit > 0 ? Math.ceil(total / limit) : 1,
         totalItems: total,
-        itemsPerPage: parseInt(limit),
+        itemsPerPage: limit || total,
       },
     });
   } catch (error) {
@@ -107,8 +111,8 @@ exports.getNotices = async (req, res, next) => {
   }
 };
 
-// Alias for backward compatibility
-exports.getAllNotices = exports.getNotices;
+// Alias for backwards compatibility
+exports.getNotices = exports.getAllNotices;
 
 /**
  * @desc    Get a single notice by ID
@@ -125,6 +129,9 @@ exports.getNoticeById = async (req, res, next) => {
 
     return ApiResponse.success(res, 'Notice fetched successfully', notice);
   } catch (error) {
+    if (error.name === 'CastError') {
+      return ApiResponse.error(res, 'Invalid notice ID format', 400);
+    }
     next(error);
   }
 };
@@ -136,10 +143,13 @@ exports.getNoticeById = async (req, res, next) => {
  */
 exports.updateNotice = async (req, res, next) => {
   try {
-    const { title, body, category, status, removePdf } = req.body;
+    const { title, body, category, removePdf } = req.body;
     let { attachmentUrl, attachmentName } = req.body;
 
-    const notice = await Notice.findById(req.params.id);
+    const notice = await Notice.findOne({
+      _id: req.params.id,
+      isActive: { $exists: true },
+    });
 
     if (!notice) {
       return ApiResponse.error(res, 'Notice not found', 404);
@@ -185,32 +195,43 @@ exports.updateNotice = async (req, res, next) => {
           logger.error('Failed to delete old notice PDF from Cloudinary:', err);
         }
       }
+      notice.attachmentUrl = attachmentUrl;
+      notice.attachmentName = attachmentName;
+    } else {
+      if (attachmentUrl !== undefined) notice.attachmentUrl = attachmentUrl;
+      if (attachmentName !== undefined) notice.attachmentName = attachmentName;
     }
 
     if (title) notice.title = title;
     if (body) notice.body = body;
     if (category) notice.category = category;
-    if (attachmentUrl !== undefined) notice.attachmentUrl = attachmentUrl;
-    if (attachmentName !== undefined) notice.attachmentName = attachmentName;
-    if (status) notice.status = status;
 
     await notice.save();
     await notice.populate('postedBy', 'fullName role');
 
+    logger.info({ event: 'notice_updated', noticeId: notice._id, userId: req.user.id }, 'Notice updated');
+
     return ApiResponse.success(res, 'Notice updated successfully', notice);
   } catch (error) {
+    if (error.name === 'CastError') {
+      return ApiResponse.error(res, 'Invalid notice ID format', 400);
+    }
     next(error);
   }
 };
 
 /**
- * @desc    Delete a notice
+ * @desc    Soft-delete a notice (sets isActive = false)
  * @route   DELETE /api/notices/:id
  * @access  Private (Admin / HR who created it)
  */
 exports.deleteNotice = async (req, res, next) => {
   try {
-    const notice = await Notice.findById(req.params.id);
+    // Bypass the isActive pre-find hook to find the raw document
+    const notice = await Notice.findOne({
+      _id: req.params.id,
+      isActive: { $exists: true },
+    });
 
     if (!notice) {
       return ApiResponse.error(res, 'Notice not found', 404);
@@ -234,10 +255,16 @@ exports.deleteNotice = async (req, res, next) => {
       }
     }
 
-    await notice.deleteOne();
+    notice.isActive = false;
+    await notice.save();
+
+    logger.info({ event: 'notice_deleted', noticeId: notice._id, userId: req.user.id }, 'Notice soft-deleted');
 
     return ApiResponse.success(res, 'Notice deleted successfully');
   } catch (error) {
+    if (error.name === 'CastError') {
+      return ApiResponse.error(res, 'Invalid notice ID format', 400);
+    }
     next(error);
   }
 };
@@ -247,13 +274,17 @@ exports.deleteNotice = async (req, res, next) => {
 // ────────────────────────────────────────────────────────────────────────────────
 
 /**
- * @desc    Archive a notice (soft delete)
+ * @desc    Archive a notice (admin action)
+ *          Sets isArchived=true, archivedAt=now — immediately hides from students
  * @route   PATCH /api/notices/:id/archive
  * @access  Private (Admin / HR who created it)
  */
 exports.archiveNotice = async (req, res, next) => {
   try {
-    const notice = await Notice.findById(req.params.id);
+    const notice = await Notice.findOne({
+      _id: req.params.id,
+      isActive: { $exists: true },
+    });
 
     if (!notice) {
       return ApiResponse.error(res, 'Notice not found', 404);
@@ -263,11 +294,11 @@ exports.archiveNotice = async (req, res, next) => {
       return ApiResponse.error(res, 'Not authorized to archive this notice', 403);
     }
 
-    if (notice.status === 'archived') {
+    if (notice.isArchived) {
       return ApiResponse.error(res, 'Notice is already archived', 400);
     }
 
-    notice.status = 'archived';
+    notice.isArchived = true;
     notice.archivedAt = new Date();
     await notice.save();
 
@@ -275,28 +306,35 @@ exports.archiveNotice = async (req, res, next) => {
 
     return ApiResponse.success(res, 'Notice archived successfully', notice);
   } catch (error) {
+    if (error.name === 'CastError') {
+      return ApiResponse.error(res, 'Invalid notice ID format', 400);
+    }
     next(error);
   }
 };
 
 /**
- * @desc    Restore an archived notice
+ * @desc    Restore an archived notice back to active
+ *          Clears isArchived and archivedAt — notice reappears on student dashboard
  * @route   PATCH /api/notices/:id/restore
  * @access  Private (Admin only)
  */
 exports.restoreNotice = async (req, res, next) => {
   try {
-    const notice = await Notice.findById(req.params.id);
+    const notice = await Notice.findOne({
+      _id: req.params.id,
+      isActive: { $exists: true },
+    });
 
     if (!notice) {
       return ApiResponse.error(res, 'Notice not found', 404);
     }
 
-    if (notice.status === 'active') {
-      return ApiResponse.error(res, 'Notice is already active', 400);
+    if (!notice.isArchived) {
+      return ApiResponse.error(res, 'Notice is not archived', 400);
     }
 
-    notice.status = 'active';
+    notice.isArchived = false;
     notice.archivedAt = null;
     await notice.save();
 
@@ -304,6 +342,9 @@ exports.restoreNotice = async (req, res, next) => {
 
     return ApiResponse.success(res, 'Notice restored successfully', notice);
   } catch (error) {
+    if (error.name === 'CastError') {
+      return ApiResponse.error(res, 'Invalid notice ID format', 400);
+    }
     next(error);
   }
 };
@@ -315,39 +356,50 @@ exports.restoreNotice = async (req, res, next) => {
  */
 exports.getArchivedNotices = async (req, res, next) => {
   try {
-    const {
-      page = 1,
-      limit = 10,
-      category,
-      sortBy = 'archivedAt',
-      sortOrder = 'desc',
-    } = req.query;
+    const filter = { isActive: { $exists: true }, isArchived: true };
 
-    const query = { status: 'archived' };
-
-    if (category) {
-      query.category = category;
+    if (req.query.category && typeof req.query.category === 'string') {
+      filter.category = req.query.category;
     }
 
-    const sort = { [sortBy]: sortOrder === 'asc' ? 1 : -1 };
-    const skip = (page - 1) * limit;
+    if (req.query.search && typeof req.query.search === 'string') {
+      const escapeRegex = (string) => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      filter.$or = [
+        { title: { $regex: escapeRegex(req.query.search), $options: 'i' } },
+        { body: { $regex: escapeRegex(req.query.search), $options: 'i' } },
+      ];
+    }
+
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = parseInt(req.query.limit, 10) || 0;
+    const skip = limit > 0 ? (page - 1) * limit : 0;
+    const sortBy = req.query.sortBy || 'archivedAt';
+    const sortOrder = req.query.sortOrder === 'asc' ? 1 : -1;
+    const sort = { [sortBy]: sortOrder };
+
+    const query = Notice.find(filter)
+      .populate('postedBy', 'fullName role')
+      .sort(sort);
+
+    if (limit > 0) {
+      query.skip(skip).limit(limit);
+    }
 
     const [notices, total] = await Promise.all([
-      Notice.find(query)
-        .sort(sort)
-        .skip(skip)
-        .limit(parseInt(limit))
-        .populate('postedBy', 'fullName role'),
-      Notice.countDocuments(query),
+      query,
+      Notice.countDocuments(filter),
     ]);
 
     return ApiResponse.success(res, 'Archived notices fetched successfully', {
       notices,
+      total,
+      page,
+      pages: limit > 0 ? Math.ceil(total / limit) : 1,
       pagination: {
-        currentPage: parseInt(page),
-        totalPages: Math.ceil(total / limit),
+        currentPage: page,
+        totalPages: limit > 0 ? Math.ceil(total / limit) : 1,
         totalItems: total,
-        itemsPerPage: parseInt(limit),
+        itemsPerPage: limit || total,
       },
     });
   } catch (error) {
@@ -355,76 +407,97 @@ exports.getArchivedNotices = async (req, res, next) => {
   }
 };
 
+// ── Read-tracking (per-user) ───────────────────────────────────────────────────
+
 /**
- * @desc    Mark a notice as read by current user
+ * @desc    Mark a notice as read for the logged-in user
  * @route   PATCH /api/notices/:id/read
  * @access  Private (All authenticated users)
  */
 exports.markNoticeRead = async (req, res, next) => {
   try {
-    const notice = await Notice.findById(req.params.id);
+    const noticeId = req.params.id;
 
+    // Validate that the notice exists
+    const notice = await Notice.findById(noticeId);
     if (!notice) {
       return ApiResponse.error(res, 'Notice not found', 404);
     }
 
-    // Add user to readBy array if not already present
-    if (!notice.readBy.includes(req.user.id)) {
-      notice.readBy.push(req.user.id);
-      await notice.save();
-    }
+    // Route to the correct collection — Admin docs live in Admin, students in User
+    const ActorModel = getActorModel(req.user.role);
+
+    // $addToSet ensures no duplicates
+    await ActorModel.findByIdAndUpdate(req.user.id, {
+      $addToSet: { readNotices: noticeId },
+    });
 
     return ApiResponse.success(res, 'Notice marked as read');
   } catch (error) {
+    if (error.name === 'CastError') {
+      return ApiResponse.error(res, 'Invalid notice ID format', 400);
+    }
     next(error);
   }
 };
 
 /**
- * @desc    Get all notices read by current user
+ * @desc    Get the list of notice IDs the logged-in user has read
  * @route   GET /api/notices/read
  * @access  Private (All authenticated users)
  */
 exports.getReadNotices = async (req, res, next) => {
   try {
-    const {
-      page = 1,
-      limit = 10,
-      category,
-      sortBy = 'createdAt',
-      sortOrder = 'desc',
-    } = req.query;
-
-    const query = { readBy: req.user.id, status: 'active' };
-
-    if (category) {
-      query.category = category;
-    }
-
-    const sort = { [sortBy]: sortOrder === 'asc' ? 1 : -1 };
-    const skip = (page - 1) * limit;
-
-    const [notices, total] = await Promise.all([
-      Notice.find(query)
-        .sort(sort)
-        .skip(skip)
-        .limit(parseInt(limit))
-        .populate('postedBy', 'fullName role'),
-      Notice.countDocuments(query),
-    ]);
-
-    return ApiResponse.success(res, 'Read notices fetched successfully', {
-      notices,
-      pagination: {
-        currentPage: parseInt(page),
-        totalPages: Math.ceil(total / limit),
-        totalItems: total,
-        itemsPerPage: parseInt(limit),
-      },
+    // Route to the correct collection — Admin docs live in Admin, students in User
+    const ActorModel = getActorModel(req.user.role);
+    const actor = await ActorModel.findById(req.user.id).select('readNotices');
+    return ApiResponse.success(res, 'Read notices fetched', {
+      readNotices: actor?.readNotices || [],
     });
   } catch (error) {
     next(error);
   }
+};
+
+// ── Internal Cron Handlers ─────────────────────────────────────────────────────
+
+/**
+ * Auto-archive all active notices older than ARCHIVE_AFTER_DAYS (30 days).
+ * Called by the cron service daily at midnight.
+ */
+exports.runAutoArchive = async () => {
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - ARCHIVE_AFTER_DAYS);
+
+  const result = await Notice.updateMany(
+    {
+      isArchived: { $ne: true },
+      isActive: true,
+      createdAt: { $lt: cutoff },
+    },
+    {
+      $set: { isArchived: true, archivedAt: new Date() },
+    }
+  );
+
+  return result.modifiedCount;
+};
+
+/**
+ * Permanently hard-delete archived notices older than PURGE_AFTER_DAYS (60 days) from archivedAt.
+ * Called by the cron service daily at midnight.
+ */
+exports.runPurgeArchived = async () => {
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - PURGE_AFTER_DAYS);
+
+  const result = await Notice.deleteMany({
+    isActive: { $exists: true },
+    isArchived: true,
+    archivedAt: { $lt: cutoff },
+  });
+
+  return result.deletedCount;
 };
 
 /**
@@ -435,12 +508,13 @@ exports.getReadNotices = async (req, res, next) => {
 exports.getNoticeStats = async (req, res, next) => {
   try {
     const [activeCount, archivedCount, totalCount] = await Promise.all([
-      Notice.countDocuments({ status: 'active' }),
-      Notice.countDocuments({ status: 'archived' }),
-      Notice.countDocuments({}),
+      Notice.countDocuments({ isActive: true, isArchived: { $ne: true } }),
+      Notice.countDocuments({ isActive: { $exists: true }, isArchived: true }),
+      Notice.countDocuments({ isActive: { $exists: true } }),
     ]);
 
     const byCategory = await Notice.aggregate([
+      { $match: { isActive: true, isArchived: { $ne: true } } },
       { $group: { _id: '$category', count: { $sum: 1 } } },
       { $sort: { count: -1 } },
     ]);
