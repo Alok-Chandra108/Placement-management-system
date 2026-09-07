@@ -18,10 +18,10 @@ CPMS is built on the **MERN** stack, focusing on professional aesthetics, secure
 - **Student Dashboard**: Real-time tracking of profile completion, applied jobs, eligibility status, and upcoming placement drives.
 - **Smart Eligibility Engine**: Automated eligibility checks (CGPA, 10th %, 12th %, backlogs, branch, course) per drive.
 - **Resume Management**: Secure PDF resume uploads (max 2MB) and deletion powered by Cloudinary via Multer.
-- **Placement Drives**: Full CRUD for recruitment drives with company logo uploads (Cloudinary), smart status engine (`upcoming` → `open` → `closed`), and detailed eligibility configuration.
+- **Placement Drives**: Full CRUD for recruitment drives with company logo and PDF brochure uploads (Cloudinary), smart status engine (`upcoming` → `open` → `closed`), and detailed eligibility configuration.
 - **Applications System**: Students apply to drives; admins view applicants, update individual or bulk application statuses.
 - **Application Status Emails**: Automatic HTML emails sent to students via Brevo whenever their application status is updated — includes styled status badge and optional admin remarks.
-- **Notices Board**: Admin creates, updates, archives, and deletes notices. Students view active notices with per-user read-tracking. PDF attachments via Cloudinary are supported.
+- **Notices Board**: Admin creates, updates, archives, and deletes notices. Students view active notices with per-user read-tracking. Optional PDF attachments (with upload/removal support) via Cloudinary are supported.
 - **Notice Lifecycle (Auto-Archive & Purge)**: A scheduled `node-cron` job runs daily at midnight IST — automatically archives notices older than 30 days and permanently purges archived notices older than 60 days.
 - **Student Directory**: Admin view of all registered students with profile modal and PDF/CSV export.
 - **Analytics Dashboard**: Admin placement analytics powered by Recharts.
@@ -30,7 +30,7 @@ CPMS is built on the **MERN** stack, focusing on professional aesthetics, secure
 - **Transactional Email (Brevo)**: All system emails (student OTP, admin OTP, password reset, status updates) are delivered via the **Brevo HTTP API** — bypassing SMTP restrictions on cloud providers like Render.
 - **Professional UI**: Premium corporate UI with Tailwind CSS v3, Framer Motion animations, and Lucide icons.
 - **Role-Based Access Control (RBAC)**: Strict permission enforcement across student and admin roles.
-- **Rate Limiting**: API-level, auth-level, and sensitive-operation rate limiting.
+- **Rate Limiting**: API-level, login, registration, and sensitive-operation rate limiting.
 - **Security**: Helmet security headers, bcrypt password hashing, hashed refresh tokens in DB, httpOnly cookies, XSS-safe HTML email templates.
 - **Automated Tests**: Jest + Supertest backend test suite.
 - **Docker Containerization**: Multi-stage Docker builds for frontend (Nginx Alpine) and backend, with Docker Compose for production and hot-reload dev environments.
@@ -108,7 +108,7 @@ cpms-mini-project/
 │   ├── middleware/
 │   │   ├── auth.middleware.js     # verifyAccessToken, restrictToRoles
 │   │   ├── upload.middleware.js   # Multer: resume (PDF, 2MB) + image (logo) + PDF (notice attachment)
-│   │   ├── rateLimiter.js         # apiLimiter, authLimiter, sensitiveLimiter
+│   │   ├── rateLimiter.js         # apiLimiter, loginLimiter, registerLimiter, sensitiveLimiter
 │   │   ├── validateRequest.middleware.js # express-validator error aggregator
 │   │   └── error.middleware.js    # Global error handler
 │   ├── models/
@@ -378,9 +378,9 @@ VITE_API_BASE_URL=http://localhost:5000/api/v1
 | Method | Endpoint | Access | Description |
 |--------|----------|--------|-------------|
 | GET | `/api/v1/drives` | Auth | List all active drives |
-| POST | `/api/v1/drives` | Admin | Create drive (with optional logo upload) |
+| POST | `/api/v1/drives` | Admin | Create drive (with optional logo and PDF brochure upload) |
 | GET | `/api/v1/drives/:id` | Auth | Get drive details |
-| PATCH | `/api/v1/drives/:id` | Admin | Update drive |
+| PATCH | `/api/v1/drives/:id` | Admin | Update drive (includes support for logo/PDF removal) |
 | DELETE | `/api/v1/drives/:id` | Admin | Soft-delete drive |
 
 ### Applications (`/api/v1/applications`)
@@ -400,7 +400,7 @@ VITE_API_BASE_URL=http://localhost:5000/api/v1
 | GET | `/api/v1/notices` | Auth | List active, non-archived notices |
 | POST | `/api/v1/notices` | Admin | Create notice (optional PDF attachment via Cloudinary) |
 | GET | `/api/v1/notices/:id` | Auth | Get notice details |
-| PUT | `/api/v1/notices/:id` | Admin | Update notice |
+| PUT | `/api/v1/notices/:id` | Admin | Update notice (includes support for PDF removal) |
 | DELETE | `/api/v1/notices/:id` | Admin | Delete notice |
 | GET | `/api/v1/notices/archived` | Admin | List archived notices |
 | PATCH | `/api/v1/notices/:id/archive` | Admin | Manually archive a notice |
