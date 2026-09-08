@@ -5,6 +5,11 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
+    "start:cluster": "pm2 start ecosystem.config.js --env production",
+    "stop:cluster": "pm2 stop ecosystem.config.js",
+    "reload:cluster": "pm2 reload ecosystem.config.js",
+    "status:cluster": "pm2 status",
+    "logs:cluster": "pm2 logs cpms-backend",
     "dev": "nodemon server.js",
     "test": "jest --runInBand --detectOpenHandles --forceExit --passWithNoTests",
     "seed:admin": "node src/scripts/seedAdmin.js",
@@ -47,6 +52,7 @@
     "migrate-mongo": "^14.0.7",
     "nodemon": "^3.1.14",
     "pino-pretty": "^13.1.3",
+    "pm2": "^7.0.4",
     "supertest": "^7.0.0"
   },
   "jest": {

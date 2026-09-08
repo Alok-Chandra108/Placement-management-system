@@ -245,10 +245,23 @@ const startServer = async () => {
     await connectRedis();
 
     // Start scheduled background jobs
-    startNoticeArchiveCron();
+    // In cluster mode (PM2 / Node cluster), run cron only on primary worker (instance 0) to avoid duplicate jobs
+    const isPrimaryWorker = !process.env.NODE_APP_INSTANCE || process.env.NODE_APP_INSTANCE === '0';
+    if (isPrimaryWorker) {
+      startNoticeArchiveCron();
+    } else {
+      logger.info({ instance: process.env.NODE_APP_INSTANCE }, 'Cluster worker: Cron jobs handled by primary worker (0)');
+    }
 
     server = app.listen(PORT, () => {
-      logger.info({ port: PORT, env: process.env.NODE_ENV || 'development' }, 'Server running');
+      logger.info(
+        { port: PORT, env: process.env.NODE_ENV || 'development', instance: process.env.NODE_APP_INSTANCE || 'standalone' },
+        'Server running'
+      );
+      // Signal PM2 cluster that this worker is ready to receive requests (for zero-downtime reloads)
+      if (process.send) {
+        process.send('ready');
+      }
     });
   } catch (error) {
     logger.fatal({ err: error }, 'Failed to start server');
