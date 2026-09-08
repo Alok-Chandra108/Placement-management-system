@@ -1,7 +1,37 @@
 const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
+const { RedisStore } = require('rate-limit-redis');
 const jwt = require('jsonwebtoken');
+const redisConfig = require('../config/redis');
 
 const isProduction = process.env.NODE_ENV === 'production';
+
+/**
+ * Creates a RedisStore for distributed rate limiting across PM2 cluster workers.
+ * If Redis is disabled (REDIS_URL='false') or during testing, falls back to MemoryStore (undefined).
+ *
+ * @param {string} prefix
+ * @returns {RedisStore|undefined}
+ */
+const createRedisStore = (prefix = 'rl:') => {
+  if (process.env.REDIS_URL === 'false' || process.env.NODE_ENV === 'test') {
+    return undefined;
+  }
+
+  try {
+    return new RedisStore({
+      sendCommand: (...args) => {
+        const client = redisConfig.getRedisClient();
+        if (!client || !client.isOpen) {
+          throw new Error('Redis client not connected');
+        }
+        return client.sendCommand(args);
+      },
+      prefix,
+    });
+  } catch {
+    return undefined;
+  }
+};
 
 /**
  * Key generator for authenticated routes.
@@ -80,6 +110,8 @@ const loginLimiter = rateLimit({
     ? parseInt(process.env.LOGIN_RATE_LIMIT_MAX, 10)
     : (isProduction ? 10 : 5000),
   keyGenerator: getPublicAuthKey('login'),
+  store: createRedisStore('rl:login:'),
+  passOnStoreError: true,
   message: {
     success: false,
     message: 'Too many login attempts. Please try again in 15 minutes.',
@@ -99,6 +131,8 @@ const registerLimiter = rateLimit({
     ? parseInt(process.env.REGISTER_RATE_LIMIT_MAX, 10)
     : (isProduction ? 5 : 3000),
   keyGenerator: getPublicAuthKey('register'),
+  store: createRedisStore('rl:register:'),
+  passOnStoreError: true,
   message: {
     success: false,
     message: 'Too many registration attempts. Please try again in 15 minutes.',
@@ -118,6 +152,8 @@ const sensitiveLimiter = rateLimit({
     ? parseInt(process.env.SENSITIVE_RATE_LIMIT_MAX, 10)
     : (isProduction ? 5 : 3000),
   keyGenerator: getPublicAuthKey('sensitive'),
+  store: createRedisStore('rl:sensitive:'),
+  passOnStoreError: true,
   message: {
     success: false,
     message: 'Too many requests. Please try again later.',
@@ -135,6 +171,8 @@ const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 500,
   keyGenerator: getAuthenticatedKey,
+  store: createRedisStore('rl:api:'),
+  passOnStoreError: true,
   message: {
     success: false,
     message: 'Too many requests, please try again later.',
@@ -151,9 +189,34 @@ const authenticatedLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 1000,
   keyGenerator: getAuthenticatedKey,
+  store: createRedisStore('rl:auth:'),
+  passOnStoreError: true,
   message: {
     success: false,
     message: 'Too many requests. Please try again later.',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+/**
+ * Rapid-fire submission limiter for applying to drives
+ * Prevents double-clicking or rapid scripted submissions during drive launch rush
+ * Limits each student to 2 attempts per 10 seconds per drive
+ */
+const applyLimiter = rateLimit({
+  windowMs: 10 * 1000, // 10 seconds window
+  max: 2, // Max 2 attempts in 10 seconds
+  keyGenerator: (req) => {
+    const studentId = req.user?.id || req.user?._id || 'anon';
+    const driveId = req.params?.driveId || 'any';
+    return `apply:${studentId}:${driveId}`;
+  },
+  store: createRedisStore('rl:apply:'),
+  passOnStoreError: true,
+  message: {
+    success: false,
+    message: 'You are submitting applications too quickly. Please wait a few seconds before trying again.',
   },
   standardHeaders: true,
   legacyHeaders: false,
@@ -165,6 +228,8 @@ module.exports = {
   sensitiveLimiter,
   apiLimiter,
   authenticatedLimiter,
+  applyLimiter,
   getAuthenticatedKey,
   getPublicAuthKey,
+  createRedisStore,
 };

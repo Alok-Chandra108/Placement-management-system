@@ -7,8 +7,10 @@ const {
   sensitiveLimiter,
   apiLimiter,
   authenticatedLimiter,
+  applyLimiter,
   getAuthenticatedKey,
   getPublicAuthKey,
+  createRedisStore,
 } = require('../middleware/rateLimiter');
 
 describe('Rate Limiter - Campus Wi-Fi & Shared IP Protection', () => {
@@ -195,6 +197,53 @@ describe('Rate Limiter - Campus Wi-Fi & Shared IP Protection', () => {
         .set('Authorization', `Bearer ${tokenB}`);
       expect(resB.status).toBe(200);
       expect(resB.body.success).toBe(true);
+    });
+
+    it('should throttle rapid-fire applications using applyLimiter', async () => {
+      const applyApp = express();
+      applyApp.use(express.json());
+
+      // Simulate authenticated student middleware
+      applyApp.use((req, res, next) => {
+        req.user = { id: 'fast_clicker_student_1' };
+        next();
+      });
+
+      applyApp.post('/api/v1/applications/apply/:driveId', applyLimiter, (req, res) => {
+        res.status(201).json({ success: true, message: 'Application submitted' });
+      });
+
+      const driveId = 'drive_tech_corp_2026';
+
+      // 1st click -> Success
+      const first = await request(applyApp).post(`/api/v1/applications/apply/${driveId}`);
+      expect(first.status).toBe(201);
+
+      // 2nd click -> Success
+      const second = await request(applyApp).post(`/api/v1/applications/apply/${driveId}`);
+      expect(second.status).toBe(201);
+
+      // 3rd click within 10s -> Blocked with 429
+      const third = await request(applyApp).post(`/api/v1/applications/apply/${driveId}`);
+      expect(third.status).toBe(429);
+      expect(third.body.message).toContain('You are submitting applications too quickly');
+    });
+  });
+
+  describe('createRedisStore', () => {
+    it('should return undefined in test environment to gracefully use MemoryStore', () => {
+      const store = createRedisStore('rl:test:');
+      expect(store).toBeUndefined();
+    });
+
+    it('should return undefined when REDIS_URL is explicitly set to false', () => {
+      const oldEnv = process.env.REDIS_URL;
+      process.env.REDIS_URL = 'false';
+
+      const store = createRedisStore('rl:test:');
+      expect(store).toBeUndefined();
+
+      process.env.REDIS_URL = oldEnv;
     });
   });
 });
