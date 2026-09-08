@@ -1,6 +1,3 @@
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
-
 export const exportToCSV = (data, filename = 'export.csv') => {
   if (!data || !data.length) {
     return;
@@ -40,10 +37,13 @@ export const exportToCSV = (data, filename = 'export.csv') => {
   document.body.removeChild(a);
 };
 
-export const exportToPDF = (data, title = 'Report', filename = 'report.pdf') => {
+export const exportToPDF = async (data, title = 'Report', filename = 'report.pdf') => {
   if (!data || !data.length) {
     return;
   }
+
+  const { default: jsPDF } = await import('jspdf');
+  await import('jspdf-autotable');
 
   const doc = new jsPDF();
   

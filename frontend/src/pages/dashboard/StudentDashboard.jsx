@@ -1,7 +1,8 @@
-import { useEffect } from 'react';
+import React, { Suspense, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { Outlet } from 'react-router-dom';
 import DashboardLayout from '../../components/dashboard/DashboardLayout';
+import RouteLoading from '../../components/common/RouteLoading';
 import { fetchProfile } from '../../features/profile/profileThunks';
 import { getNotices, fetchReadNotices } from '../../features/notices/noticeSlice';
 
@@ -16,7 +17,9 @@ const StudentDashboard = () => {
 
   return (
     <DashboardLayout>
-      <Outlet />
+      <Suspense fallback={<RouteLoading message="Loading dashboard section..." />}>
+        <Outlet />
+      </Suspense>
     </DashboardLayout>
   );
 };
