@@ -7,3 +7,5 @@ build/
 .vscode/
 *.resolved
 ci_cd_guide.md
+docs/cicd-explanation.md
+docs/docker-explanation.md
