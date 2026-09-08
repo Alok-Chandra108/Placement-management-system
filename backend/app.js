@@ -15,6 +15,7 @@ const driveRoutes = require('./routes/drive.routes');
 const applicationRoutes = require('./routes/application.routes');
 const noticeRoutes = require('./routes/notice.routes');
 const adminRoutes = require('./routes/admin.routes');
+const healthRoutes = require('./routes/health.routes');
 const errorHandler = require('./middleware/error.middleware');
 
 const app = express();
@@ -232,6 +233,10 @@ app.get('/', (req, res) => {
     version: 'v1',
   });
 });
+
+// Deep health check endpoints (bypasses rate limiters for load balancers and uptime monitors)
+app.use('/health', healthRoutes);
+app.use('/api/v1/health', healthRoutes);
 
 const { apiLimiter } = require('./middleware/rateLimiter');
 

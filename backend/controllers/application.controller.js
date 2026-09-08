@@ -3,7 +3,7 @@ const Drive = require('../models/Drive.model');
 const StudentProfile = require('../models/StudentProfile.model');
 const User = require('../models/User.model');
 const ApiResponse = require('../utils/ApiResponse');
-const { sendStatusUpdateEmail } = require('../services/email.service');
+const { queueStatusUpdateEmail, queueBulkStatusUpdateEmails } = require('../services/emailQueue.service');
 const { logger } = require('../config/logger');
 
 /**
@@ -204,14 +204,14 @@ exports.updateApplicationStatus = async (req, res, next) => {
         const drive = await Drive.findById(application.driveId).select('companyName jobRole');
 
         if (studentUser && drive) {
-          await sendStatusUpdateEmail(
-            studentUser.fullName,
-            studentUser.email,
-            drive.companyName,
-            drive.jobRole,
+          await queueStatusUpdateEmail({
+            fullName: studentUser.fullName,
+            email: studentUser.email,
+            companyName: drive.companyName,
+            jobRole: drive.jobRole,
             status,
-            application.remarks || ''
-          );
+            remarks: application.remarks || '',
+          });
         }
       } catch (emailErr) {
         // Never let email errors bubble up to the client
@@ -277,21 +277,25 @@ exports.updateBulkApplicationStatus = async (req, res, next) => {
         const userMap = new Map(users.map(u => [u._id.toString(), u]));
         const driveMap = new Map(drives.map(d => [d._id.toString(), d]));
 
+        const emailJobs = [];
         for (const application of applications) {
           const studentUser = userMap.get(application.studentId?.toString());
           const drive = driveMap.get(application.driveId?.toString());
 
           if (studentUser && drive) {
-             // Let it run asynchronously to avoid blocking the response for too long
-             sendStatusUpdateEmail(
-              studentUser.fullName,
-              studentUser.email,
-              drive.companyName,
-              drive.jobRole,
+            emailJobs.push({
+              fullName: studentUser.fullName,
+              email: studentUser.email,
+              companyName: drive.companyName,
+              jobRole: drive.jobRole,
               status,
-              remarks || ''
-            ).catch(err => logger.error({ err, applicationId: application._id, status }, 'Bulk status email notification failed'));
+              remarks: remarks || '',
+            });
           }
+        }
+
+        if (emailJobs.length > 0) {
+          await queueBulkStatusUpdateEmails(emailJobs);
         }
       } catch (emailErr) {
         logger.error({ err: emailErr, status }, 'Bulk status email notification lookup failed');
