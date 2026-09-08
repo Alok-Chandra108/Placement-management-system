@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const compression = require('compression');
 const helmet = require('helmet');
 const httpLogger = require('./middleware/httpLogger');
 const { logger } = require('./config/logger');
@@ -200,6 +201,9 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+
+// HTTP response compression (gzip/deflate for payloads)
+app.use(compression());
 
 // HTTP Request/Response logging (structured JSON via Pino)
 app.use(httpLogger);

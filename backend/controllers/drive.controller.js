@@ -2,6 +2,7 @@ const Drive = require('../models/Drive.model');
 const ApiResponse = require('../utils/ApiResponse');
 const cloudinary = require('../config/cloudinary');
 const { logger } = require('../config/logger');
+const { getCache, setCache, invalidateCache } = require('../services/cache.service');
 
 /**
  * @desc    Create a new drive
@@ -27,6 +28,9 @@ exports.createDrive = async (req, res, next) => {
 
     const drive = await Drive.create(driveData);
 
+    // Invalidate drives cache on new drive creation
+    await invalidateCache('drives:*');
+
     return ApiResponse.success(res, 'Drive created successfully', drive, 201);
   } catch (error) {
     next(error);
@@ -40,6 +44,15 @@ exports.createDrive = async (req, res, next) => {
  */
 exports.getAllDrives = async (req, res, next) => {
   try {
+    // Generate cache key based on query parameters (Cache-Aside Pattern)
+    const queryString = Object.keys(req.query).length > 0 ? JSON.stringify(req.query) : 'all';
+    const cacheKey = `drives:${queryString}`;
+
+    const cachedData = await getCache(cacheKey);
+    if (cachedData) {
+      return ApiResponse.success(res, 'Drives fetched successfully', cachedData);
+    }
+
     const filter = {};
     if (req.query.status && typeof req.query.status === 'string') {
       filter.status = req.query.status;
@@ -69,12 +82,17 @@ exports.getAllDrives = async (req, res, next) => {
       Drive.countDocuments(filter),
     ]);
 
-    return ApiResponse.success(res, 'Drives fetched successfully', {
+    const result = {
       drives,
       total,
       page,
       pages: limit > 0 ? Math.ceil(total / limit) : 1,
-    });
+    };
+
+    // Cache drives list for 60 seconds in Redis
+    await setCache(cacheKey, result, 60);
+
+    return ApiResponse.success(res, 'Drives fetched successfully', result);
   } catch (error) {
     next(error);
   }
@@ -87,11 +105,19 @@ exports.getAllDrives = async (req, res, next) => {
  */
 exports.getDriveById = async (req, res, next) => {
   try {
+    const cacheKey = `drive:${req.params.id}`;
+    const cachedDrive = await getCache(cacheKey);
+    if (cachedDrive) {
+      return ApiResponse.success(res, 'Drive details fetched successfully', cachedDrive);
+    }
+
     const drive = await Drive.findById(req.params.id);
 
     if (!drive) {
       return ApiResponse.error(res, 'Drive not found', 404);
     }
+
+    await setCache(cacheKey, drive, 60);
 
     return ApiResponse.success(res, 'Drive details fetched successfully', drive);
   } catch (error) {
@@ -212,6 +238,9 @@ exports.updateDrive = async (req, res, next) => {
       return ApiResponse.error(res, 'Drive not found', 404);
     }
 
+    // Invalidate drive list and specific drive cache
+    await invalidateCache('drives:*', `drive:${req.params.id}`);
+
     return ApiResponse.success(res, 'Drive updated successfully', drive);
   } catch (error) {
     next(error);
@@ -237,6 +266,9 @@ exports.deleteDrive = async (req, res, next) => {
 
     drive.isActive = false;
     await drive.save();
+
+    // Invalidate drive cache
+    await invalidateCache('drives:*', `drive:${req.params.id}`);
 
     return ApiResponse.success(res, 'Drive deleted successfully');
   } catch (error) {

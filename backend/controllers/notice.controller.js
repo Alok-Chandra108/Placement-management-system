@@ -4,6 +4,7 @@ const Admin = require('../models/Admin.model');
 const ApiResponse = require('../utils/ApiResponse');
 const { logger } = require('../config/logger');
 const cloudinary = require('../config/cloudinary');
+const { getCache, setCache, invalidateCache } = require('../services/cache.service');
 
 // Helper: return the correct model based on the authenticated user's role
 const getActorModel = (role) => (role === 'admin' ? Admin : User);
@@ -47,6 +48,9 @@ exports.createNotice = async (req, res, next) => {
 
     logger.info({ event: 'notice_created', noticeId: notice._id, userId: req.user.id }, 'Notice created');
 
+    // Invalidate notices cache
+    await invalidateCache('notices:*');
+
     return ApiResponse.success(res, 'Notice created successfully', notice, 201);
   } catch (error) {
     next(error);
@@ -60,6 +64,15 @@ exports.createNotice = async (req, res, next) => {
  */
 exports.getAllNotices = async (req, res, next) => {
   try {
+    // Generate cache key based on query parameters (Cache-Aside Pattern)
+    const queryString = Object.keys(req.query).length > 0 ? JSON.stringify(req.query) : 'all';
+    const cacheKey = `notices:${queryString}`;
+
+    const cachedData = await getCache(cacheKey);
+    if (cachedData) {
+      return ApiResponse.success(res, 'Notices fetched successfully', cachedData);
+    }
+
     const filter = {}; // isActive: true AND isArchived: false applied automatically by pre-find hook
 
     if (req.query.category && typeof req.query.category === 'string') {
@@ -94,7 +107,7 @@ exports.getAllNotices = async (req, res, next) => {
       Notice.countDocuments(filter),
     ]);
 
-    return ApiResponse.success(res, 'Notices fetched successfully', {
+    const result = {
       notices,
       total,
       page,
@@ -105,7 +118,12 @@ exports.getAllNotices = async (req, res, next) => {
         totalItems: total,
         itemsPerPage: limit || total,
       },
-    });
+    };
+
+    // Cache notices list for 60 seconds in Redis
+    await setCache(cacheKey, result, 60);
+
+    return ApiResponse.success(res, 'Notices fetched successfully', result);
   } catch (error) {
     next(error);
   }
@@ -121,11 +139,19 @@ exports.getNotices = exports.getAllNotices;
  */
 exports.getNoticeById = async (req, res, next) => {
   try {
+    const cacheKey = `notice:${req.params.id}`;
+    const cachedNotice = await getCache(cacheKey);
+    if (cachedNotice) {
+      return ApiResponse.success(res, 'Notice fetched successfully', cachedNotice);
+    }
+
     const notice = await Notice.findById(req.params.id).populate('postedBy', 'fullName role');
 
     if (!notice) {
       return ApiResponse.error(res, 'Notice not found', 404);
     }
+
+    await setCache(cacheKey, notice, 60);
 
     return ApiResponse.success(res, 'Notice fetched successfully', notice);
   } catch (error) {
@@ -211,6 +237,9 @@ exports.updateNotice = async (req, res, next) => {
 
     logger.info({ event: 'notice_updated', noticeId: notice._id, userId: req.user.id }, 'Notice updated');
 
+    // Invalidate notices list and specific notice cache
+    await invalidateCache('notices:*', `notice:${notice._id}`);
+
     return ApiResponse.success(res, 'Notice updated successfully', notice);
   } catch (error) {
     if (error.name === 'CastError') {
@@ -260,6 +289,9 @@ exports.deleteNotice = async (req, res, next) => {
 
     logger.info({ event: 'notice_deleted', noticeId: notice._id, userId: req.user.id }, 'Notice soft-deleted');
 
+    // Invalidate notices cache
+    await invalidateCache('notices:*', `notice:${req.params.id}`);
+
     return ApiResponse.success(res, 'Notice deleted successfully');
   } catch (error) {
     if (error.name === 'CastError') {
@@ -304,6 +336,9 @@ exports.archiveNotice = async (req, res, next) => {
 
     logger.info({ event: 'notice_archived', noticeId: notice._id, userId: req.user.id }, 'Notice archived');
 
+    // Invalidate notices cache
+    await invalidateCache('notices:*', `notice:${notice._id}`);
+
     return ApiResponse.success(res, 'Notice archived successfully', notice);
   } catch (error) {
     if (error.name === 'CastError') {
@@ -339,6 +374,9 @@ exports.restoreNotice = async (req, res, next) => {
     await notice.save();
 
     logger.info({ event: 'notice_restored', noticeId: notice._id, userId: req.user.id }, 'Notice restored');
+
+    // Invalidate notices cache
+    await invalidateCache('notices:*', `notice:${notice._id}`);
 
     return ApiResponse.success(res, 'Notice restored successfully', notice);
   } catch (error) {
