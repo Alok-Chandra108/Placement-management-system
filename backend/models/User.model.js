@@ -133,6 +133,10 @@ userSchema.methods.generateRefreshToken = function () {
   );
 };
 
+// Compound indexes for admin directory filtering and role queries
+userSchema.index({ role: 1, department: 1, createdAt: -1 });
+userSchema.index({ role: 1, createdAt: -1 });
+
 const User = mongoose.model('User', userSchema);
 
 module.exports = User;

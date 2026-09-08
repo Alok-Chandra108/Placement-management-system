@@ -42,6 +42,11 @@ const applicationSchema = new mongoose.Schema(
 // Prevent duplicate applications
 applicationSchema.index({ studentId: 1, driveId: 1 }, { unique: true });
 
+// Compound indexes for high-traffic query acceleration
+applicationSchema.index({ driveId: 1, appliedAt: -1 });
+applicationSchema.index({ driveId: 1, status: 1 });
+applicationSchema.index({ studentId: 1, appliedAt: -1 });
+
 const Application = mongoose.model('Application', applicationSchema);
 
 module.exports = Application;

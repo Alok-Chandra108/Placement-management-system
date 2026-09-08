@@ -70,6 +70,12 @@ noticeSchema.pre(/^(find|countDocuments)/, function () {
   }
 });
 
+// Compound indexes for high-traffic query acceleration
+noticeSchema.index({ isActive: 1, isArchived: 1, createdAt: -1 });
+noticeSchema.index({ isActive: 1, isArchived: 1, category: 1, createdAt: -1 });
+noticeSchema.index({ isArchived: 1, archivedAt: -1 });
+noticeSchema.index({ postedBy: 1, createdAt: -1 });
+
 const Notice = mongoose.model('Notice', noticeSchema);
 
 module.exports = Notice;

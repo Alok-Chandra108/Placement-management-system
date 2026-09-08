@@ -146,6 +146,11 @@ driveSchema.pre(/^find/, function () {
   }
 });
 
+// Compound indexes for high-traffic query acceleration
+driveSchema.index({ isActive: 1, status: 1, createdAt: -1 });
+driveSchema.index({ status: 1, registrationDeadline: 1 });
+driveSchema.index({ createdBy: 1, createdAt: -1 });
+
 const Drive = mongoose.model('Drive', driveSchema);
 
 module.exports = Drive;
