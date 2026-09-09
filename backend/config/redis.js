@@ -16,26 +16,26 @@ const connectRedis = async () => {
     const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 
     if (redisUrl === 'false') {
-      logger.info('Redis: Disabled by configuration');
+      logger.info('Redis: Disabled by configuration (REDIS_URL=false)');
       return null;
     }
 
     redisClient = createClient({
       url: redisUrl,
       socket: {
+        connectTimeout: 5000,
         reconnectStrategy: (retries) => {
-          if (retries > 10) {
-            logger.error('Redis: Maximum reconnection attempts reached');
-            return new Error('Redis reconnection failed');
+          if (retries > 5) {
+            logger.warn('Redis: Maximum reconnection attempts reached, falling back to in-memory operation');
+            return false; // Stop retrying and fall back to in-memory
           }
-          // Exponential backoff: 100ms, 200ms, 400ms, etc.
-          return Math.min(retries * 100, 3000);
+          return Math.min(retries * 200, 2000);
         },
       },
     });
 
     redisClient.on('error', (err) => {
-      logger.error({ err }, 'Redis Client Error');
+      logger.warn({ err: err.message }, 'Redis Client Warning (falling back to memory operations)');
     });
 
     redisClient.on('connect', () => {
@@ -53,8 +53,9 @@ const connectRedis = async () => {
     await redisClient.connect();
     return redisClient;
   } catch (error) {
-    logger.error({ err: error, message: error.message }, 'Redis: Failed to connect');
-    throw error;
+    logger.warn({ message: error.message }, 'Redis: Could not connect on startup - continuing with in-memory fallback');
+    redisClient = null;
+    return null;
   }
 };
 

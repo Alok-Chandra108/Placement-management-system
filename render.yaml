@@ -4,7 +4,9 @@ services:
     env: node
     rootDir: backend
     buildCommand: npm install
+    preDeployCommand: npm run migrate:up
     startCommand: npm start
+    healthCheckPath: /health
     envVars:
       - key: NODE_VERSION
         value: "20"
@@ -14,6 +16,10 @@ services:
         value: "5000"
       - key: MONGO_URI
         sync: false
+      - key: REDIS_URL
+        sync: false
+        # Set to your Upstash Redis URL (e.g. rediss://default:...@...upstash.io:6379)
+        # Or set to "false" to run in resilient in-memory fallback mode
       - key: JWT_ACCESS_SECRET
         sync: false
       - key: JWT_REFRESH_SECRET
@@ -49,3 +55,7 @@ services:
       - key: VITE_API_BASE_URL
         sync: false
         # Set this to https://<your-api-domain>/api/v1 in Render dashboard
+      - key: VITE_COLLEGE_DOMAIN
+        value: "mite.ac.in"
+      - key: VITE_COLLEGE_NAME
+        value: "Mangalore Institute of Technology & Engineering"

@@ -23,14 +23,14 @@ CMD ["npm", "test"]
 # Stage 4: Production Environment
 FROM base AS production
 RUN npm install --omit=dev
-COPY . .
-ENV PORT=5000
-ENV NODE_ENV=production
 # Create non-root user (node user exists in official node images)
 RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001 -G nodejs
+COPY --chown=nodejs:nodejs . .
 USER nodejs
+ENV PORT=5000
+ENV NODE_ENV=production
 EXPOSE 5000
-# Healthcheck using native Node (wget not in alpine by default)
-HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:5000/', (r) => {r.statusCode === 200 ? process.exit(0) : process.exit(1)}).on('error', () => process.exit(1))"
+# Healthcheck using native Node probing deep health endpoint
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:5000/health', (r) => { (r.statusCode === 200 || r.statusCode === 503) ? process.exit(0) : process.exit(1); }).on('error', () => process.exit(1));"
 CMD ["npm", "start"]

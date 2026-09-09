@@ -18,11 +18,8 @@ RUN npm run build
 
 # Stage 4: Serve the app with Nginx (Production)
 FROM nginx:alpine AS production
-# Create non-root user (nginx user exists in official nginx images)
-RUN addgroup -g 1001 -S nginxjs && adduser -S nginxjs -u 1001 -G nginxjs
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
-USER nginxjs
 EXPOSE 80
 # Healthcheck using native wget (available in nginx:alpine)
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \

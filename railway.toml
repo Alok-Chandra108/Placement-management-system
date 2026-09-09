@@ -1,0 +1,16 @@
+# Railway Deployment Configuration for CPMS Backend
+# Documentation: https://docs.railway.app/reference/config-as-code
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "backend/Dockerfile"
+dockerfileTarget = "production"
+
+[deploy]
+healthcheckPath = "/health"
+healthcheckTimeout = 60
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5
+
+# Pre-deploy migration command ensures MongoDB schema/indexes are up to date
+preDeployCommand = "npm run migrate:up"

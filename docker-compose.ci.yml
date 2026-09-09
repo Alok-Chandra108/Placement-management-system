@@ -10,6 +10,7 @@ services:
       target: test   # Uses the test stage: npm install (all deps including jest)
     environment:
       - NODE_ENV=test
+      - PORT=5000
       - MONGO_URI=mongodb://mongo:27017/cpms_test
       - REDIS_URL=redis://redis:6379
       - JWT_ACCESS_SECRET=test-access-secret-at-least-32-chars-long
@@ -23,16 +24,20 @@ services:
       - BREVO_API_KEY=xkeysib-test-key
       - BREVO_SENDER_EMAIL=test@example.com
     depends_on:
-      - mongo
-      - redis
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     # CMD from the test stage already runs npm test
 
-  # Frontend build verification (optional - runs build to catch compile errors)
+  # Frontend build verification (runs build to catch compile/bundle errors)
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
       target: build
+    environment:
+      - VITE_API_BASE_URL=http://localhost:5000/api/v1
     command: npm run build
 
   mongo:
@@ -40,12 +45,24 @@ services:
     tmpfs:
       - /data/db  # Use in-memory storage for faster tests
     command: mongod --quiet --bind_ip_all
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 2s
+      timeout: 2s
+      retries: 10
+      start_period: 2s
 
   redis:
     image: redis:alpine
     tmpfs:
       - /data  # In-memory for tests
     command: redis-server --save "" --appendonly no
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 2s
+      retries: 10
+      start_period: 1s
 
 networks:
   default:

@@ -10,7 +10,8 @@ services:
       - CHOKIDAR_USEPOLLING=true
       - CHOKIDAR_INTERVAL=300
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
     networks:
       - cpms-network
 
@@ -30,7 +31,7 @@ services:
       - cpms-network
 
   redis:
-    image: redis:alpine
+    image: redis:7-alpine
     ports:
       - "6379:6379"
     volumes:
@@ -38,6 +39,12 @@ services:
     networks:
       - cpms-network
     command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 2s
 
 networks:
   cpms-network:

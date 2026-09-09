@@ -9,10 +9,17 @@ services:
     env_file:
       - ./backend/.env
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
     networks:
       - cpms-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5000/health', (r) => { (r.statusCode === 200 || r.statusCode === 503) ? process.exit(0) : process.exit(1); }).on('error', () => process.exit(1));"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     deploy:
       resources:
         limits:
@@ -35,7 +42,8 @@ services:
     ports:
       - "80:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
       - cpms-network
     restart: unless-stopped
@@ -54,7 +62,7 @@ services:
         max-file: "3"
 
   redis:
-    image: redis:alpine@sha256:8f7e6d5c4b3a2f1e0d9c8b7a6f5e4d3c2b1a0f9e8d7c6b5a4f3e2d1c0b9a8f7e6
+    image: redis:7-alpine
     ports:
       - "6379:6379"
     volumes:
@@ -63,6 +71,12 @@ services:
       - cpms-network
     command: redis-server --appendonly yes --maxmemory-policy allkeys-lru
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 3s
     deploy:
       resources:
         limits:
