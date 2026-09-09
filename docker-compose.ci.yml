@@ -24,10 +24,8 @@ services:
       - BREVO_API_KEY=xkeysib-test-key
       - BREVO_SENDER_EMAIL=test@example.com
     depends_on:
-      mongo:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      - mongo
+      - redis
     # CMD from the test stage already runs npm test
 
   # Frontend build verification (runs build to catch compile/bundle errors)
@@ -45,24 +43,12 @@ services:
     tmpfs:
       - /data/db  # Use in-memory storage for faster tests
     command: mongod --quiet --bind_ip_all
-    healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 2s
-      timeout: 2s
-      retries: 10
-      start_period: 2s
 
   redis:
     image: redis:alpine
     tmpfs:
       - /data  # In-memory for tests
     command: redis-server --save "" --appendonly no
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 2s
-      timeout: 2s
-      retries: 10
-      start_period: 1s
 
 networks:
   default:
