@@ -94,6 +94,9 @@ export const refreshAccessToken = createAsyncThunk(
       return data;
     } catch (error) {
       // Clear session only after all retries are exhausted
+      try {
+        localStorage.removeItem('hasSession');
+      } catch {}
       dispatch(clearCredentials());
       dispatch(clearProfileState());
       dispatch(clearApplications());

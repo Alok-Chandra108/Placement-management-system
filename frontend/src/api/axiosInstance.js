@@ -82,6 +82,9 @@ axiosInstance.interceptors.response.use(
         processQueue(refreshError, null);
 
         // Logout user
+        try {
+          localStorage.removeItem('hasSession');
+        } catch {}
         if (storeRef) {
           storeRef.dispatch({ type: 'auth/clearCredentials' });
         }

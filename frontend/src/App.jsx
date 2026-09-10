@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Loader2 } from 'lucide-react';
 import AppRouter from './routes/AppRouter';
 import { refreshAccessToken } from './features/auth/authThunks';
+import { setInitialized } from './features/auth/authSlice';
 import { ConfirmProvider } from './context/ConfirmContext';
 
 function App() {
@@ -13,6 +14,19 @@ function App() {
   const [slowLoad, setSlowLoad] = useState(false);
 
   useEffect(() => {
+    let hasSession = false;
+    try {
+      hasSession = localStorage.getItem('hasSession') === 'true';
+    } catch {
+      hasSession = false;
+    }
+
+    // If no prior session hint, mark initialized immediately without waking sleeping backend
+    if (!hasSession) {
+      dispatch(setInitialized());
+      return;
+    }
+
     dispatch(refreshAccessToken());
     // If initialization takes longer than 5s, show a hint that the server is waking up
     const timer = setTimeout(() => setSlowLoad(true), 5000);

@@ -1,11 +1,21 @@
 import { createSlice } from '@reduxjs/toolkit';
 
+// Safe helper to check for previous login session hint in localStorage
+const hasSessionHint = () => {
+  try {
+    return typeof window !== 'undefined' && localStorage.getItem('hasSession') === 'true';
+  } catch {
+    return false;
+  }
+};
+
 const initialState = {
   user: null,
   accessToken: null,
   role: null,
   isAuthenticated: false,
-  isInitialized: false,
+  // If no prior session hint exists, initialize immediately (0ms) so public pages like /login load instantly
+  isInitialized: !hasSessionHint(),
   loading: false,
   error: null,
 };
@@ -23,7 +33,11 @@ const authSlice = createSlice({
       state.isInitialized = true;
       state.loading = false;
       state.error = null;
-      // Refresh token is now stored in httpOnly cookie (backend handles this)
+      try {
+        localStorage.setItem('hasSession', 'true');
+      } catch {
+        // Ignore quota/storage errors in restrictive environments
+      }
     },
     setAccessToken: (state, action) => {
       state.accessToken = action.payload;
@@ -36,7 +50,11 @@ const authSlice = createSlice({
       state.isInitialized = true;
       state.loading = false;
       state.error = null;
-      // Refresh token cleared via httpOnly cookie by backend on logout
+      try {
+        localStorage.removeItem('hasSession');
+      } catch {
+        // Ignore storage errors
+      }
     },
     setInitialized: (state) => {
       state.isInitialized = true;
