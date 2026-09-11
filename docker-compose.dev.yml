@@ -9,9 +9,6 @@ services:
       - FRONTEND_URL=http://localhost:5173
       - CHOKIDAR_USEPOLLING=true
       - CHOKIDAR_INTERVAL=300
-    depends_on:
-      redis:
-        condition: service_healthy
     networks:
       - cpms-network
 
@@ -30,25 +27,8 @@ services:
     networks:
       - cpms-network
 
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis-data:/data
-    networks:
-      - cpms-network
-    command: redis-server --appendonly yes
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-      start_period: 2s
 
 networks:
   cpms-network:
     driver: bridge
 
-volumes:
-  redis-data:

@@ -47,7 +47,6 @@ const redactPaths = [
   'CLOUDINARY_API_KEY',
   'RESEND_API_KEY',
   'MONGO_URI',
-  'REDIS_URL',
   'MONGODB_URI',
 ];
 

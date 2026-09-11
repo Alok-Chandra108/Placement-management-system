@@ -120,7 +120,7 @@ exports.getAllNotices = async (req, res, next) => {
       },
     };
 
-    // Cache notices list for 60 seconds in Redis
+    // Cache notices list for 60 seconds in memory
     await setCache(cacheKey, result, 60);
 
     return ApiResponse.success(res, 'Notices fetched successfully', result);

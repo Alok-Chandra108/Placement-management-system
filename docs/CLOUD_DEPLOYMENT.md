@@ -19,13 +19,12 @@ Comprehensive deployment reference for the **Campus Placement Management System 
                           │   Node.js 20 Express API    │
                           │   https://api.yourdomain    │
                           └──────┬───────────────┬──────┘
-                                 │               │
-                 Mongoose / Pool │               │ Redis Protocol (TLS)
-                                 ▼               ▼
-         ┌─────────────────────────────┐   ┌─────────────────────────────┐
-         │     MongoDB Atlas (M0/M10)  │   │     Upstash Redis (Free)    │
-         │   Database & Schema Indexes │   │   Cache, Queue & Limiter    │
-         └─────────────────────────────┘   └─────────────────────────────┘
+                  Mongoose / Pool │
+                                  ▼
+          ┌─────────────────────────────┐
+          │     MongoDB Atlas (M0/M10)  │
+          │   Database & Schema Indexes │
+          └─────────────────────────────┘
 ```
 
 ---
@@ -43,7 +42,7 @@ The backend is configured as a native Node.js web service managed via `render.ya
 | `NODE_ENV` | String | `production` | Enables production optimisations |
 | `PORT` | Number | `5000` | Port served by Express |
 | `MONGO_URI` | Secret | `mongodb+srv://user:pass@cluster.mongodb.net/cpms?appName=CPMS` | MongoDB connection string |
-| `REDIS_URL` | Secret | `rediss://default:token@...upstash.io:6379` *(or `false`)* | Upstash Redis connection string |
+
 | `JWT_ACCESS_SECRET` | Secret | `64-character-hex-random-string` | Access token JWT secret |
 | `JWT_REFRESH_SECRET` | Secret | `different-64-char-hex-string` | Refresh token JWT secret |
 | `FRONTEND_URL` | String | `https://cpms.vercel.app` | Allowed CORS origins (HTTPS only) |
@@ -55,39 +54,11 @@ The backend is configured as a native Node.js web service managed via `render.ya
 
 ### Built-in Automated Features
 - **Database Migrations**: Configured with `preDeployCommand: npm run migrate:up`. Before every deployment goes live, Render automatically applies any pending MongoDB compound index migrations.
-- **Deep Health Probing**: Configured with `healthCheckPath: /health`. Render tests both MongoDB connection and Redis ping before routing traffic to a newly deployed worker.
+- **Deep Health Probing**: Configured with `healthCheckPath: /health`. Render tests MongoDB connection before routing traffic to a newly deployed worker.
 
 ---
 
-## 2. Upstash Redis Integration (Free Tier)
 
-CPMS uses Redis for three features:
-1. **Cache-aside** for active job drives and institutional notices (sub-millisecond loads).
-2. **Distributed Rate Limiting** for campus Wi-Fi / shared IP protection.
-3. **Asynchronous Email Queue** for non-blocking batch notification dispatches.
-
-### How to Provision Free Upstash Redis
-1. Visit [console.upstash.com](https://console.upstash.com/) and create a free account.
-2. Click **Create Database**:
-   - **Name**: `cpms-redis`
-   - **Type**: Regional
-   - **Primary Region**: Select the same region as your Render backend (e.g., `AWS - eu-west-1` or `AWS - ap-southeast-1` or `AWS - us-east-1`).
-   - **Eviction**: Enabled (e.g. `allkeys-lru`).
-3. Under the **Details** tab, locate **Connect to your database** $\rightarrow$ select **Node.js** or **ioredis** and copy the `rediss://...` connection string.
-4. Add it to Render Environment Variables:
-   ```env
-   REDIS_URL=rediss://default:YOUR_TOKEN@YOUR_HOST.upstash.io:6379
-   ```
-
-### Resilient Fallback Mode (Running Without Redis)
-If you prefer not to use Redis, simply set:
-```env
-REDIS_URL=false
-```
-The CPMS backend is programmed to detect this and gracefully fall back to:
-- Direct indexed MongoDB queries (taking only ~2–5 ms).
-- In-memory rate limiting with user ID keying.
-- In-memory email queuing.
 
 ---
 
@@ -120,18 +91,13 @@ The frontend is a React 19 + Vite Single Page Application configured with code s
 
 ## 4. Railway Deployment (Alternative PaaS)
 
-Railway allows one-click full-stack deployment with integrated Redis.
+Railway allows one-click full-stack deployment.
 
 ### Deploying to Railway
 1. Install the Railway CLI or link via [railway.app](https://railway.app/).
 2. The project contains a pre-configured [railway.toml](file:///c:/Users/Alok%20Chandra/cpms-mini-project/railway.toml).
 3. In Railway Dashboard:
-   - Click **+ New** $\rightarrow$ **Database** $\rightarrow$ **Add Redis**.
    - Click **+ New** $\rightarrow$ **GitHub Repo** $\rightarrow$ Select `cpms-mini-project`.
-   - Under backend service variables, reference Railway's internal Redis:
-     ```env
-     REDIS_URL=${{Redis.REDIS_URL}}
-     ```
    - Railway will automatically run `npm run migrate:up` and monitor `/health`.
 
 ---
@@ -153,7 +119,7 @@ The workflow in `.github/workflows/ci.yml` builds and pushes multi-platform Dock
    - **Protocol**: `HTTP`
    - **Path**: `/health`
    - **Interval**: 20s, **Timeout**: 5s, **Healthy threshold**: 2
-5. Enter environment variables matching your MongoDB Atlas and Upstash / ElastiCache Redis endpoints.
+5. Enter environment variables matching your MongoDB Atlas endpoints.
 
 ---
 

@@ -1,7 +1,6 @@
 require('dotenv').config();
 const app = require('./app');
 const connectDB = require('./config/db');
-const { connectRedis } = require('./config/redis');
 const { startNoticeArchiveCron } = require('./services/noticeArchiveCron');
 const { logger } = require('./config/logger');
 
@@ -31,7 +30,6 @@ const validateEnv = () => {
   const optional = [
     { key: 'PORT', default: '5000', description: 'Server port' },
     { key: 'NODE_ENV', default: 'development', description: 'Environment (development/production)' },
-    { key: 'REDIS_URL', default: 'redis://localhost:6379', description: 'Redis connection URL' },
     { key: 'JWT_ACCESS_EXPIRY', default: '15m', description: 'JWT access token expiry' },
     { key: 'JWT_REFRESH_EXPIRY', default: '7d', description: 'JWT refresh token expiry' },
     { key: 'ADMIN_EMAIL', default: '11mt25mca082-t@mite.ac.in', description: 'Admin email for seeding (optional)' },
@@ -103,18 +101,6 @@ const validateEnv = () => {
     }
   }
 
-  // Validate REDIS_URL scheme
-  if (process.env.REDIS_URL) {
-    try {
-      const parsed = new URL(process.env.REDIS_URL);
-      if (parsed.protocol !== 'redis:' && parsed.protocol !== 'rediss:') {
-        warnings.push({ key: 'REDIS_URL', description: 'Redis URL should use redis:// or rediss:// protocol', note: 'Current protocol: ' + parsed.protocol });
-      }
-    } catch {
-      warnings.push({ key: 'REDIS_URL', description: 'Redis URL is not a valid URL format' });
-    }
-  }
-
   // Validate Cloudinary credentials format (if set)
   if (process.env.CLOUDINARY_API_KEY && !/^\d+$/.test(process.env.CLOUDINARY_API_KEY)) {
     warnings.push({ key: 'CLOUDINARY_API_KEY', description: 'Cloudinary API key should be numeric', note: 'Format check failed' });
@@ -161,7 +147,6 @@ const validateEnv = () => {
     env: process.env.NODE_ENV,
     port: process.env.PORT,
     mongoConfigured: !!process.env.MONGO_URI,
-    redisUrl: process.env.REDIS_URL,
     frontendUrl: process.env.FRONTEND_URL || 'not set (dev defaults)',
     cloudinaryConfigured: !!process.env.CLOUDINARY_CLOUD_NAME,
     emailConfigured: !!process.env.BREVO_API_KEY,
@@ -220,12 +205,6 @@ const gracefulShutdown = async (signal) => {
       logger.info('MongoDB connection closed gracefully');
     }
 
-    // Close Redis connection gracefully
-    logger.info('Closing Redis connection...');
-    const { disconnectRedis } = require('./config/redis');
-    await disconnectRedis();
-    logger.info('Redis connection closed gracefully');
-
     logger.info('Graceful shutdown complete');
     process.exit(0);
   } catch (error) {
@@ -242,7 +221,6 @@ process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 const startServer = async () => {
   try {
     await connectDB();
-    await connectRedis();
 
     // Start scheduled background jobs
     // In cluster mode (PM2 / Node cluster), run cron only on primary worker (instance 0) to avoid duplicate jobs

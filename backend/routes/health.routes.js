@@ -1,6 +1,5 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const { getRedisClient } = require('../config/redis');
 
 const router = express.Router();
 
@@ -36,27 +35,7 @@ router.get('/', async (req, res) => {
     isDbHealthy = false;
   }
 
-  // 2. Probe Redis
-  let redisStatus = 'disconnected';
-  let redisLatencyMs = null;
-
-  if (process.env.REDIS_URL === 'false') {
-    redisStatus = 'disabled';
-  } else {
-    try {
-      const redisClient = getRedisClient();
-      if (redisClient && redisClient.isOpen) {
-        const rPingStart = Date.now();
-        await redisClient.ping();
-        redisLatencyMs = Date.now() - rPingStart;
-        redisStatus = 'connected';
-      }
-    } catch {
-      redisStatus = 'error';
-    }
-  }
-
-  // 3. System Metrics
+  // 2. System Metrics
   const memUsage = process.memoryUsage();
   const uptimeSeconds = Math.floor(process.uptime());
 
@@ -67,10 +46,6 @@ router.get('/', async (req, res) => {
   if (!isDbHealthy) {
     overallStatus = 'unhealthy';
     statusCode = 503; // Primary database unavailable
-  } else if (redisStatus === 'disconnected' || redisStatus === 'error') {
-    // Secondary cache/limiter service degraded
-    overallStatus = 'degraded';
-    statusCode = 200;
   }
 
   return res.status(statusCode).json({
@@ -91,10 +66,6 @@ router.get('/', async (req, res) => {
       database: {
         status: dbStatus,
         latencyMs: dbLatencyMs,
-      },
-      redis: {
-        status: redisStatus,
-        latencyMs: redisLatencyMs,
       },
     },
   });

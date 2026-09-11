@@ -1,36 +1,33 @@
-const redisConfig = require('../config/redis');
 const { logger } = require('../config/logger');
 
+const cache = new Map();
 const DEFAULT_TTL_SECONDS = 60; // 60 seconds TTL for high-traffic read endpoints
 
 /**
- * Retrieve parsed JSON value from Redis by key.
- * Returns parsed object, or null if cache miss, client not ready, or error.
+ * Retrieve parsed JSON value from memory cache by key.
  *
  * @param {string} key
  * @returns {Promise<any|null>}
  */
 const getCache = async (key) => {
   try {
-    const redisClient = redisConfig.getRedisClient();
-    if (!redisClient || !redisClient.isOpen) {
+    const item = cache.get(key);
+    if (!item) return null;
+
+    if (Date.now() > item.expiry) {
+      cache.delete(key);
       return null;
     }
 
-    const data = await redisClient.get(key);
-    if (!data) {
-      return null;
-    }
-
-    return JSON.parse(data);
+    return item.value;
   } catch (err) {
-    logger.warn({ err: err.message, key }, 'Redis getCache non-critical error (falling back to database)');
+    logger.warn({ err: err.message, key }, 'Cache getCache non-critical error');
     return null;
   }
 };
 
 /**
- * Store a JSON-serializable value in Redis with a TTL.
+ * Store a value in memory cache with a TTL.
  *
  * @param {string} key
  * @param {any} value
@@ -39,15 +36,13 @@ const getCache = async (key) => {
  */
 const setCache = async (key, value, ttlSeconds = DEFAULT_TTL_SECONDS) => {
   try {
-    const redisClient = redisConfig.getRedisClient();
-    if (!redisClient || !redisClient.isOpen) {
-      return false;
-    }
-
-    await redisClient.setEx(key, ttlSeconds, JSON.stringify(value));
+    cache.set(key, {
+      value, // store raw value to save parsing overhead
+      expiry: Date.now() + (ttlSeconds * 1000)
+    });
     return true;
   } catch (err) {
-    logger.warn({ err: err.message, key }, 'Redis setCache non-critical error');
+    logger.warn({ err: err.message, key }, 'Cache setCache non-critical error');
     return false;
   }
 };
@@ -60,27 +55,23 @@ const setCache = async (key, value, ttlSeconds = DEFAULT_TTL_SECONDS) => {
  */
 const invalidateCache = async (...keysOrPatterns) => {
   try {
-    const redisClient = redisConfig.getRedisClient();
-    if (!redisClient || !redisClient.isOpen) {
-      return false;
-    }
+    for (const pattern of keysOrPatterns) {
+      if (!pattern) continue;
 
-    for (const item of keysOrPatterns) {
-      if (!item) continue;
-
-      if (item.includes('*')) {
-        // Pattern-based flush
-        const matchingKeys = await redisClient.keys(item);
-        if (matchingKeys && matchingKeys.length > 0) {
-          await redisClient.del(matchingKeys);
+      if (pattern.includes('*')) {
+        const regex = new RegExp('^' + pattern.replace(/\*/g, '.*') + '$');
+        for (const key of cache.keys()) {
+          if (regex.test(key)) {
+            cache.delete(key);
+          }
         }
       } else {
-        await redisClient.del(item);
+        cache.delete(pattern);
       }
     }
     return true;
   } catch (err) {
-    logger.warn({ err: err.message }, 'Redis invalidateCache non-critical error');
+    logger.warn({ err: err.message }, 'Cache invalidateCache non-critical error');
     return false;
   }
 };

@@ -89,7 +89,7 @@ exports.getAllDrives = async (req, res, next) => {
       pages: limit > 0 ? Math.ceil(total / limit) : 1,
     };
 
-    // Cache drives list for 60 seconds in Redis
+    // Cache drives list for 60 seconds in memory
     await setCache(cacheKey, result, 60);
 
     return ApiResponse.success(res, 'Drives fetched successfully', result);

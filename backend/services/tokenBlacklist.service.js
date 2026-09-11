@@ -1,5 +1,20 @@
-const { getRedisClient } = require('../config/redis');
 const { logger } = require('../config/logger');
+
+const blacklist = new Map();
+
+// Periodic cleanup to prevent memory leaks
+// Runs every hour
+const cleanupInterval = setInterval(() => {
+  const now = Math.floor(Date.now() / 1000);
+  for (const [key, expiry] of blacklist.entries()) {
+    if (expiry <= now) {
+      blacklist.delete(key);
+    }
+  }
+}, 60 * 60 * 1000);
+
+// Prevent the interval from keeping the Node process alive
+cleanupInterval.unref();
 
 /**
  * Add a token hash to the blacklist
@@ -9,25 +24,16 @@ const { logger } = require('../config/logger');
  */
 const addToBlacklist = async (tokenHash, expiryTimestamp) => {
   try {
-    const redisClient = getRedisClient();
-    if (!redisClient) {
-      logger.error('Token Blacklist: Redis client not available');
-      return false;
-    }
-
     const now = Math.floor(Date.now() / 1000);
     const ttl = expiryTimestamp - now;
 
-    // Only add to blacklist if token hasn't already expired
     if (ttl <= 0) {
       logger.warn({ tokenHash: tokenHash.substring(0, 8) }, 'Token already expired, skipping blacklist');
       return true;
     }
 
-    // Store token hash with TTL matching token expiry
-    // Key format: blacklist:token:<hash>
     const key = `blacklist:token:${tokenHash}`;
-    await redisClient.setEx(key, ttl, '1');
+    blacklist.set(key, expiryTimestamp);
 
     logger.info({ tokenHash: tokenHash.substring(0, 8), ttl }, 'Added token to blacklist');
     return true;
@@ -44,21 +50,23 @@ const addToBlacklist = async (tokenHash, expiryTimestamp) => {
  */
 const isBlacklisted = async (tokenHash) => {
   try {
-    const redisClient = getRedisClient();
-    if (!redisClient) {
-      logger.error('Token Blacklist: Redis client not available');
-      // Fail closed: if Redis is down, reject tokens to be safe
-      return true;
+    const key = `blacklist:token:${tokenHash}`;
+    const expiry = blacklist.get(key);
+    
+    if (!expiry) {
+      return false;
     }
 
-    const key = `blacklist:token:${tokenHash}`;
-    const result = await redisClient.exists(key);
+    const now = Math.floor(Date.now() / 1000);
+    if (expiry <= now) {
+      blacklist.delete(key);
+      return false;
+    }
 
-    return result === 1;
+    return true;
   } catch (error) {
     logger.error({ err: error, message: error.message, tokenHash: tokenHash.substring(0, 8) }, 'Failed to check token blacklist');
-    // Fail closed: if check fails, reject the token
-    return true;
+    return true; // Fail closed
   }
 };
 
@@ -69,14 +77,8 @@ const isBlacklisted = async (tokenHash) => {
  */
 const removeFromBlacklist = async (tokenHash) => {
   try {
-    const redisClient = getRedisClient();
-    if (!redisClient) {
-      logger.error('Token Blacklist: Redis client not available');
-      return false;
-    }
-
     const key = `blacklist:token:${tokenHash}`;
-    await redisClient.del(key);
+    blacklist.delete(key);
 
     logger.info({ tokenHash: tokenHash.substring(0, 8) }, 'Removed token from blacklist');
     return true;

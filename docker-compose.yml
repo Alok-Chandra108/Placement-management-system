@@ -8,9 +8,6 @@ services:
       - "5000:5000"
     env_file:
       - ./backend/.env
-    depends_on:
-      redis:
-        condition: service_healthy
     networks:
       - cpms-network
     restart: unless-stopped
@@ -61,39 +58,8 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis-data:/data
-    networks:
-      - cpms-network
-    command: redis-server --appendonly yes --maxmemory-policy allkeys-lru
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-      start_period: 3s
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 256M
-        reservations:
-          cpus: '0.1'
-          memory: 64M
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
 
 networks:
   cpms-network:
     driver: bridge
 
-volumes:
-  redis-data:

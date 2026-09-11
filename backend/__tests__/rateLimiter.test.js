@@ -10,7 +10,6 @@ const {
   applyLimiter,
   getAuthenticatedKey,
   getPublicAuthKey,
-  createRedisStore,
 } = require('../middleware/rateLimiter');
 
 describe('Rate Limiter - Campus Wi-Fi & Shared IP Protection', () => {
@@ -230,20 +229,5 @@ describe('Rate Limiter - Campus Wi-Fi & Shared IP Protection', () => {
     });
   });
 
-  describe('createRedisStore', () => {
-    it('should return undefined in test environment to gracefully use MemoryStore', () => {
-      const store = createRedisStore('rl:test:');
-      expect(store).toBeUndefined();
-    });
 
-    it('should return undefined when REDIS_URL is explicitly set to false', () => {
-      const oldEnv = process.env.REDIS_URL;
-      process.env.REDIS_URL = 'false';
-
-      const store = createRedisStore('rl:test:');
-      expect(store).toBeUndefined();
-
-      process.env.REDIS_URL = oldEnv;
-    });
-  });
 });

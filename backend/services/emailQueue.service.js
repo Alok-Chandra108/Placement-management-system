@@ -1,11 +1,9 @@
-const { getRedisClient } = require('../config/redis');
 const { logger } = require('../config/logger');
 
-const QUEUE_KEY = 'cpms:email:queue';
 const MAX_RETRIES = 3;
 const DISPATCH_INTERVAL_MS = 200; // 5 emails/sec max rate limit
 
-// In-memory fallback queue for local development/testing without Redis
+// In-memory queue
 const memoryQueue = [];
 
 let isProcessing = false;
@@ -17,7 +15,7 @@ let stats = {
 };
 
 /**
- * Enqueue an email job into Redis or memory fallback
+ * Enqueue an email job into memory
  * @param {Object} job - { type, data, attempts }
  */
 const enqueueJob = async (job) => {
@@ -28,43 +26,18 @@ const enqueueJob = async (job) => {
   };
 
   stats.enqueued++;
-
-  try {
-    const redisClient = getRedisClient();
-    if (redisClient && redisClient.isOpen) {
-      await redisClient.rPush(QUEUE_KEY, JSON.stringify(payload));
-      return true;
-    }
-  } catch (redisErr) {
-    logger.warn({ err: redisErr }, 'EmailQueue: Redis push failed, falling back to in-memory queue');
-  }
-
-  // Fallback to in-memory queue
   memoryQueue.push(payload);
   return true;
 };
 
 /**
- * Pop the next job from Redis or memory fallback
+ * Pop the next job from memory
  * @returns {Promise<Object|null>}
  */
 const dequeueJob = async () => {
-  try {
-    const redisClient = getRedisClient();
-    if (redisClient && redisClient.isOpen) {
-      const raw = await redisClient.lPop(QUEUE_KEY);
-      if (raw) {
-        return JSON.parse(raw);
-      }
-    }
-  } catch (redisErr) {
-    logger.warn({ err: redisErr }, 'EmailQueue: Redis pop failed, checking in-memory queue');
-  }
-
   if (memoryQueue.length > 0) {
     return memoryQueue.shift();
   }
-
   return null;
 };
 
@@ -188,21 +161,11 @@ const queueBulkStatusUpdateEmails = async (jobs) => {
  * Public API: Get current queue statistics
  */
 const getQueueStats = async () => {
-  let redisQueueLength = 0;
-  try {
-    const redisClient = getRedisClient();
-    if (redisClient && redisClient.isOpen) {
-      redisQueueLength = await redisClient.lLen(QUEUE_KEY);
-    }
-  } catch {
-    redisQueueLength = 0;
-  }
-
   return {
     ...stats,
-    pending: redisQueueLength + memoryQueue.length,
+    pending: memoryQueue.length,
     inMemoryCount: memoryQueue.length,
-    redisCount: redisQueueLength,
+    redisCount: 0,
   };
 };
 

@@ -29,8 +29,8 @@ CPMS is built on the **MERN** stack, focusing on professional aesthetics, secure
 - **Drive Reports**: Admin endpoint to generate per-drive applicant reports.
 - **Transactional Email (Brevo)**: All system emails (student OTP, admin OTP, password reset, status updates) are delivered via the **Brevo HTTP API** — bypassing SMTP restrictions on cloud providers like Render.
 - **Database Migrations (`migrate-mongo`)**: Managed schema migrations and compound performance indexes for high-throughput queries.
-- **Deep Health & Readiness Probing**: Production `/health` and `/api/v1/health` monitoring endpoints probing MongoDB connection latency, Redis ping, memory metrics (RSS, Heap), and process uptime.
-- **Redis Caching & Asynchronous Queue**: Sub-millisecond read caching for drives and notices with an asynchronous email notification queue (with graceful, non-fatal in-memory fallback).
+- **Deep Health & Readiness Probing**: Production `/health` and `/api/v1/health` monitoring endpoints probing MongoDB connection latency, memory metrics (RSS, Heap), and process uptime.
+- **In-Memory Caching & Queue**: Sub-millisecond read caching for drives and notices with an asynchronous in-memory email notification queue.
 - **Campus Wi-Fi Shared IP Protection**: User-ID keyed distributed rate limiting ensuring students in campus computer labs or shared college NAT IPs are never throttled.
 - **Frontend Code Splitting & Vendor Chunking**: Dynamic route-level React 19 lazy loading with Rollup vendor chunking (`vendor-react`, `vendor-redux`, `vendor-charts`, `vendor-forms`, `vendor-motion`, `vendor-ui`).
 - **Professional UI**: Premium corporate UI with Tailwind CSS v3, Framer Motion animations, and Lucide icons.
@@ -65,13 +65,13 @@ CPMS is built on the **MERN** stack, focusing on professional aesthetics, secure
 - **Environment**: Node.js 20
 - **Framework**: Express.js v5 (with PM2 multi-core cluster support)
 - **Database**: MongoDB (Mongoose ODM v9) + `migrate-mongo` migration engine
-- **Cache & Queue**: Redis 7 / Upstash Redis (cache-aside, distributed rate limiting, email worker queue with in-memory fallback)
+- **Cache & Queue**: In-memory caching and queuing system for sub-millisecond read caching and email queuing.
 - **File Storage**: Cloudinary (resumes via `multer-storage-cloudinary`; images & PDFs via `multer`)
 - **Authentication**: JWT (Access Token 15m + Refresh Token 7d, stored as bcrypt hash in DB) + Two-Step Admin OTP
 - **Email Service**: **Brevo HTTP API** — OTP, admin OTP, password reset, and application status update emails
 - **Scheduled Jobs**: `node-cron` — daily notice auto-archive (30 days) + purge (60 days) at midnight IST (cluster-safe instance-0 worker)
 - **Validation**: `express-validator` (per-route validation chains)
-- **Security**: Helmet, `express-rate-limit`, `rate-limit-redis`, bcrypt, httpOnly cookies, CSRF protection, Mongo Sanitize, XSS-clean
+- **Security**: Helmet, `express-rate-limit`, bcrypt, httpOnly cookies, CSRF protection, Mongo Sanitize, XSS-clean
 - **Logging**: Structured JSON logging via Pino & `pino-http` (Morgan in dev)
 - **Compression**: Response compression (`compression` gzip/deflate)
 - **Health Checks**: Deep readiness probing (`/health` & `/api/v1/health`)
@@ -80,7 +80,6 @@ CPMS is built on the **MERN** stack, focusing on professional aesthetics, secure
 ### Deployment & DevOps
 - **Cloud PaaS**: Render (Backend web service with `preDeployCommand` migrations & `/health` checks)
 - **Cloud Edge**: Vercel (Frontend React SPA deployment with immutable asset caching)
-- **Cloud Redis**: Upstash Redis (serverless Redis with TLS & automatic in-memory fallback)
 - **Alternative PaaS**: Railway (`railway.toml` 1-click template)
 - **Enterprise Cloud**: AWS (ECS Fargate / App Runner via multi-arch Docker images)
 - **Containerization**: Docker & Docker Compose (multi-stage builds, dev & prod orchestration with health checks)
@@ -100,7 +99,7 @@ cpms-mini-project/
 │   ├── CLOUD_DEPLOYMENT.md       # Complete multi-cloud ops guide (Render, Vercel, Upstash, AWS)
 │   ├── cicd-explanation.md       # CI/CD deep dive & concepts
 │   └── docker-explanation.md     # Docker containerization reference
-├── docker-compose.yml            # Production Docker Compose orchestration (backend, frontend, redis)
+├── docker-compose.yml            # Production Docker Compose orchestration (backend, frontend)
 ├── docker-compose.ci.yml         # Isolated CI test orchestration with health-checked services
 ├── docker-compose.dev.yml        # Development Docker Compose with hot-reload volume mounts
 ├── render.yaml                   # Render Blueprint config (health checks, pre-deploy migrations, Upstash)
@@ -110,7 +109,7 @@ cpms-mini-project/
 ├── backend/
 │   ├── Dockerfile                # Multi-stage: base → development → test → production
 │   ├── app.js                    # Express app (security headers, CORS, rate limits, routes)
-│   ├── server.js                 # Server entry point + DB/Redis connection + graceful shutdown
+│   ├── server.js                 # Server entry point + DB connection + graceful shutdown
 │   ├── ecosystem.config.js       # PM2 cluster configuration (zero-downtime reloads)
 │   ├── migrate-mongo-config.js   # MongoDB migration configuration
 │   ├── migrations/               # Version-controlled schema & index migrations
@@ -119,8 +118,6 @@ cpms-mini-project/
 │   │   ├── cloudinary.js         # Cloudinary SDK configuration
 │   │   ├── db.js                 # MongoDB connection & pool tuning
 │   │   ├── logger.js             # Pino structured JSON logger
-│   │   └── redis.js              # Resilient Redis client with in-memory fallback
-│   ├── controllers/              # Business logic handlers
 │   ├── middleware/               # Auth, upload, CSRF, rate limiter, request ID, error handling
 │   ├── models/                   # Mongoose schemas (User, Admin, Drive, Application, Notice, OTP)
 │   ├── routes/
@@ -132,7 +129,7 @@ cpms-mini-project/
 │   │   ├── notice.routes.js      # /api/v1/notices/*
 │   │   └── admin.routes.js       # /api/v1/admin/*
 │   ├── services/
-│   │   ├── cache.service.js      # Redis cache-aside helper for drives & notices
+│   │   ├── cache.service.js      # In-memory cache-aside helper for drives & notices
 │   │   ├── emailQueue.service.js # Asynchronous background email notification queue
 │   │   ├── email.service.js      # Brevo HTTP API email sender
 │   │   └── noticeArchiveCron.js  # Daily auto-archive & purge scheduled cron
@@ -441,8 +438,7 @@ For full, step-by-step guides, operational procedures, and environment variables
 - **Render (Backend API)**:
   - Deployed as a Node.js web service using `render.yaml`.
   - **Automated Migrations**: Uses `preDeployCommand: npm run migrate:up` to apply MongoDB schema and compound index migrations before each release.
-  - **Deep Health Probing**: Monitored via `healthCheckPath: /health` to verify database and cache readiness before traffic routing.
-  - **Redis Layer**: Seamlessly connects to **Upstash Redis** (`REDIS_URL`) or runs in resilient in-memory fallback mode (`REDIS_URL=false`).
+  - **Deep Health Probing**: Monitored via `healthCheckPath: /health` to verify database readiness before traffic routing.
 
 - **Vercel (Frontend React SPA)**:
   - Production build using Vite 8 (`dist/`).
@@ -451,7 +447,7 @@ For full, step-by-step guides, operational procedures, and environment variables
 
 - **Railway (Alternative 1-Click PaaS)**:
   - Pre-configured with [railway.toml](railway.toml) for Dockerfile-based building.
-  - Automatically provisions private Redis networking and monitors `/health`.
+  - Monitors `/health`.
 
 - **AWS (ECS Fargate / AWS App Runner)**:
   - Supported natively using the multi-arch production Docker images published by GitHub Actions (`linux/amd64` and `linux/arm64` for Graviton).
@@ -462,8 +458,8 @@ For full, step-by-step guides, operational procedures, and environment variables
   - **Frontend (`frontend/Dockerfile`)**: Multi-stage — `base` (shared deps), `development` (Vite dev server on `5173`), `build` (`npm run build`), and `production` (Nginx Alpine serving `dist/` with gzip and asset caching).
   - **Backend (`backend/Dockerfile`)**: Multi-stage — `base`, `development` (nodemon hot-reload), `test` (full dev dependencies for Jest), and `production` (lean `--omit=dev` with non-root user and `/health` probe).
 - **Docker Compose**:
-  - **`docker-compose.yml`**: Production stack — backend (`5000`), frontend Nginx (`80`), and Redis 7 Alpine (`6379`) with container health checks and dependencies.
-  - **`docker-compose.ci.yml`**: Isolated CI testing container stack with MongoDB and Redis health checks preventing startup race conditions.
+  - **`docker-compose.yml`**: Production stack — backend (`5000`), and frontend Nginx (`80`) with container health checks and dependencies.
+  - **`docker-compose.ci.yml`**: Isolated CI testing container stack with MongoDB health checks preventing startup race conditions.
   - **`docker-compose.dev.yml`**: Development override with live volume mounts for hot reloading.
 
 ### CI/CD Pipeline (GitHub Actions)

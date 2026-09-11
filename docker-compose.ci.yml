@@ -11,8 +11,6 @@ services:
     environment:
       - NODE_ENV=test
       - PORT=5000
-      - MONGO_URI=mongodb://mongo:27017/cpms_test
-      - REDIS_URL=redis://redis:6379
       - JWT_ACCESS_SECRET=test-access-secret-at-least-32-chars-long
       - JWT_REFRESH_SECRET=test-refresh-secret-at-least-32-chars-long
       - JWT_ACCESS_EXPIRY=15m
@@ -25,7 +23,6 @@ services:
       - BREVO_SENDER_EMAIL=test@example.com
     depends_on:
       - mongo
-      - redis
     # CMD from the test stage already runs npm test
 
   # Frontend build verification (runs build to catch compile/bundle errors)
@@ -44,11 +41,6 @@ services:
       - /data/db  # Use in-memory storage for faster tests
     command: mongod --quiet --bind_ip_all
 
-  redis:
-    image: redis:alpine
-    tmpfs:
-      - /data  # In-memory for tests
-    command: redis-server --save "" --appendonly no
 
 networks:
   default:

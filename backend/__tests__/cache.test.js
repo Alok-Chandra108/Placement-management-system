@@ -1,38 +1,9 @@
 const { getCache, setCache, invalidateCache } = require('../services/cache.service');
-const redisConfig = require('../config/redis');
 
-describe('Cache Service (Redis Cache-Aside)', () => {
-  let mockRedisClient;
-
-  beforeEach(() => {
-    const memoryStore = new Map();
-    mockRedisClient = {
-      isOpen: true,
-      get: jest.fn(async (key) => memoryStore.get(key) || null),
-      setEx: jest.fn(async (key, ttl, value) => {
-        memoryStore.set(key, value);
-        return 'OK';
-      }),
-      del: jest.fn(async (keys) => {
-        const keyList = Array.isArray(keys) ? keys : [keys];
-        keyList.forEach(k => memoryStore.delete(k));
-        return keyList.length;
-      }),
-      keys: jest.fn(async (pattern) => {
-        const regex = new RegExp('^' + pattern.replace('*', '.*') + '$');
-        const matched = [];
-        for (const k of memoryStore.keys()) {
-          if (regex.test(k)) matched.push(k);
-        }
-        return matched;
-      }),
-    };
-
-    jest.spyOn(redisConfig, 'getRedisClient').mockReturnValue(mockRedisClient);
-  });
-
-  afterEach(() => {
-    jest.restoreAllMocks();
+describe('Cache Service (In-Memory)', () => {
+  afterEach(async () => {
+    // Invalidate everything to clean up between tests
+    await invalidateCache('*');
   });
 
   it('should store and retrieve data from cache', async () => {
@@ -40,7 +11,6 @@ describe('Cache Service (Redis Cache-Aside)', () => {
     const success = await setCache('drives:all', testData, 60);
 
     expect(success).toBe(true);
-    expect(mockRedisClient.setEx).toHaveBeenCalledWith('drives:all', 60, JSON.stringify(testData));
 
     const retrieved = await getCache('drives:all');
     expect(retrieved).toEqual(testData);
@@ -70,18 +40,5 @@ describe('Cache Service (Redis Cache-Aside)', () => {
     expect(await getCache('drives:{"page":1}')).toBeNull();
     // Notices cache remains untouched
     expect(await getCache('notices:all')).toEqual([{ id: 2 }]);
-  });
-
-  it('should gracefully degrade if Redis client is null (offline/disabled)', async () => {
-    jest.spyOn(redisConfig, 'getRedisClient').mockReturnValue(null);
-
-    const getRes = await getCache('drives:all');
-    expect(getRes).toBeNull();
-
-    const setRes = await setCache('drives:all', { test: true }, 60);
-    expect(setRes).toBe(false);
-
-    const invRes = await invalidateCache('drives:*');
-    expect(invRes).toBe(false);
   });
 });

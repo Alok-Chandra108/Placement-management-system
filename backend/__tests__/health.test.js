@@ -16,7 +16,6 @@ describe('GET /health and GET /api/v1/health', () => {
     expect(res.body.system).toHaveProperty('instanceId');
     expect(res.body).toHaveProperty('services');
     expect(res.body.services).toHaveProperty('database');
-    expect(res.body.services).toHaveProperty('redis');
   });
 
   it('should return 200 healthy on /api/v1/health when database is connected', async () => {

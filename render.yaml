@@ -16,10 +16,6 @@ services:
         value: "5000"
       - key: MONGO_URI
         sync: false
-      - key: REDIS_URL
-        sync: false
-        # Set to your Upstash Redis URL (e.g. rediss://default:...@...upstash.io:6379)
-        # Or set to "false" to run in resilient in-memory fallback mode
       - key: JWT_ACCESS_SECRET
         sync: false
       - key: JWT_REFRESH_SECRET
