@@ -14,7 +14,7 @@
     "@hookform/resolvers": "^5.2.2",
     "@reduxjs/toolkit": "^2.11.2",
     "@tailwindcss/forms": "^0.5.11",
-    "@tanstack/react-query": "^5.99.1",
+    "@tanstack/react-query": "^5.102.8",
     "autoprefixer": "^10.5.0",
     "axios": "^1.15.0",
     "class-variance-authority": "^0.7.1",
