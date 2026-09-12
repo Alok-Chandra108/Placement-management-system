@@ -97,7 +97,7 @@ jobs:
 
       # Initialise BuildKit builder that supports multi-platform manifests
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Log in to Docker Hub
         if: steps.docker_check.outputs.enabled == 'true'
