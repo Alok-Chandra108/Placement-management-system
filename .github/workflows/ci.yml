@@ -108,7 +108,7 @@ jobs:
 
       # ── Backend ────────────────────────────────────────────────────────────
       - name: Build & push backend (multi-arch)
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: ./backend
           target: production
@@ -122,7 +122,7 @@ jobs:
 
       # ── Frontend ───────────────────────────────────────────────────────────
       - name: Build & push frontend (multi-arch)
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: ./frontend
           target: production
