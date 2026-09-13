@@ -17,6 +17,7 @@ const noticeRoutes = require('./routes/notice.routes');
 const adminRoutes = require('./routes/admin.routes');
 const healthRoutes = require('./routes/health.routes');
 const errorHandler = require('./middleware/error.middleware');
+const promBundle = require('express-prom-bundle');
 
 const app = express();
 
@@ -25,6 +26,21 @@ app.set('trust proxy', 1);
 
 // Request ID middleware - MUST be first for full request tracing
 app.use(requestIdMiddleware);
+
+// Prometheus Metrics Middleware
+// Note on Security: In a production environment, the /metrics endpoint should be
+// firewalled or restricted to internal network traffic (e.g., from the Prometheus scraper only)
+// to prevent exposing application internals to the public internet.
+const metricsMiddleware = promBundle({
+  includeMethod: true,
+  includePath: true,
+  includeStatusCode: true,
+  includeUp: true,
+  promClient: {
+    collectDefaultMetrics: {}
+  }
+});
+app.use(metricsMiddleware);
 
 // Security headers - Production-configured
 app.use(

@@ -28,7 +28,32 @@ services:
       - cpms-network
 
 
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data_dev:/prometheus
+    networks:
+      - cpms-network
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - grafana_data_dev:/var/lib/grafana
+    networks:
+      - cpms-network
+    depends_on:
+      - prometheus
+
 networks:
   cpms-network:
     driver: bridge
 
+volumes:
+  prometheus_data_dev:
+  grafana_data_dev:
