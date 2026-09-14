@@ -68,9 +68,11 @@ const baseConfig = {
   },
 };
 
-const transport = isProduction
-  ? undefined
-  : pino.transport({
+let transport = undefined;
+if (!isProduction) {
+  try {
+    require.resolve('pino-pretty');
+    transport = pino.transport({
       target: 'pino-pretty',
       options: {
         colorize: true,
@@ -79,6 +81,10 @@ const transport = isProduction
         singleLine: false,
       },
     });
+  } catch (err) {
+    // pino-pretty not installed, fallback to standard JSON
+  }
+}
 
 const logger = transport ? pino(baseConfig, transport) : pino(baseConfig);
 

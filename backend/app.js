@@ -95,7 +95,7 @@ const validateOrigin = (origin, isProduction) => {
     }
 
     // Validate protocol
-    if (isProduction) {
+    if (isProduction && process.env.ALLOW_HTTP !== 'true') {
       if (urlObj.protocol !== 'https:') {
         logger.warn({ origin, reason: 'http_not_allowed_in_production' }, 'SECURITY: Origin rejected - only HTTPS allowed in production');
         return false;
