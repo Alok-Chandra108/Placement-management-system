@@ -106,6 +106,7 @@ cpms-mini-project/
 ├── railway.toml                  # Railway 1-click deployment configuration
 ├── vercel.json                   # Root Vercel SPA routing & monorepo build configuration
 │
+├── terraform/                    # Infrastructure as Code for AWS EC2 deployment
 ├── backend/
 │   ├── Dockerfile                # Multi-stage: base → development → test → production
 │   ├── app.js                    # Express app (security headers, CORS, rate limits, routes)
@@ -449,8 +450,9 @@ For full, step-by-step guides, operational procedures, and environment variables
   - Pre-configured with [railway.toml](railway.toml) for Dockerfile-based building.
   - Monitors `/health`.
 
-- **AWS (ECS Fargate / AWS App Runner)**:
+- **AWS (ECS Fargate / AWS App Runner / EC2)**:
   - Supported natively using the multi-arch production Docker images published by GitHub Actions (`linux/amd64` and `linux/arm64` for Graviton).
+  - **Terraform (`terraform/`)**: Contains Infrastructure as Code (IaC) to provision a complete AWS EC2 environment. **Important**: You must configure valid AWS credentials (e.g., `aws configure` or set `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` environment variables) before running `terraform init`, `terraform apply`, or `terraform destroy` in this directory to avoid authentication errors.
 
 ### Containerization & Orchestration
 
