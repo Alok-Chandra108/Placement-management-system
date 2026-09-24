@@ -1,9 +1,6 @@
 services:
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-      target: production
+    image: alokchandra7/cpms-backend:k8s
     ports:
       - "5000:5000"
     env_file:
@@ -32,10 +29,7 @@ services:
         max-file: "3"
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      target: production
+    image: alokchandra7/cpms-frontend:k8s
     ports:
       - "80:80"
     depends_on:
