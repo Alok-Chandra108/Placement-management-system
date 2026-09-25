@@ -9,7 +9,7 @@ set -euo pipefail
 # ── System updates ──────────────────────────────────────────
 echo ">>> [1/5] Updating system packages..."
 dnf update -y
-dnf install -y git curl
+dnf install -y git
 
 # ── Install k3s as SERVER (control plane) ──────────────────
 # K3S_TOKEN: pre-shared secret so worker nodes can join

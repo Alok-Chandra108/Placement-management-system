@@ -21,7 +21,7 @@ resource "aws_security_group" "cpms_sg" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # Note: In a real production app, restrict this to your IP
+    cidr_blocks = ["13.233.177.0/29"] # Restricted to EC2 Instance Connect for ap-south-1
   }
 
   # Frontend

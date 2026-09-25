@@ -59,7 +59,7 @@ resource "aws_security_group" "k3s_master_sg" {
     from_port   = 9345
     to_port     = 9345
     protocol    = "tcp"
-    self        = true
+    cidr_blocks = ["172.31.0.0/16"] # Allow all internal VPC traffic
   }
 
   # Flannel VXLAN — pod-to-pod networking between nodes
@@ -68,7 +68,7 @@ resource "aws_security_group" "k3s_master_sg" {
     from_port   = 8472
     to_port     = 8472
     protocol    = "udp"
-    self        = true
+    cidr_blocks = ["172.31.0.0/16"]
   }
 
   # Kubelet metrics — used by the control plane to monitor nodes
@@ -77,7 +77,7 @@ resource "aws_security_group" "k3s_master_sg" {
     from_port   = 10250
     to_port     = 10250
     protocol    = "tcp"
-    self        = true
+    cidr_blocks = ["172.31.0.0/16"]
   }
 
   # All outbound traffic allowed

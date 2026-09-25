@@ -13,11 +13,11 @@ export const options = {
 };
 
 export default function () {
-  const url = 'http://3.108.238.147/api/v1/health';
+  const url = 'http://13.201.132.122/api/v1/health';
   
   const params = {
     headers: {
-      'Origin': 'http://3.108.238.147'
+      'Origin': 'http://13.201.132.122'
     },
   };
 

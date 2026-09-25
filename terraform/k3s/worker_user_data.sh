@@ -12,7 +12,7 @@ K3S_TOKEN="${k3s_token}"
 # ── System updates ──────────────────────────────────────────
 echo ">>> [1/4] Updating system packages..."
 dnf update -y
-dnf install -y curl
+dnf install -y git
 
 # ── Wait for master API server to be reachable ─────────────
 # The master node takes ~60s to fully boot and start k3s.
